@@ -2,6 +2,7 @@
 import { Routes, Route, Link } from 'react-router'
 import Home from './pages/Home'
 import Modulo from './pages/Modulo'
+import Conteudos from './pages/Conteudos'
 
 function App() {
   return (
@@ -27,13 +28,9 @@ function App() {
         <Route path="/" element={<Home />} />
 
         <Route
-          path="/conteudos"
+          path="/Conteudos"
           element={
-            <Modulo
-              titulo="Conteúdos"
-              descricao="Gerenciamento central de materiais audiovisuais."
-              cor="#0089FF"
-            />
+            <Conteudos />
           }
         />
 
