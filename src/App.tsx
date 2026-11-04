@@ -5,6 +5,7 @@ import Conteudos from './pages/Conteudos'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Modulo from './pages/Modulo'
+import Administracao from './pages/Administracao'
 
 export default function App() {
   const { carregando, email, perfil, erro, sair } = useAuth()
@@ -27,6 +28,13 @@ export default function App() {
       <div className="flex items-center gap-3 text-xs text-white/50">
         <span>{modoDemo ? 'DEMONSTRAÇÃO LOCAL' : perfil?.nome || email}</span>
         {!modoDemo && <button onClick={() => void sair()} className="rounded-lg border border-white/20 px-3 py-2 text-white hover:bg-white/10">Sair</button>}
+        {!modoDemo && perfil?.papel === 'admin' && (<Link
+    to="/administracao"
+    className="rounded-lg border border-white/20 px-3 py-2 text-white hover:bg-white/10"
+  >
+    Administração
+  </Link>
+)}
       </div>
     </header>
     <Routes>
@@ -36,6 +44,7 @@ export default function App() {
       <Route path="/atualizacao" element={<Modulo titulo="Atualização" descricao="Materiais que precisam ser atualizados." cor="#B900E5" />} />
       <Route path="/remocao" element={<Modulo titulo="Remoção" descricao="Controle de materiais que devem sair da grade." cor="#E90058" />} />
       <Route path="*" element={<Modulo titulo="Página não encontrada" descricao="Verifique o endereço informado." cor="#777777" />} />
+      <Route path="/Administracao" element={<Administracao />}/>
     </Routes>
   </main>
 }
