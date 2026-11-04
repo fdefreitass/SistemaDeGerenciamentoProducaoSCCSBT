@@ -227,7 +227,7 @@ export default function Conteudos() {
               <span className="font-bold">▣ {secao.nome} <span className="ml-3 text-xs font-normal text-white/40">{itens.length} materiais</span></span>
               <span className="text-white/50">{aberta ? '−' : '+'}</span>
             </button>
-            {aberta && <div className="overflow-x-auto border-t border-white/10"><table className="w-full min-w-[950px] text-left text-sm">
+            {aberta && <div className="overflow-x-auto border-t border-white/10"><table className="w-full min-w-237.5 text-left text-sm">
               <thead className="bg-[#202020] text-xs text-white/50"><tr>
                 {['CÓDIGO', 'TÍTULO', 'DURAÇÃO', 'SITUAÇÃO NA GRADE', 'PRODUÇÃO', 'ARQUIVO'].map(col => <th key={col} className="px-5 py-4">{col}</th>)}
               </tr></thead>
