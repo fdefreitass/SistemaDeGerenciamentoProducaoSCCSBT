@@ -6,6 +6,7 @@ import Home from './pages/Home'
 import Login from './pages/Login'
 import Modulo from './pages/Modulo'
 import Administracao from './pages/Administracao'
+import DefinirSenha from './pages/DefinirSenha'
 
 export default function App() {
   const { carregando, email, perfil, erro, sair } = useAuth()
@@ -45,6 +46,7 @@ export default function App() {
       <Route path="/remocao" element={<Modulo titulo="Remoção" descricao="Controle de materiais que devem sair da grade." cor="#E90058" />} />
       <Route path="*" element={<Modulo titulo="Página não encontrada" descricao="Verifique o endereço informado." cor="#777777" />} />
       <Route path="/Administracao" element={<Administracao />}/>
+      <Route path="/definir-senha" element={<DefinirSenha />} />
     </Routes>
   </main>
 }
