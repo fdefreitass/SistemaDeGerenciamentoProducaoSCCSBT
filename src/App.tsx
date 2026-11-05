@@ -1,4 +1,4 @@
-import { Link, Route, Routes } from 'react-router'
+import { Link, Route, Routes, useLocation } from 'react-router'
 import { useAuth } from './context/AuthContext'
 import { modoDemo, supabase } from './lib/supabase'
 import Conteudos from './pages/Conteudos'
@@ -10,6 +10,15 @@ import DefinirSenha from './pages/DefinirSenha'
 
 export default function App() {
   const { carregando, email, perfil, erro, sair } = useAuth()
+  const { pathname } = useLocation()
+
+  // Rota pública de ativação de contas.
+  // A autorização para definir a senha é verificada
+  // pelo Supabase Auth dentro do componente.
+  if (pathname === '/definir-senha') {
+    return <DefinirSenha />
+  }
+
 
   if (!modoDemo) {
     if (!supabase) return <main className="min-h-screen bg-black p-10 text-red-300">Configuração incompleta. Verifique VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY.</main>

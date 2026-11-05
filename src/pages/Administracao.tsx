@@ -7,6 +7,7 @@ import {
   listarUsuarios,
   type UsuarioResumo,
 } from '../services/usuarios'
+import ConviteUsuario from '../components/ConviteUsuario'
 
 const nomesPapel = {
   admin: 'Administrador',
@@ -92,7 +93,7 @@ export default function Administracao() {
           Consulte usuários, permissões e situação das contas.
         </p>
       </div>
-
+      <ConviteUsuario />
       <div className="mt-10 grid gap-4 sm:grid-cols-3">
         {[
           { titulo: 'TOTAL DE USUÁRIOS', valor: usuarios.length },
