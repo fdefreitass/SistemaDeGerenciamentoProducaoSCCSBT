@@ -426,3 +426,15 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/convidar-usuario/deno.json"
 entrypoint = "./functions/convidar-usuario/index.ts"
+
+[functions.criar-usuario-temporario]
+enabled = true
+verify_jwt = true
+import_map = "./functions/criar-usuario-temporario/deno.json"
+entrypoint = "./functions/criar-usuario-temporario/index.ts"
+
+[functions.trocar-senha-inicial]
+enabled = true
+verify_jwt = true
+import_map = "./functions/trocar-senha-inicial/deno.json"
+entrypoint = "./functions/trocar-senha-inicial/index.ts"

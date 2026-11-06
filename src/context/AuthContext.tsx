@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       const { data: perfilAtual, error: erroPerfil } = await client
         .from('perfis')
-        .select('id, nome, papel, ativo')
+        .select('id, nome, papel, ativo, troca_senha_pendente')
         .eq('id', usuario.user.id)
         .maybeSingle()
       if (!ativo) return

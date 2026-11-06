@@ -1,4 +1,5 @@
-import { Link, Route, Routes, useLocation } from 'react-router'
+
+import { Link, Navigate, Route, Routes, useLocation } from 'react-router'
 import { useAuth } from './context/AuthContext'
 import { modoDemo, supabase } from './lib/supabase'
 import Conteudos from './pages/Conteudos'
@@ -7,6 +8,8 @@ import Login from './pages/Login'
 import Modulo from './pages/Modulo'
 import Administracao from './pages/Administracao'
 import DefinirSenha from './pages/DefinirSenha'
+import PrimeiroAcesso from './pages/PrimeiroAcesso'
+
 
 export default function App() {
   const { carregando, email, perfil, erro, sair } = useAuth()
@@ -27,8 +30,13 @@ export default function App() {
     if (erro || !perfil?.ativo) return <main className="min-h-screen bg-black p-10 text-white">
       <h1 className="text-2xl font-bold">Acesso não autorizado</h1>
       <p className="mt-3 text-white/60">A conta não possui perfil ativo ou não foi possível verificar sua autorização.</p>
-      <button onClick={() => void sair()} className="mt-6 rounded-lg bg-white px-4 py-2 text-black">Sair</button>
-    </main>
+      <button onClick={() => void sair()} className="mt-6 rounded-lg bg-white px-4 py-2 text-black">Sair</button></main>
+    // Exige troca de senha antes de liberar o sistema.
+    // Qualquer estado diferente de false permanece restrito.
+    if (perfil?.troca_senha_pendente !== false) {return pathname === '/primeiro-acesso' ? <PrimeiroAcesso /> : <Navigate to="/primeiro-acesso" replace /> }
+    // Impede acesso à tela de primeiro acesso
+    // por usuários que já concluíram a troca.
+    if (pathname === '/primeiro-acesso') { return <Navigate to="/" replace /> }
   }
 
   return <main className="min-h-screen bg-[#080808] text-white">

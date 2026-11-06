@@ -12,7 +12,14 @@ export type StatusProducao =
   | 'aguardando_aprovacao'
   | 'pronto_para_envio'
 
-export type Perfil = { id: string; nome: string; papel: Papel; ativo: boolean }
+export type Perfil = {
+  id: string
+  nome: string
+  papel: Papel
+  ativo: boolean
+  troca_senha_pendente: boolean
+}
+
 export type Secao = { id: string; nome: string }
 export type Material = {
   id: string
