@@ -25,14 +25,15 @@ export default {
     const { data: perfil, error: erroPerfil } =
       await ctx.supabase
         .from('perfis')
-        .select('papel, ativo')
+        .select('papel, ativo, troca_senha_pendente')
         .eq('id', usuarioId)
         .single()
 
     if (
       erroPerfil ||
       !perfil?.ativo ||
-      perfil.papel !== 'admin'
+      perfil.papel !== 'admin' ||
+      perfil.troca_senha_pendente !== false
     ) {
       return Response.json(
         { erro: 'Acesso exclusivo de administradores' },
