@@ -15,12 +15,12 @@ export default function BoasVindas() {
   const destino = autorizado ? '/painel' : '/login'
 
   return (
-    <main className="scc-landing flex min-h-[100svh] flex-col overflow-hidden bg-[#030303] text-white">
+    <main className="scc-landing flex min-h-[100svh] flex-col overflow-hidden bg-bg-[#050505] text-white">
       <header className="scc-brand-header relative z-30 flex w-full items-center gap-4">
         <Link to="/" aria-label="Página inicial SCC Produção" className="flex shrink-0 items-center">
           <img src={logoBranca} alt="SCC SBT" className="scc-brand-logo w-auto object-contain" />
         </Link>
-        <div className="scc-brand-title mx-auto hidden w-full items-center justify-center rounded-2xl border border-white/[0.05] bg-[#161616] font-extrabold tracking-[.12em] text-white/90 md:flex">
+        <div className="scc-brand-title mx-auto hidden w-full items-center justify-center rounded-2xl border border-white/[0.05] bg-bg-[#050505] font-extrabold tracking-[.12em] text-white/90 md:flex">
           PRODUÇÃO SCC SBT
         </div>
         <Link to={destino} className="scc-brand-action scc-brand-action-quiet ml-auto inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.07] text-xs font-semibold text-white/80 transition hover:border-white/25 hover:bg-white/[0.12] hover:text-white">
@@ -58,7 +58,7 @@ export default function BoasVindas() {
 
         <img src={apresentador} alt="Personagem ilustrado do SCC SBT" className="scc-landing-host pointer-events-none absolute z-10 select-none" draggable={false} />
 
-        <Link to={destino} className="scc-landing-cta absolute z-20 inline-flex items-center gap-3 rounded-2xl border border-white/20 bg-black/65 px-5 py-3.5 text-sm font-semibold text-white backdrop-blur-lg transition hover:border-[#d9fb00]/65 hover:bg-[#161616]">
+        <Link to={destino} className="scc-landing-cta absolute z-20 inline-flex items-center gap-3 rounded-2xl border border-white/20 bg-black/65 px-5 py-3.5 text-sm font-semibold text-white backdrop-blur-lg transition hover:border-[#d9fb00]/65 hover:bg-bg-white/[0.05]">
           {autorizado ? <ArrowRight size={17} className="text-[#e7fa00]" /> : <LockKeyhole size={17} className="text-[#e7fa00]" />}
           {autorizado ? 'Continuar para a gestão' : 'Acessar sistema de produção'}
           <ArrowRight size={16} className="text-white/55" />
