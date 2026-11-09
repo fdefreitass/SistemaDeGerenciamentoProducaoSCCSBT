@@ -41,11 +41,23 @@ export default function DefinirSenha() {
     if (senha !== confirmacao) { setErro('As senhas não coincidem.'); return }
     setEtapa('enviando')
     try {
-      // O servidor valida o OTP e só então define a senha e libera o perfil.
-      const { data, error } = await obterSupabase().functions.invoke<Resposta>('concluir-ativacao', {
+      const client = obterSupabase()
+      // A troca por um JWT de uso único autentica a pessoa convidada.
+      const { data: validado, error: erroConvite } = await client.auth.verifyOtp({
+        token_hash: token,
+        type: 'invite',
+      })
+      if (erroConvite || !validado.session) {
+        throw new Error('Convite inválido ou expirado. Solicite um novo link ao administrador.')
+      }
+      // O servidor exige ainda o hash original registrado no momento do convite.
+      const { data, error } = await client.functions.invoke<Resposta>('concluir-ativacao', {
         body: { token_hash: token, senhaNova: senha },
       })
-      if (error || !data?.ok) throw new Error('Não foi possível ativar. O convite pode ter expirado ou sido utilizado.')
+      if (error || !data?.ok) {
+        throw new Error('Não foi possível concluir a ativação. Contate o administrador para recuperar o acesso.')
+      }
+      await client.auth.signOut({ scope: 'local' })
       setSenha('')
       setConfirmacao('')
       setEtapa('concluido')
