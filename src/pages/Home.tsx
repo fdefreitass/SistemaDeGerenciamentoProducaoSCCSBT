@@ -76,7 +76,7 @@ export default function Home() {
           { nome: 'Precisam atualizar', numero: contagem.atualizar, cor: '#b28aff', Icone: RefreshCcw, rota: '/conteudos?filtro=atualizar' },
           { nome: 'Precisam gravar', numero: contagem.gravar, cor: '#ff9861', Icone: Clapperboard, rota: '/conteudos?filtro=gravar' },
         ].map(kpi => (
-          <Link key={kpi.nome} to={kpi.rota} className="group relative overflow-hidden rounded-[22px] border border-white/[0.085] bg-[#1f1f1f] p-6 transition duration-200 hover:-translate-y-1 hover:border-white/25 hover:bg-[#292929]">
+          <Link key={kpi.nome} to={kpi.rota} className="scc-glass-panel group relative overflow-hidden rounded-[22px] border border-white/[0.085] bg-[#1f1f1f] p-6 transition duration-200 hover:-translate-y-1 hover:border-white/25 hover:bg-[#292929]">
             <div className="flex items-center justify-between gap-3">
               <p className="text-[12px] font-semibold text-white/50">{kpi.nome}</p>
               <kpi.Icone size={19} style={{ color: kpi.cor }} />
@@ -105,7 +105,7 @@ export default function Home() {
           const itens = materiais.filter(m => m.secao_id === secao.id)
           const emUso = itens.filter(m => m.status_grade === 'em_utilizacao').length
           return (
-            <Link key={secao.id} to={`/conteudos?busca=${encodeURIComponent(secao.nome)}`} className="group relative overflow-hidden rounded-[22px] border border-white/[0.085] bg-[#1f1f1f] p-6 transition hover:-translate-y-1 hover:border-white/25">
+            <Link key={secao.id} to={`/conteudos?busca=${encodeURIComponent(secao.nome)}`} className="scc-glass-panel group relative overflow-hidden rounded-[22px] border border-white/[0.085] bg-[#1f1f1f] p-6 transition hover:-translate-y-1 hover:border-white/25">
               <span className="absolute inset-x-0 top-0 h-[5px]" style={{ backgroundColor: cor }} />
               <div className="flex items-start justify-between gap-3">
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-black/30" style={{ color: cor }}>
@@ -122,7 +122,7 @@ export default function Home() {
             </Link>
           )
         }) : (
-          <div className="col-span-full rounded-2xl border border-dashed border-white/15 bg-[#1f1f1f] px-6 py-12 text-center">
+          <div className="scc-glass-panel col-span-full rounded-2xl border border-dashed border-white/15 bg-[#1f1f1f] px-6 py-12 text-center">
             <FolderOpen size={32} className="mx-auto text-white/25"/>
             <p className="mt-4 text-sm font-semibold">Nenhuma seção cadastrada</p>
             <p className="mt-2 text-xs text-white/40">Crie sua primeira seção na Central de Materiais.</p>
@@ -131,7 +131,7 @@ export default function Home() {
       </div>
 
       <div className="mt-10 grid gap-5 lg:grid-cols-[1.65fr_1fr]">
-        <section className="rounded-[24px] border border-white/[.085] bg-[#1f1f1f]">
+        <section className="scc-glass-panel rounded-[24px] border border-white/[.085] bg-[#1f1f1f]">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[.07] px-6 py-5">
             <div>
               <h2 className="text-lg font-bold">Materiais em destaque</h2>
@@ -154,7 +154,7 @@ export default function Home() {
             </div>
           ) : <p className="px-6 py-12 text-center text-sm text-white/40">Nenhum material cadastrado.</p>}
         </section>
-        <section className="flex flex-col rounded-[24px] border border-white/[.085] bg-[#1f1f1f] p-6">
+        <section className="scc-glass-panel flex flex-col rounded-[24px] border border-white/[.085] bg-[#1f1f1f] p-6">
           <h2 className="text-lg font-bold">Acesso rápido</h2>
           <p className="mt-1 text-xs text-white/40">Encontre exatamente o que precisa.</p>
           <form onSubmit={pesquisar} className="mt-6 flex gap-2">
