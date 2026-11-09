@@ -446,6 +446,6 @@ entrypoint = "./functions/redefinir-senha-usuario/index.ts"
 
 [functions.concluir-ativacao]
 enabled = true
-verify_jwt = false
+verify_jwt = true
 import_map = "./functions/concluir-ativacao/deno.json"
 entrypoint = "./functions/concluir-ativacao/index.ts"
