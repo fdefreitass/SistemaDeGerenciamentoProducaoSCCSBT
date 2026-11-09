@@ -199,11 +199,23 @@ export default function Conteudos() {
         status_grade: entrada.status_grade, status_producao: entrada.status_producao,
       }
       if (dialogo.modo === 'editar' && dialogo.original) {
-        const atualizado = modoDemo
-          ? { ...dialogo.original, ...campos }
-          : await atualizarMaterial(dialogo.original.id, campos)
+        // Atualiza somente os campos realmente alterados: alterações comuns
+        // continuam funcionando antes do grant para código e seção.
+        const original = dialogo.original
+        const alteracoes: Partial<typeof campos> = {}
+        if (campos.secao_id !== original.secao_id) alteracoes.secao_id = campos.secao_id
+        if (campos.codigo !== original.codigo) alteracoes.codigo = campos.codigo
+        if (campos.titulo !== original.titulo) alteracoes.titulo = campos.titulo
+        if (campos.duracao_segundos !== original.duracao_segundos) alteracoes.duracao_segundos = campos.duracao_segundos
+        if (campos.link_externo !== original.link_externo) alteracoes.link_externo = campos.link_externo
+        if (campos.observacoes !== original.observacoes) alteracoes.observacoes = campos.observacoes
+        if (campos.status_grade !== original.status_grade) alteracoes.status_grade = campos.status_grade
+        if (campos.status_producao !== original.status_producao) alteracoes.status_producao = campos.status_producao
+        const atualizado = Object.keys(alteracoes).length
+          ? (modoDemo ? { ...original, ...alteracoes } : await atualizarMaterial(original.id, alteracoes))
+          : original
         setMateriais(atual => atual.map(m => m.id === atualizado.id ? atualizado : m))
-        setSucesso('Material atualizado com sucesso.')
+        setSucesso(Object.keys(alteracoes).length ? 'Material atualizado com sucesso.' : 'Nenhuma alteração necessária.')
       } else {
         const novo: Material = modoDemo
           ? { ...campos, id: crypto.randomUUID() }
