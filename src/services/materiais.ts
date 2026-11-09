@@ -25,7 +25,8 @@ export async function criarSecao(nome: string): Promise<Secao> {
 }
 
 export async function criarMaterial(
-  novo: Pick<Material, 'secao_id' | 'codigo' | 'titulo' | 'duracao_segundos' | 'link_externo'>
+  novo: Pick<Material, 'secao_id' | 'codigo' | 'titulo' | 'duracao_segundos' | 'link_externo'> &
+    Partial<Pick<Material, 'status_grade' | 'status_producao' | 'observacoes'>>
 ): Promise<Material> {
   const { data, error } = await obterSupabase()
     .from('materiais').insert(novo)
@@ -37,12 +38,14 @@ export async function criarMaterial(
 
 export async function atualizarMaterial(
   id: string,
-  alteracoes: Partial<Pick<Material, 'titulo' | 'duracao_segundos' | 'status_grade' | 'status_producao' | 'link_externo' | 'observacoes'>>
-): Promise<void> {
+  alteracoes: Partial<Pick<Material, 'secao_id' | 'codigo' | 'titulo' | 'duracao_segundos' | 'status_grade' | 'status_producao' | 'link_externo' | 'observacoes'>>
+): Promise<Material> {
   const { data, error } = await obterSupabase()
-    .from('materiais').update(alteracoes).eq('id', id).select('id').single()
+      .from('materiais').update(alteracoes).eq('id', id)
+    .select('id, secao_id, codigo, titulo, duracao_segundos, status_grade, status_producao, link_externo, observacoes').single()
   if (error) throw error
   if (!data) throw new Error('Material não localizado ou operação não permitida.')
+  return data as Material
 }
 
 // Nome é atualizado somente quando permitido pelas políticas RLS de seções.
@@ -51,4 +54,15 @@ export async function renomearSecao(id: string, nome: string): Promise<Secao> {
     .from('secoes').update({ nome }).eq('id', id).select('id, nome').single()
   if (error) throw error
   return data as Secao
+}
+
+/** Exclusão permanente permitida somente a administradores pela RLS do banco.
+ * Requer a migração 20261109_02_edicao_exclusao_materiais.sql.
+ * Histórico é mantido mesmo após a exclusão do registro principal.
+ */
+export async function excluirMaterial(id: string): Promise<void> {
+  const { data, error } = await obterSupabase().from('materiais')
+    .delete().eq('id', id).select('id').single()
+  if (error) throw error
+  if (!data) throw new Error('Exclusão não permitida ou material inexistente.')
 }
