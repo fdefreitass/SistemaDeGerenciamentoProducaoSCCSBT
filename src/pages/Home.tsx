@@ -79,7 +79,7 @@ export default function Home() {
           { nome: 'Precisam atualizar', numero: contagem.atualizar, cor: '#b28aff', Icone: RefreshCcw, rota: '/conteudos?filtro=atualizar' },
           { nome: 'Precisam gravar', numero: contagem.gravar, cor: '#ff9861', Icone: Clapperboard, rota: '/conteudos?filtro=gravar' },
         ].map(kpi => (
-          <Link key={kpi.nome} to={kpi.rota} className="group relative overflow-hidden rounded-[22px] border border-white/[0.085] bg-[#141517] p-6 transition duration-200 hover:-translate-y-1 hover:border-white/25 hover:bg-[#1b1c1f]">
+          <Link key={kpi.nome} to={kpi.rota} className="group relative overflow-hidden rounded-[22px] border border-white/[0.085] bg-bg-[#050505] p-6 transition duration-200 hover:-translate-y-1 hover:border-white/25 hover:bg-bg-white/[0.05]">
             <div className="flex items-center justify-between gap-3">
               <p className="text-[12px] font-semibold text-white/50">{kpi.nome}</p>
               <kpi.Icone size={19} style={{ color: kpi.cor }} />
@@ -108,7 +108,7 @@ export default function Home() {
           const itens = materiais.filter(m => m.secao_id === secao.id)
           const emUso = itens.filter(m => m.status_grade === 'em_utilizacao').length
           return (
-            <Link key={secao.id} to={`/conteudos?busca=${encodeURIComponent(secao.nome)}`} className="group relative overflow-hidden rounded-[22px] border border-white/[0.085] bg-[#141517] p-6 transition hover:-translate-y-1 hover:border-white/25">
+            <Link key={secao.id} to={`/conteudos?busca=${encodeURIComponent(secao.nome)}`} className="group relative overflow-hidden rounded-[22px] border border-white/[0.085] bg-bg-[#050505] p-6 transition hover:-translate-y-1 hover:border-white/25">
               <span className="absolute inset-x-0 top-0 h-[5px]" style={{ backgroundColor: cor }} />
               <div className="flex items-start justify-between gap-3">
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-black/30" style={{ color: cor }}>
@@ -125,7 +125,7 @@ export default function Home() {
             </Link>
           )
         }) : (
-          <div className="col-span-full rounded-2xl border border-dashed border-white/15 bg-[#131416] px-6 py-12 text-center">
+          <div className="col-span-full rounded-2xl border border-dashed border-white/15 bg-bg-[#050505] px-6 py-12 text-center">
             <FolderOpen size={32} className="mx-auto text-white/25"/>
             <p className="mt-4 text-sm font-semibold">Nenhuma seção cadastrada</p>
             <p className="mt-2 text-xs text-white/40">Crie sua primeira seção na Central de Materiais.</p>
@@ -134,7 +134,7 @@ export default function Home() {
       </div>
 
       <div className="mt-10 grid gap-5 lg:grid-cols-[1.65fr_1fr]">
-        <section className="rounded-[24px] border border-white/[.085] bg-[#141517]">
+        <section className="rounded-[24px] border border-white/[.085] bg-bg-[#050505]">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[.07] px-6 py-5">
             <div>
               <h2 className="text-lg font-bold">Materiais em destaque</h2>
@@ -157,12 +157,12 @@ export default function Home() {
             </div>
           ) : <p className="px-6 py-12 text-center text-sm text-white/40">Nenhum material cadastrado.</p>}
         </section>
-        <section className="flex flex-col rounded-[24px] border border-white/[.085] bg-[#141517] p-6">
+        <section className="flex flex-col rounded-[24px] border border-white/[.085] bg-bg-[#050505] p-6">
           <h2 className="text-lg font-bold">Acesso rápido</h2>
           <p className="mt-1 text-xs text-white/40">Encontre exatamente o que precisa.</p>
           <form onSubmit={pesquisar} className="mt-6 flex gap-2">
             <label htmlFor="pesquisa-dashboard" className="sr-only">Buscar material</label>
-            <input id="pesquisa-dashboard" value={pesquisa} onChange={e => setPesquisa(e.target.value)} placeholder="Buscar material..." className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#08090b] px-3.5 py-3 text-sm outline-none focus:border-[#e2fa4a]/50" />
+            <input id="pesquisa-dashboard" value={pesquisa} onChange={e => setPesquisa(e.target.value)} placeholder="Buscar material..." className="min-w-0 flex-1 rounded-xl border border-white/10 bg-bg-[#050505] px-3.5 py-3 text-sm outline-none focus:border-[#e2fa4a]/50" />
             <button type="submit" aria-label="Pesquisar" className="rounded-xl bg-white px-3.5 text-black transition hover:bg-[#e2fa4a]"><Search size={19}/></button>
           </form>
           <div className="mt-6 space-y-2">
@@ -171,7 +171,7 @@ export default function Home() {
               { rota: '/atualizacao', nome: 'Atualização', Icone: RefreshCcw },
               { rota: '/remocao', nome: 'Remoção', Icone: Clock3 },
             ].map(item => (
-              <Link key={item.rota} to={item.rota} className="flex items-center gap-3 rounded-xl border border-white/[.08] bg-[#0e0f11] p-3.5 text-sm text-white/70 transition hover:border-white/20 hover:text-white">
+              <Link key={item.rota} to={item.rota} className="flex items-center gap-3 rounded-xl border border-white/[.08] bg-bg-[#050505] p-3.5 text-sm text-white/70 transition hover:border-white/20 hover:text-white">
                 <item.Icone size={17} className="text-[#e2fa4a]"/><span className="flex-1">{item.nome}</span><ArrowRight size={15} className="text-white/30"/>
               </Link>
             ))}
