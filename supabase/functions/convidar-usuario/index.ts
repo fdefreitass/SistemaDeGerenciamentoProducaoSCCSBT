@@ -72,6 +72,25 @@ export default {
       return responder({ erro: 'Não foi possível configurar a conta. Nenhum convite foi liberado.' }, 500)
     }
 
+    // Persistir somente a IMPRESSÃO DIGITAL (SHA-256) do token de uso único.
+    // A conclusão exige simultaneamente JWT válido e posse desse segredo.
+    const digest = await crypto.subtle.digest('SHA-256',
+      new TextEncoder().encode(data.properties.hashed_token))
+    const token_sha256 = Array.from(new Uint8Array(digest))
+      .map(byte => byte.toString(16).padStart(2, '0')).join('')
+
+    const { error: erroArmazenamento } = await ctx.supabaseAdmin
+      .from('convites_ativacao')
+      .upsert({
+        usuario_id: data.user.id,
+        token_sha256,
+        expira_em: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      }, { onConflict: 'usuario_id' })
+    if (erroArmazenamento) {
+      await ctx.supabaseAdmin.auth.admin.deleteUser(data.user.id)
+      return responder({ erro: 'Falha ao registrar o convite; a conta não foi liberada.' }, 500)
+    }
+
     const url = origem + '/definir-senha?token_hash=' +
       encodeURIComponent(data.properties.hashed_token) + '&type=invite'
 
