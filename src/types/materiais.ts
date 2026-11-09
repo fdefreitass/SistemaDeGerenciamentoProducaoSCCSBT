@@ -24,11 +24,11 @@ export type Secao = { id: string; nome: string; cor_hex?: string | null }
 export type Material = {
   id: string
   secao_id: string
-  codigo: string
+  codigo: string | null
   titulo: string
-  duracao_segundos: number
-  status_grade: StatusGrade
-  status_producao: StatusProducao
+  duracao_segundos: number | null
+  status_grade: StatusGrade | null
+  status_producao: StatusProducao | null
   link_externo: string | null
   observacoes: string | null
 }
