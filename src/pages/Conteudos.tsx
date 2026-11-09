@@ -71,6 +71,10 @@ export default function Conteudos() {
     const valor = new URLSearchParams(search).get('filtro')
     return valor === 'uso' || valor === 'atualizar' || valor === 'gravar' ? valor : 'todos'
   })
+  const [filtroGrade, setFiltroGrade] = useState<StatusGrade | 'todas'>(() => {
+    const grade = new URLSearchParams(search).get('grade')
+    return statusGrade.some(item => item.value === grade) ? grade as StatusGrade : 'todas'
+  })
   const [novaSecao, setNovaSecao] = useState('')
   const [secaoEditando, setSecaoEditando] = useState<string | null>(null)
   const [nomeSecaoEditando, setNomeSecaoEditando] = useState('')
@@ -88,6 +92,8 @@ export default function Conteudos() {
     setBusca(params.get('busca') ?? '')
     const f = params.get('filtro')
     setFiltro(f === 'uso' || f === 'atualizar' || f === 'gravar' ? f : 'todos')
+    const grade = params.get('grade')
+    setFiltroGrade(statusGrade.some(item => item.value === grade) ? grade as StatusGrade : 'todas')
   }, [search])
 
   useEffect(() => {
@@ -326,15 +332,16 @@ export default function Conteudos() {
     const secao = secoes.find(s => s.id === m.secao_id)
     const texto = (m.codigo + ' ' + m.titulo + ' ' + (secao?.nome ?? '')).toLocaleLowerCase('pt-BR')
     const achou = texto.includes(busca.trim().toLocaleLowerCase('pt-BR'))
-    return achou && (
+    const correspondeFiltro = (
       filtro === 'todos' ||
       (filtro === 'uso' && m.status_grade === 'em_utilizacao') ||
       (filtro === 'atualizar' && m.status_producao === 'precisa_atualizar') ||
       (filtro === 'gravar' && m.status_producao === 'precisa_gravar')
     )
+    return achou && correspondeFiltro && (filtroGrade === 'todas' || m.status_grade === filtroGrade)
   })
   const secoesVisiveis = secoes.filter(secao =>
-    (!busca.trim() && filtro === 'todos') || filtrados.some(m => m.secao_id === secao.id)
+    (!busca.trim() && filtro === 'todos' && filtroGrade === 'todas') || filtrados.some(m => m.secao_id === secao.id)
   )
   const totalUso = materiais.filter(m => m.status_grade === 'em_utilizacao').length
   const totalAtualizar = materiais.filter(m => m.status_producao === 'precisa_atualizar').length
@@ -379,25 +386,35 @@ export default function Conteudos() {
               <h2 className="text-base font-bold text-white/90">Encontre o que precisa</h2>
               <p className="mt-1 text-xs text-white/40">Busque pelo código, título ou nome da seção.</p>
             </div>
-            {(busca || filtro !== 'todos') && <button type="button" onClick={() => { setBusca(''); setFiltro('todos') }}
+            {(busca || filtro !== 'todos' || filtroGrade !== 'todas') && <button type="button" onClick={() => { setBusca(''); setFiltro('todos'); setFiltroGrade('todas') }}
               className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-white/60 transition hover:bg-white/5 hover:text-white">
               Limpar filtros
             </button>}
           </div>
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(220px,260px)]">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(280px,1fr)_minmax(190px,240px)_minmax(210px,260px)]">
             <div className="relative min-w-0">
               <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/35" />
               <input aria-label="Pesquisar materiais" type="search" placeholder="Pesquisar materiais ou seções..." value={busca}
                 onChange={e => setBusca(e.target.value)} className="scc-materials-input h-12 w-full rounded-xl border border-white/10 bg-[#050505] pl-12 pr-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#e2fa00]/45" />
             </div>
             <div>
-              <label className="sr-only" htmlFor="filtro-materiais">Filtrar materiais</label>
+              <label className="sr-only" htmlFor="filtro-materiais">Filtrar materiais por prioridade</label>
               <select id="filtro-materiais" className="scc-materials-input h-12 w-full rounded-xl border border-white/10 bg-[#050505] px-4 text-sm text-white outline-none focus:border-[#e2fa00]/45" value={filtro}
                 onChange={e => setFiltro(e.target.value as Filtro)}>
                 <option value="todos">Todos os materiais</option>
                 <option value="uso">Em utilização</option>
                 <option value="atualizar">Precisa atualizar</option>
                 <option value="gravar">Precisa gravar</option>
+              </select>
+            </div>
+            <div>
+              <label className="sr-only" htmlFor="filtro-situacao-grade">Filtrar por situação na grade</label>
+              <select id="filtro-situacao-grade"
+                className="scc-materials-input h-12 w-full rounded-xl border border-white/10 bg-[#050505] px-4 text-sm text-white outline-none transition focus:border-[#e2fa00]/45"
+                value={filtroGrade}
+                onChange={e => setFiltroGrade(e.target.value as StatusGrade | 'todas')}>
+                <option value="todas">Todas as situações da grade</option>
+                {statusGrade.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
               </select>
             </div>
           </div>
@@ -496,7 +513,7 @@ export default function Conteudos() {
                   <col style={{ width: '12%' }} />
                 </colgroup>
                 <thead><tr className="bg-[#181818] text-[11px] font-bold uppercase tracking-[.04em] text-white/50">
-                  {['Código', 'Título', 'Duração', 'Situação na grade', 'Status produção', 'Arquivo', 'Ações'].map(nome => <th key={nome} scope="col" className="px-4 py-4">{nome}</th>)}
+                  {['Código', 'Título', 'Duração', 'Situação na grade', 'Status produção', 'Arquivo', 'Ações'].map(nome => <th key={nome} scope="col" className={'px-4 py-4 ' + (nome === 'Ações' ? 'text-center' : '')}>{nome}</th>)}
                 </tr></thead>
                 <tbody>
                   {itens.map(m => <tr key={m.id} className="border-t border-white/[0.06] bg-[#1f1f1f] transition hover:bg-[#292929]">
@@ -522,8 +539,8 @@ export default function Conteudos() {
                         ? <a href={m.link_externo} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-bold text-[#e2fa00] hover:underline">Abrir arquivo <ArrowUpRight size={13} /></a>
                         : <span className="text-white/35">Sem link</span>}
                     </td>
-                    <td className="px-3 py-4">
-                      {podeEditar ? <div className="flex items-center justify-end gap-1.5">
+                    <td className="px-3 py-4 text-center">
+                      {podeEditar ? <div className="flex items-center justify-center gap-1.5">
                         <button type="button" disabled={salvando} onClick={() => abrirMaterial('editar', m)}
                           title={'Editar ' + m.titulo} aria-label={'Editar ' + m.titulo}
                           className="rounded-lg border border-white/10 p-2 text-white/70 transition hover:border-blue-400/50 hover:bg-blue-400/10 hover:text-blue-200 disabled:opacity-40"><Pencil size={15} /></button>
