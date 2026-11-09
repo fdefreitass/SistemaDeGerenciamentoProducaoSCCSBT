@@ -74,10 +74,10 @@ export default function ConviteUsuario() {
   }
 
   const campo =
-    'w-full rounded-lg border border-white/10 bg-[#101010] px-4 py-3 text-sm text-white outline-none focus:border-blue-500'
+    'w-full rounded-lg border border-white/10 bg-[#050505] px-4 py-3 text-sm text-white outline-none focus:border-blue-500'
 
   return (
-    <section className="mt-8 rounded-2xl border border-white/10 bg-[#151515] p-6">
+    <section className="mt-8 rounded-2xl border border-white/10 bg-[#050505] p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold">
