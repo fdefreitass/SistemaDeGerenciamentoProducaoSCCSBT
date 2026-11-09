@@ -546,18 +546,57 @@ export default function Conteudos() {
                 <button disabled={salvando} className="flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-xs font-bold text-black disabled:opacity-40"><Check size={15} /> Salvar nome</button>
                 <button type="button" onClick={() => setSecaoEditando(null)} className="flex items-center gap-2 rounded-xl border border-white/20 px-4 py-3 text-xs text-white/70"><X size={15} /> Fechar</button>
               </form>
-              <div className="mt-4">
-                <p className="mb-2 text-xs font-semibold text-white/65">Cor da seção</p>
-                <div className="flex flex-wrap items-center gap-2">
+              <div className="mt-6 border-t border-white/10 pt-5">
+                <p className="mb-3 text-xs font-semibold text-white/65">Cor da seção</p>
+                <div className="flex flex-wrap items-center gap-2.5">
                   {paletaSecoes.map(tom => <button key={tom} type="button" style={{ backgroundColor: tom }}
-                    title={'Usar cor ' + tom} aria-label={'Usar cor ' + tom} aria-pressed={cor.toLowerCase() === tom.toLowerCase()}
-                    onClick={() => void salvarCorSecao(secao.id, tom)}
-                    className={'h-9 w-9 rounded-full border-[3px] transition hover:scale-105 ' + (cor.toLowerCase() === tom.toLowerCase() ? 'border-white' : 'border-transparent')} />)}
-                  <label className="ml-3 flex items-center gap-2 text-xs text-white/65">Outra cor
-                    <input type="color" aria-label="Escolher cor personalizada" value={cor} onChange={e => void salvarCorSecao(secao.id, e.target.value)} className="h-9 w-10 cursor-pointer bg-transparent" />
-                  </label>
+                    title={'Aplicar cor ' + tom} aria-label={'Aplicar cor ' + tom}
+                    aria-pressed={cor.toLowerCase() === tom.toLowerCase()}
+                    disabled={salvando} onClick={() => void salvarCorSecao(secao.id, tom)}
+                    className={'h-9 w-9 cursor-pointer rounded-full border-[3px] transition hover:scale-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:opacity-50 ' +
+                      (cor.toLowerCase() === tom.toLowerCase() ? 'border-white' : 'border-transparent')} />)}
                 </div>
-                <p className="mt-2 text-[11px] text-white/40">Nome e cor são sincronizados entre todos os usuários após a migração 03.</p>
+                <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end">
+                  <div className="min-w-0 flex-1">
+                    <label htmlFor={'cor-hex-' + secao.id} className="mb-2 block text-xs font-semibold text-white/65">Cor personalizada (HEX)</label>
+                    <div className="flex h-12 min-w-0 items-center gap-3 rounded-xl border border-white/15 bg-[#101010] px-3 transition focus-within:border-[#e2fa00]/60">
+                      <label title="Abrir seletor de cores" className="relative h-8 w-8 shrink-0 cursor-pointer overflow-hidden rounded-lg border border-white/25"
+                        style={{ backgroundColor: hexValido(corSecaoEditando) ? corSecaoEditando : cor }}>
+                        <input type="color" aria-label="Escolher cor com a paleta" value={hexValido(corSecaoEditando) ? corSecaoEditando : cor}
+                          disabled={salvando} onChange={e => setCorSecaoEditando(e.target.value.toUpperCase())}
+                          className="absolute inset-0 h-full w-full cursor-pointer opacity-0" />
+                      </label>
+                      <span className="text-sm font-semibold text-white/40">HEX</span>
+                      <input id={'cor-hex-' + secao.id} type="text" inputMode="text"
+                        autoComplete="off" spellCheck={false} maxLength={7}
+                        aria-invalid={!hexValido(corSecaoEditando)}
+                        aria-describedby={'cor-hex-ajuda-' + secao.id}
+                        value={corSecaoEditando}
+                        onChange={e => setCorSecaoEditando(e.target.value.toUpperCase())}
+                        placeholder="#1F1F1F"
+                        className="min-w-0 flex-1 bg-transparent font-mono text-sm font-semibold tracking-wider text-white outline-none placeholder:text-white/30" />
+                    </div>
+                    <p id={'cor-hex-ajuda-' + secao.id} className={'mt-2 text-[11px] ' +
+                      (hexValido(corSecaoEditando) ? 'text-white/40' : 'text-amber-300')}>
+                      {hexValido(corSecaoEditando) ? 'Exemplo: #E2FA00. A cor será sincronizada para todos.' : 'Informe # seguido de seis dígitos hexadecimais.'}
+                    </p>
+                  </div>
+                  <button type="button" onClick={() => void salvarCorSecao(secao.id, corSecaoEditando)}
+                    disabled={salvando || !hexValido(corSecaoEditando) || corSecaoEditando.toLowerCase() === cor.toLowerCase()}
+                    className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-5 text-xs font-bold text-[#050505] transition hover:bg-[#e2fa00] disabled:cursor-not-allowed disabled:opacity-35">
+                    <Check size={16}/> Aplicar cor
+                  </button>
+                </div>
+              </div>
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-red-400/15 pt-5">
+                <div>
+                  <p className="text-sm font-bold text-white/80">Remover seção</p>
+                  <p className="mt-1 text-xs text-white/40">Se houver materiais, eles serão transferidos antes da exclusão.</p>
+                </div>
+                <button type="button" onClick={() => solicitarExclusaoSecao(secao)} disabled={salvando}
+                  className="inline-flex items-center gap-2 rounded-xl border border-red-400/35 px-4 py-3 text-xs font-bold text-red-300 transition hover:border-red-400 hover:bg-red-400/10 disabled:opacity-40">
+                  <Trash2 size={15} /> Excluir seção
+                </button>
               </div>
             </div>}
 
