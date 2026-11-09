@@ -109,7 +109,7 @@ export default function App() {
   const nome = modoDemo ? 'Demonstração local' : perfil?.nome || email || 'Colaborador'
 
   return (
-    <div className="scc-app-body min-h-screen bg-[#050505] text-white">
+    <div className="scc-app-body relative isolate min-h-screen bg-[#050505] text-white">
       <header className="sticky top-0 z-30 border-b border-white/[0.07] bg-[#050505]/95 backdrop-blur-xl">
         <div className="scc-app-header-inner grid min-h-[82px] grid-cols-[1fr_auto] items-center gap-4 lg:grid-cols-[1fr_minmax(300px,1.65fr)_1fr]">
           <Link to="/" className="flex w-fit items-center" aria-label="Voltar à apresentação SCC Produção">
@@ -183,6 +183,7 @@ export default function App() {
         </div>
       </header>
 
+      <div className="scc-app-content relative z-10">
       <Routes>
         <Route path="/painel" element={<Home />} />
         <Route path="/conteudos" element={<Conteudos />} />
@@ -193,6 +194,7 @@ export default function App() {
         <Route path="/perfil" element={<MeuPerfil />} />
         <Route path="*" element={<Navigate to="/painel" replace />} />
       </Routes>
+      </div>
     </div>
   )
 }
