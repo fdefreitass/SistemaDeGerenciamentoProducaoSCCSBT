@@ -533,7 +533,7 @@ export default function Conteudos() {
             </button>}
           </div>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(280px,1fr)_minmax(190px,240px)_minmax(210px,260px)]">
-            <div className="relative min-w-0 xl:pt-[21px]">
+            <div className="relative min-w-0 xl:mt-[21px]">
               <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/35" />
               <input aria-label="Pesquisar materiais" type="search" placeholder="Pesquisar materiais ou seções..." value={busca}
                 onChange={e => setBusca(e.target.value)} className="scc-materials-input h-12 w-full rounded-xl border border-white/10 bg-[#050505] pl-12 pr-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#e2fa00]/45" />
