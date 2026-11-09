@@ -749,3 +749,31 @@ body { overflow-x: hidden; }
   background: rgba(255, 255, 255, .14);
   border-color: rgba(255, 255, 255, .28);
 }
+
+/* Logos oficiais dos programas — sem recriar tipografia ou deformar proporções. */
+.scc-landing-programs .scc-showcase-card > img.scc-program-logo {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 83%;
+  height: 66%;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+  object-position: center;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 3px 7px rgba(0, 0, 0, .12));
+}
+.scc-landing-card-news > img.scc-program-logo {
+  width: 87% !important;
+  height: 62% !important;
+}
+.scc-landing-card-meiodia > img.scc-program-logo {
+  width: 87% !important;
+  height: 67% !important;
+}
+.scc-landing-card-queso > img.scc-program-logo {
+  width: 91% !important;
+  height: 72% !important;
+}
