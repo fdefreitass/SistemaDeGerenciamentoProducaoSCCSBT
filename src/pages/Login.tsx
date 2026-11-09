@@ -30,14 +30,14 @@ export default function Login() {
   }
 
   return (
-    <main className="scc-login-layout relative flex min-h-[100svh] flex-col overflow-hidden bg-[#030303] text-white">
+    <main className="scc-login-layout relative flex min-h-[100svh] flex-col overflow-hidden bg-bg-[#050505] text-white">
       <img src={laco} alt="" className="scc-login-ribbon pointer-events-none absolute inset-0 h-full w-full select-none object-cover object-center" draggable={false} />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/15 via-black/10 to-black/50" />
       <header className="scc-brand-header relative z-10 flex w-full items-center gap-4">
         <Link to="/" aria-label="Voltar à página inicial">
           <img src={logoBranca} alt="SCC SBT" className="scc-brand-logo w-auto object-contain" />
         </Link>
-        <div className="scc-brand-title mx-auto hidden w-full items-center justify-center rounded-2xl border border-white/5 bg-[#161616]/95 font-extrabold tracking-[.1em] md:flex">
+        <div className="scc-brand-title mx-auto hidden w-full items-center justify-center rounded-2xl border border-white/5 bg-bg-[#050505]/95 font-extrabold tracking-[.1em] md:flex">
           ACESSO AO SCC PRODUÇÃO
         </div>
         <Link to="/" className="scc-brand-action ml-auto inline-flex items-center gap-2 rounded-xl bg-white font-extrabold text-black transition hover:bg-white/85">
@@ -46,7 +46,7 @@ export default function Login() {
       </header>
 
       <div className="scc-login-content relative z-10 flex flex-1 items-center justify-center">
-        <section className="scc-login-panel w-full rounded-[28px] border border-white/15 bg-[#131313]/95 shadow-[0_35px_110px_rgba(0,0,0,.62)] backdrop-blur-2xl" aria-labelledby="titulo-login">
+        <section className="scc-login-panel w-full rounded-[28px] border border-white/15 bg-bg-[#050505]/95 shadow-[0_35px_110px_rgba(0,0,0,.62)] backdrop-blur-2xl" aria-labelledby="titulo-login">
           <div className="mx-auto flex w-fit flex-col items-center">
             <img src={logoBranca} alt="SCC SBT" className="scc-login-logo w-auto object-contain" />
             <span className="mt-4 text-[10px] font-bold uppercase tracking-[.2em] text-white/35">Plataforma de gestão de conteúdos</span>
@@ -66,7 +66,7 @@ export default function Login() {
               <input id="email" type="email" autoComplete="username" required value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="voce@empresa.com.br"
-                className="scc-login-input w-full rounded-xl border border-white/10 bg-[#090909] px-4 text-white outline-none transition placeholder:text-white/25 focus:border-blue-400/70 focus:ring-2 focus:ring-blue-500/10"
+                className="scc-login-input w-full rounded-xl border border-white/10 bg-bg-[#050505] px-4 text-white outline-none transition placeholder:text-white/25 focus:border-blue-400/70 focus:ring-2 focus:ring-blue-500/10"
               />
             </div>
             <div>
@@ -74,7 +74,7 @@ export default function Login() {
               <div className="relative">
                 <input id="senha" type={mostrarSenha ? 'text' : 'password'} autoComplete="current-password" required value={senha}
                   onChange={e => setSenha(e.target.value)}
-                  className="scc-login-input w-full rounded-xl border border-white/10 bg-[#090909] px-4 pr-12 text-white outline-none transition focus:border-blue-400/70 focus:ring-2 focus:ring-blue-500/10"
+                  className="scc-login-input w-full rounded-xl border border-white/10 bg-bg-[#050505] px-4 pr-12 text-white outline-none transition focus:border-blue-400/70 focus:ring-2 focus:ring-blue-500/10"
                 />
                 <button type="button" onClick={() => setMostrarSenha(v => !v)} aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'} className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-white/45 transition hover:text-white">
                   {mostrarSenha ? <EyeOff size={18} /> : <Eye size={18} />}
