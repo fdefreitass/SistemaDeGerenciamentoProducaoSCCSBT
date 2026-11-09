@@ -16,7 +16,21 @@ import {
   type Material, type Secao, type StatusGrade, type StatusProducao,
 } from '../types/materiais'
 
-type Filtro = 'todos' | 'uso' | 'atualizar' | 'gravar'
+type FiltroProducao = StatusProducao | 'todos'
+
+function filtroProducaoInicial(params: URLSearchParams): FiltroProducao {
+  const direto = params.get('producao')
+  if (statusProducao.some(item => item.value === direto)) return direto as StatusProducao
+  const antigo = params.get('filtro')
+  if (antigo === 'atualizar') return 'precisa_atualizar'
+  if (antigo === 'gravar') return 'precisa_gravar'
+  return 'todos'
+}
+function filtroGradeInicial(params: URLSearchParams): StatusGrade | 'todas' {
+  const grade = params.get('grade')
+  if (statusGrade.some(item => item.value === grade)) return grade as StatusGrade
+  return params.get('filtro') === 'uso' ? 'em_utilizacao' : 'todas'
+}
 type ModoFormulario = 'novo' | 'editar' | 'duplicar'
 type Formulario = {
   secao_id: string
@@ -69,14 +83,8 @@ export default function Conteudos() {
   const [materiais, setMateriais] = useState<Material[]>(modoDemo ? demoMateriais : [])
   const [abertas, setAbertas] = useState<Record<string, boolean>>({})
   const [busca, setBusca] = useState(() => new URLSearchParams(search).get('busca') ?? '')
-  const [filtro, setFiltro] = useState<Filtro>(() => {
-    const valor = new URLSearchParams(search).get('filtro')
-    return valor === 'uso' || valor === 'atualizar' || valor === 'gravar' ? valor : 'todos'
-  })
-  const [filtroGrade, setFiltroGrade] = useState<StatusGrade | 'todas'>(() => {
-    const grade = new URLSearchParams(search).get('grade')
-    return statusGrade.some(item => item.value === grade) ? grade as StatusGrade : 'todas'
-  })
+  const [filtroProducao, setFiltroProducao] = useState<FiltroProducao>(() => filtroProducaoInicial(new URLSearchParams(search)))
+  const [filtroGrade, setFiltroGrade] = useState<StatusGrade | 'todas'>(() => filtroGradeInicial(new URLSearchParams(search)))
   const [novaSecao, setNovaSecao] = useState('')
   const [secaoEditando, setSecaoEditando] = useState<string | null>(null)
   const [nomeSecaoEditando, setNomeSecaoEditando] = useState('')
@@ -96,10 +104,8 @@ export default function Conteudos() {
   useEffect(() => {
     const params = new URLSearchParams(search)
     setBusca(params.get('busca') ?? '')
-    const f = params.get('filtro')
-    setFiltro(f === 'uso' || f === 'atualizar' || f === 'gravar' ? f : 'todos')
-    const grade = params.get('grade')
-    setFiltroGrade(statusGrade.some(item => item.value === grade) ? grade as StatusGrade : 'todas')
+    setFiltroProducao(filtroProducaoInicial(params))
+    setFiltroGrade(filtroGradeInicial(params))
   }, [search])
 
   useEffect(() => {
@@ -231,7 +237,7 @@ export default function Conteudos() {
       setAbertas(atual => ({ ...atual, [campos.secao_id]: true }))
       setDialogo(null)
       setBusca('')
-      setFiltro('todos')
+      setFiltroProducao('todos')
       setFiltroGrade('todas')
     } catch (e) {
       setErro(erroAmigavel(e, 'Não foi possível salvar. Verifique as permissões e tente novamente.'))
@@ -371,7 +377,7 @@ export default function Conteudos() {
       setConfirmacaoSecao('')
       setDestinoSecao('')
       setBusca('')
-      setFiltro('todos')
+      setFiltroProducao('todos')
       setFiltroGrade('todas')
       setSucesso(transferidos > 0
         ? `Seção removida. ${transferidos} ${transferidos === 1 ? 'material transferido' : 'materiais transferidos'} com histórico preservado.`
@@ -392,16 +398,11 @@ export default function Conteudos() {
     const secao = secoes.find(s => s.id === m.secao_id)
     const texto = (m.codigo + ' ' + m.titulo + ' ' + (secao?.nome ?? '')).toLocaleLowerCase('pt-BR')
     const achou = texto.includes(busca.trim().toLocaleLowerCase('pt-BR'))
-    const correspondeFiltro = (
-      filtro === 'todos' ||
-      (filtro === 'uso' && m.status_grade === 'em_utilizacao') ||
-      (filtro === 'atualizar' && m.status_producao === 'precisa_atualizar') ||
-      (filtro === 'gravar' && m.status_producao === 'precisa_gravar')
-    )
-    return achou && correspondeFiltro && (filtroGrade === 'todas' || m.status_grade === filtroGrade)
+    return achou && (filtroProducao === 'todos' || m.status_producao === filtroProducao) &&
+      (filtroGrade === 'todas' || m.status_grade === filtroGrade)
   })
   const secoesVisiveis = secoes.filter(secao =>
-    (!busca.trim() && filtro === 'todos' && filtroGrade === 'todas') || filtrados.some(m => m.secao_id === secao.id)
+    (!busca.trim() && filtroProducao === 'todos' && filtroGrade === 'todas') || filtrados.some(m => m.secao_id === secao.id)
   )
   const totalUso = materiais.filter(m => m.status_grade === 'em_utilizacao').length
   const totalAtualizar = materiais.filter(m => m.status_producao === 'precisa_atualizar').length
@@ -446,35 +447,35 @@ export default function Conteudos() {
               <h2 className="text-base font-bold text-white/90">Encontre o que precisa</h2>
               <p className="mt-1 text-xs text-white/40">Busque pelo código, título ou nome da seção.</p>
             </div>
-            {(busca || filtro !== 'todos' || filtroGrade !== 'todas') && <button type="button" onClick={() => { setBusca(''); setFiltro('todos'); setFiltroGrade('todas') }}
+            {(busca || filtroProducao !== 'todos' || filtroGrade !== 'todas') && <button type="button" onClick={() => { setBusca(''); setFiltroProducao('todos'); setFiltroGrade('todas') }}
               className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-white/60 transition hover:bg-white/5 hover:text-white">
               Limpar filtros
             </button>}
           </div>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(280px,1fr)_minmax(190px,240px)_minmax(210px,260px)]">
-            <div className="relative min-w-0">
+            <div className="relative min-w-0 xl:pt-[21px]">
               <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/35" />
               <input aria-label="Pesquisar materiais" type="search" placeholder="Pesquisar materiais ou seções..." value={busca}
                 onChange={e => setBusca(e.target.value)} className="scc-materials-input h-12 w-full rounded-xl border border-white/10 bg-[#050505] pl-12 pr-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#e2fa00]/45" />
             </div>
-            <div>
-              <label className="sr-only" htmlFor="filtro-materiais">Filtrar materiais por prioridade</label>
-              <select id="filtro-materiais" className="scc-materials-input h-12 w-full rounded-xl border border-white/10 bg-[#050505] px-4 text-sm text-white outline-none focus:border-[#e2fa00]/45" value={filtro}
-                onChange={e => setFiltro(e.target.value as Filtro)}>
-                <option value="todos">Todos os materiais</option>
-                <option value="uso">Em utilização</option>
-                <option value="atualizar">Precisa atualizar</option>
-                <option value="gravar">Precisa gravar</option>
-              </select>
-            </div>
-            <div>
-              <label className="sr-only" htmlFor="filtro-situacao-grade">Filtrar por situação na grade</label>
+            <div className="min-w-0">
+              <label htmlFor="filtro-situacao-grade" className="mb-1.5 block text-[11px] font-semibold text-white/50">Situação na grade</label>
               <select id="filtro-situacao-grade"
-                className="scc-materials-input h-12 w-full rounded-xl border border-white/10 bg-[#050505] px-4 text-sm text-white outline-none transition focus:border-[#e2fa00]/45"
+                className="scc-materials-input h-12 w-full min-w-0 rounded-xl border border-white/10 bg-[#050505] px-4 text-sm text-white outline-none transition focus:border-[#e2fa00]/45"
                 value={filtroGrade}
                 onChange={e => setFiltroGrade(e.target.value as StatusGrade | 'todas')}>
-                <option value="todas">Todas as situações da grade</option>
+                <option value="todas">Aplique um filtro</option>
                 {statusGrade.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
+              </select>
+            </div>
+            <div className="min-w-0">
+              <label htmlFor="filtro-producao" className="mb-1.5 block text-[11px] font-semibold text-white/50">Status de produção</label>
+              <select id="filtro-producao"
+                className="scc-materials-input h-12 w-full min-w-0 rounded-xl border border-white/10 bg-[#050505] px-4 text-sm text-white outline-none transition focus:border-[#e2fa00]/45"
+                value={filtroProducao}
+                onChange={e => setFiltroProducao(e.target.value as FiltroProducao)}>
+                <option value="todos">Aplique um filtro</option>
+                {statusProducao.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
               </select>
             </div>
           </div>
