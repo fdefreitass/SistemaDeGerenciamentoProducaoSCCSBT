@@ -77,11 +77,11 @@ export default function App() {
   const nome = modoDemo ? 'Demonstração local' : perfil?.nome || email || 'Colaborador'
 
   return (
-    <div className="min-h-screen bg-[#08090b] text-white">
+    <div className="scc-app-body min-h-screen bg-[#08090b] text-white">
       <header className="sticky top-0 z-30 border-b border-white/[0.07] bg-[#08090b]/95 backdrop-blur-xl">
-        <div className="mx-auto grid h-[82px] max-w-[1760px] grid-cols-[1fr_auto] items-center gap-4 px-5 sm:px-8 lg:grid-cols-[1fr_minmax(300px,1.65fr)_1fr] lg:px-12">
+        <div className="scc-app-header-inner grid min-h-[82px] grid-cols-[1fr_auto] items-center gap-4 lg:grid-cols-[1fr_minmax(300px,1.65fr)_1fr]">
           <Link to="/" className="flex w-fit items-center" aria-label="Voltar à apresentação SCC Produção">
-            <img src={logoBranca} alt="SCC SBT" className="h-[42px] w-auto max-w-[112px] object-contain" />
+            <img src={logoBranca} alt="SCC SBT" className="scc-brand-logo w-auto object-contain" />
           </Link>
           <div className="hidden h-[48px] items-center justify-center rounded-xl border border-white/[0.06] bg-[#161616] text-[12px] font-extrabold tracking-[.08em] lg:flex">
             {titulos[pathname.toLowerCase()] ?? 'PRODUÇÃO SCC SBT'}
@@ -130,7 +130,7 @@ export default function App() {
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-[1540px] items-center justify-between gap-3 px-5 pt-5 text-xs sm:px-8">
+      <div className="scc-app-crumbs flex items-center justify-between gap-3 pt-5 text-xs">
         <Link to="/painel" className="inline-flex items-center gap-2 text-white/45 transition hover:text-white">
           <ArrowLeft size={15} /> Visão geral
         </Link>
