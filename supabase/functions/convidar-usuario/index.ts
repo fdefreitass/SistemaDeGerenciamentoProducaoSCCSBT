@@ -50,7 +50,7 @@ export default {
     const { data, error } = await ctx.supabaseAdmin.auth.admin.generateLink({
       type: 'invite',
       email,
-      options: { data: { name: nome }, redirectTo: origem + '/definir-senha' },
+      options: { data: { name: nome } },
     })
     if (error || !data.user?.id || !data.properties?.hashed_token) {
       return responder({ erro: 'Não foi possível gerar o link de ativação.' }, 502)
