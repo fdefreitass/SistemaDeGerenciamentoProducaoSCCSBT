@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Link, Navigate, NavLink, Route, Routes, useLocation } from 'react-router'
-import { ArrowLeft, ChevronDown, Clapperboard, LayoutDashboard, LibraryBig, LogOut, Menu, RefreshCcw, ArchiveX, Users } from 'lucide-react'
+import { ArrowLeft, ChevronDown, Clapperboard, LayoutDashboard, LibraryBig, LogOut, Menu, RefreshCcw, ArchiveX, Users, UserRound } from 'lucide-react'
 import { useAuth } from './context/AuthContext'
 import { modoDemo, supabase } from './lib/supabase'
 import logoBranca from './assets/SCC SBT BRANCA.png'
+import Avatar from './components/Avatar'
+import MeuPerfil from './pages/MeuPerfil'
 import BoasVindas from './pages/BoasVindas'
 import Conteudos from './pages/Conteudos'
 import Home from './pages/Home'
@@ -28,6 +30,7 @@ const titulos: Record<string, string> = {
   '/atualizacao': 'ATUALIZAÇÕES',
   '/remocao': 'REMOÇÕES',
   '/administracao': 'ADMINISTRAÇÃO',
+  '/perfil': 'MEU PERFIL',
 }
 
 export default function App() {
@@ -109,6 +112,9 @@ export default function App() {
                       <Icone size={17} />{texto}
                     </NavLink>
                   ))}
+                  <NavLink to="/perfil" onClick={() => setMenuAberto(false)} className="mt-2 flex items-center gap-3 border-t border-white/10 px-3 py-3 text-sm text-white/65 hover:text-white">
+                    <UserRound size={17} /> Meu Perfil
+                  </NavLink>
                   {administrador && (
                     <NavLink to="/administracao" onClick={() => setMenuAberto(false)} className="mt-2 flex items-center gap-3 border-t border-white/10 px-3 py-3 text-sm text-white/65 hover:text-white">
                       <Users size={17} /> Usuários e acessos
@@ -117,6 +123,10 @@ export default function App() {
                 </div>
               )}
             </div>
+            <Link to="/perfil" aria-label="Abrir meu perfil" title="Meu Perfil" className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.035] p-1 transition hover:border-[#e2fa00]/60 focus-visible:outline-2 focus-visible:outline-[#e2fa00]">
+              <Avatar id={perfil?.id} nome={nome} tamanho={42} />
+              <span className="hidden max-w-[135px] truncate pr-3 text-xs font-semibold text-white/75 2xl:inline">{perfil?.nome ?? 'Meu Perfil'}</span>
+            </Link>
             {!modoDemo && (
               <button
                 onClick={() => void sair()}
@@ -144,6 +154,7 @@ export default function App() {
         <Route path="/atualizacao" element={<Modulo titulo="Atualização" descricao="Materiais que precisam ser atualizados." cor="#B900E5" />} />
         <Route path="/remocao" element={<Modulo titulo="Remoção" descricao="Controle de materiais que devem sair da grade." cor="#E90058" />} />
         <Route path="/administracao" element={<Administracao />} />
+        <Route path="/perfil" element={<MeuPerfil />} />
         <Route path="*" element={<Navigate to="/painel" replace />} />
       </Routes>
     </div>
