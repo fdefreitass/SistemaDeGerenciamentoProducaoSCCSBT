@@ -862,14 +862,13 @@ body { overflow-x: hidden; }
   --scc-materials-spacing: clamp(20px, 2vw, 48px);
 }
 .scc-materials-overview::before {
+  /* Área de indicadores: mesmo preto oficial das demais superfícies. */
   position: absolute;
   inset: 0;
   z-index: -1;
   content: '';
   pointer-events: none;
-  background:
-    radial-gradient(ellipse 48% 70% at 95% 0%, rgba(97, 114, 146, .09), transparent 75%),
-    linear-gradient(130deg, rgba(255,255,255,.012), transparent 70%);
+  background: transparent;
 }
 .scc-materials-stat {
   transition: border-color .2s ease, background-color .2s ease;
