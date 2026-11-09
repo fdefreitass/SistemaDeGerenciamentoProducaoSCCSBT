@@ -351,7 +351,7 @@ export default function Conteudos() {
   return (
     <main className="scc-materials-page scc-fluid-content min-h-[calc(100svh-90px)] pb-20 pt-7 sm:pt-9">
       {/* ÁREA 01 — cabeçalho, indicadores e filtros. */}
-      <section aria-labelledby="titulo-central" className="scc-materials-overview relative isolate overflow-hidden rounded-[26px] border border-white/[0.09] bg-[#1f1f1f] p-5 shadow-[0_24px_80px_rgba(0,0,0,.16)] sm:p-7 xl:p-9">
+      <section aria-labelledby="titulo-central" className="scc-glass-panel scc-materials-overview relative isolate overflow-hidden rounded-[26px] border border-white/[0.09] bg-[#1f1f1f] p-5 shadow-[0_24px_80px_rgba(0,0,0,.16)] sm:p-7 xl:p-9">
         <div className="relative z-10 flex flex-wrap items-end justify-between gap-5">
           <div className="min-w-0">
             <p className="text-[11px] font-extrabold uppercase tracking-[.18em] text-[#e2fa00]">SCC PRODUÇÃO <span className="mx-2 text-white/30">/</span> GESTÃO DE CONTEÚDOS</p>
@@ -433,7 +433,7 @@ export default function Conteudos() {
       {sucesso && <div role="status" className="mt-5 rounded-xl border border-emerald-400/20 bg-[#103025] p-4 text-sm text-emerald-200">{sucesso}</div>}
 
       {/* ÁREA 02 — seções e dados, visualmente independentes do cabeçalho. */}
-      <section aria-labelledby="titulo-secoes" className="scc-materials-workspace mt-8 rounded-[26px] border border-white/[0.085] bg-[#050505] p-4 sm:p-6 xl:p-8">
+      <section aria-labelledby="titulo-secoes" className="scc-glass-panel scc-materials-workspace mt-8 rounded-[26px] border border-white/[0.085] bg-[#050505] p-4 sm:p-6 xl:p-8">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-[10px] font-extrabold uppercase tracking-[.19em] text-white/35">ACERVO DE PRODUÇÃO</p>
@@ -455,8 +455,8 @@ export default function Conteudos() {
           const aberta = abertas[secao.id] !== false
           const cor = corDaSecao(cores, secao.id, Math.max(0, secoes.findIndex(s => s.id === secao.id)))
           const editandoSecao = secaoEditando === secao.id
-          return <section key={secao.id} className="scc-section-card overflow-hidden rounded-[18px] border border-white/[0.09] bg-[#1f1f1f] shadow-[0_8px_24px_rgba(0,0,0,.12)]">
-            <div className="relative flex min-h-[76px] flex-wrap items-center gap-3 border-b border-white/[0.075] bg-[#252525] px-4 py-3 sm:px-6" style={{ borderLeft: `4px solid ${cor}` }}>
+          return <section key={secao.id} className="scc-glass-panel scc-section-card overflow-hidden rounded-[18px] border border-white/[0.09] bg-[#1f1f1f] shadow-[0_8px_24px_rgba(0,0,0,.12)]">
+            <div className="scc-section-header relative flex min-h-[76px] flex-wrap items-center gap-3 border-b border-white/[0.075] bg-[#252525] px-4 py-3 sm:px-6" style={{ borderLeft: `4px solid ${cor}` }}>
               <button type="button" className="flex min-w-0 flex-1 items-center gap-3.5 py-1 text-left text-white"
                 onClick={() => setAbertas(atual => ({ ...atual, [secao.id]: !aberta }))}
                 aria-expanded={aberta} aria-label={(aberta ? 'Recolher ' : 'Expandir ') + secao.nome}>
@@ -516,7 +516,7 @@ export default function Conteudos() {
                   {['Código', 'Título', 'Duração', 'Situação na grade', 'Status produção', 'Arquivo', 'Ações'].map(nome => <th key={nome} scope="col" className={'px-4 py-4 ' + (nome === 'Ações' ? 'text-center' : '')}>{nome}</th>)}
                 </tr></thead>
                 <tbody>
-                  {itens.map(m => <tr key={m.id} className="border-t border-white/[0.06] bg-[#1f1f1f] transition hover:bg-[#292929]">
+                  {itens.map(m => <tr key={m.id} className="scc-material-row border-t border-white/[0.06] bg-[#1f1f1f] transition hover:bg-[#292929]">
                     <td className="px-4 py-4 font-mono text-[12px] font-bold" style={{ color: cor }}>{m.codigo}</td>
                     <td className="px-4 py-4 text-[12px] font-semibold text-white/90"><span className="block truncate" title={m.titulo}>{m.titulo}</span></td>
                     <td className="px-4 py-4 text-xs tabular-nums text-white/75">{m.duracao_segundos}s</td>
