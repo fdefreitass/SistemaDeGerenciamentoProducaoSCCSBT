@@ -75,19 +75,19 @@ export default function App() {
 
   if (!modoDemo) {
     if (!supabase) return (
-      <main className="flex min-h-screen items-center justify-center bg-black p-8 text-red-300">
+      <main className="flex min-h-screen items-center justify-center bg-[#050505] p-8 text-red-300">
         Configuração incompleta. Verifique as variáveis VITE_SUPABASE_*.
       </main>
     )
     if (carregando) return (
-      <main className="flex min-h-screen items-center justify-center bg-black text-white/65">
+      <main className="flex min-h-screen items-center justify-center bg-[#050505] text-white/65">
         Validando seu acesso…
       </main>
     )
     if (!email) return pathname === '/login' ? <Login /> : <Navigate to="/login" replace />
     if (erro || !perfil?.ativo) return (
-      <main className="flex min-h-screen items-center justify-center bg-black p-6 text-white">
-        <section className="w-full max-w-md rounded-3xl border border-white/10 bg-[#151515] p-8">
+      <main className="flex min-h-screen items-center justify-center bg-[#050505] p-6 text-white">
+        <section className="w-full max-w-md rounded-3xl border border-white/10 bg-bg-[#050505] p-8">
           <h1 className="text-2xl font-bold">Acesso não autorizado</h1>
           <p className="mt-4 text-sm leading-6 text-white/55">A conta não possui perfil ativo ou não foi possível verificar sua autorização.</p>
           <button onClick={() => void sair()} className="mt-7 rounded-xl bg-white px-5 py-3 text-sm font-bold text-black">Sair</button>
@@ -109,13 +109,13 @@ export default function App() {
   const nome = modoDemo ? 'Demonstração local' : perfil?.nome || email || 'Colaborador'
 
   return (
-    <div className="scc-app-body min-h-screen bg-[#08090b] text-white">
-      <header className="sticky top-0 z-30 border-b border-white/[0.07] bg-[#08090b]/95 backdrop-blur-xl">
+    <div className="scc-app-body min-h-screen bg-bg-[#050505] text-white">
+      <header className="sticky top-0 z-30 border-b border-white/[0.07] bg-bg-[#050505]/95 backdrop-blur-xl">
         <div className="scc-app-header-inner grid min-h-[82px] grid-cols-[1fr_auto] items-center gap-4 lg:grid-cols-[1fr_minmax(300px,1.65fr)_1fr]">
           <Link to="/" className="flex w-fit items-center" aria-label="Voltar à apresentação SCC Produção">
             <img src={logoBranca} alt="SCC SBT" className="scc-brand-logo w-auto object-contain" />
           </Link>
-          <div className="hidden h-[48px] items-center justify-center rounded-xl border border-white/[0.06] bg-[#161616] text-[12px] font-extrabold tracking-[.08em] lg:flex">
+          <div className="hidden h-[48px] items-center justify-center rounded-xl border border-white/[0.06] bg-bg-[#050505] text-[12px] font-extrabold tracking-[.08em] lg:flex">
             {titulos[pathname.toLowerCase()] ?? 'PRODUÇÃO SCC SBT'}
           </div>
           <div className="flex items-center justify-end gap-2.5">
@@ -138,7 +138,7 @@ export default function App() {
                 <nav
                   id="menu-conta"
                   aria-label="Menu da conta e navegação"
-                  className="absolute right-0 top-[calc(100%+12px)] z-40 w-[min(300px,calc(100vw-32px))] overflow-hidden rounded-2xl border border-white/15 bg-[#17191d] p-2 shadow-2xl shadow-black/80"
+                  className="absolute right-0 top-[calc(100%+12px)] z-40 w-[min(300px,calc(100vw-32px))] overflow-hidden rounded-2xl border border-white/15 bg-bg-[#050505] p-2 shadow-2xl shadow-black/80"
                 >
                   <div className="mb-2 border-b border-white/10 px-3 pb-3 pt-2">
                     <p className="truncate text-sm font-bold text-white">{nome}</p>
