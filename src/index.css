@@ -862,7 +862,7 @@ body { overflow-x: hidden; }
 
 /* Central de Materiais — dois blocos autônomos e leitura escalável. */
 .scc-materials-page {
-  background: var(--scc-black);
+  background: transparent;
   --scc-materials-spacing: clamp(20px, 2vw, 48px);
 }
 .scc-materials-overview::before {
@@ -942,4 +942,64 @@ body { overflow-x: hidden; }
 }
 :is(button, input, select, textarea), .scc-material-table, .scc-app-crumbs {
   font-family: var(--font-sans);
+}
+
+/* SCC Produção: laço cromático sutil atrás dos módulos autenticados. */
+.scc-app-body::before {
+  content: "";
+  position: fixed;
+  inset: clamp(82px, 7svh, 140px) 0 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url("./assets/LAÇO_COLORIDO.png");
+  background-repeat: no-repeat;
+  background-position: center 42%;
+  background-size: cover;
+  opacity: .36;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 13%, #000 82%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 13%, #000 82%, transparent 100%);
+}
+.scc-app-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* Vidro fosco: revela discretamente o laço sem sacrificar a legibilidade. */
+.scc-glass-panel {
+  background: rgba(31, 31, 31, .77);
+  -webkit-backdrop-filter: blur(22px) saturate(115%);
+  backdrop-filter: blur(22px) saturate(115%);
+  border-color: rgba(255, 255, 255, .12);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.055), 0 18px 40px rgba(0,0,0,.20);
+}
+.scc-glass-panel.scc-materials-overview {
+  background: rgba(31, 31, 31, .78);
+}
+.scc-glass-panel.scc-materials-workspace {
+  background: rgba(22, 22, 22, .68);
+}
+.scc-glass-panel.scc-section-card {
+  background: rgba(31, 31, 31, .75);
+}
+.scc-section-card .scc-section-header {
+  background: rgba(42, 42, 42, .72);
+}
+.scc-section-card .scc-material-row {
+  background: rgba(31, 31, 31, .56);
+}
+.scc-section-card .scc-material-row:hover {
+  background: rgba(49, 49, 49, .76);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .scc-glass-panel { background: rgba(31,31,31,.95); }
+}
+@media (max-width: 767px) {
+  .scc-app-body::before {
+    opacity: .25;
+    background-position: 55% center;
+  }
+  .scc-glass-panel {
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+  }
 }
