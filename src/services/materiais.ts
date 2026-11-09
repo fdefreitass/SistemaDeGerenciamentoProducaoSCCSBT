@@ -44,3 +44,11 @@ export async function atualizarMaterial(
   if (error) throw error
   if (!data) throw new Error('Material não localizado ou operação não permitida.')
 }
+
+// Nome é atualizado somente quando permitido pelas políticas RLS de seções.
+export async function renomearSecao(id: string, nome: string): Promise<Secao> {
+  const { data, error } = await obterSupabase()
+    .from('secoes').update({ nome }).eq('id', id).select('id, nome').single()
+  if (error) throw error
+  return data as Secao
+}
