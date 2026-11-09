@@ -39,6 +39,7 @@ create policy perfis_editar_proprio_nome on public.perfis
   with check (
     id = (select auth.uid())
     and (select private.papel_atual()) is not null
+    and char_length(btrim(nome)) between 2 and 100
   );
 
 -- Avatar exclusivo do titular: sem URL pública.
