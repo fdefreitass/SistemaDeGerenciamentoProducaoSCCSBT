@@ -187,14 +187,15 @@ export default function Administracao() {
           className="w-full rounded-xl border border-white/10 bg-[#050505] py-3 pl-11 pr-4 text-sm outline-none focus:border-blue-400" />
       </div>
 
+      {sucesso && <p role="status" className="mt-5 rounded-xl border border-emerald-400/25 bg-emerald-400/10 p-4 text-sm text-emerald-200">{sucesso}</p>}
       {erro && <p role="alert" className="mt-5 rounded-xl border border-red-400/25 bg-red-400/10 p-4 text-sm text-red-200">{erro}</p>}
 
       <section className="mt-4 overflow-hidden rounded-2xl border border-white/10">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[880px] table-fixed text-left text-sm">
+          <table className="w-full min-w-[1080px] table-fixed text-left text-sm">
             <colgroup>
-              <col style={{width:'35%'}}/><col style={{width:'14%'}}/>
-              <col style={{width:'17%'}}/><col style={{width:'14%'}}/><col style={{width:'20%'}}/>
+              <col style={{width:'28%'}}/><col style={{width:'13%'}}/>
+              <col style={{width:'17%'}}/><col style={{width:'14%'}}/><col style={{width:'28%'}}/>
             </colgroup>
             <thead className="bg-white/[0.04] text-[11px] uppercase tracking-wider text-white/55">
               <tr>
@@ -223,17 +224,42 @@ export default function Administracao() {
                   </td>
                   <td className="px-5 py-3.5 text-white/55">{new Date(usuario.criado_em).toLocaleDateString('pt-BR')}</td>
                   <td className="px-5 py-3.5 text-right">
-                    {usuario.papel !== 'admin' ? (
-                      <button type="button" disabled={processando} onClick={() => {
-                        setAlvo(usuario)
-                        setConfirma(false)
-                        setSenhaProvisoria('')
-                        setCopiado(false)
-                        setErro('')
-                      }} className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-3 py-2.5 text-xs font-bold text-white/75 transition hover:border-white/30 hover:bg-white/5 disabled:opacity-40">
-                        <KeyRound size={16} /> Redefinir senha
-                      </button>
-                    ) : <span className="text-xs text-white/35">Conta administrativa</span>}
+                    {usuario.id === perfil?.id ? (
+                      <span className="text-xs text-white/40">Sua conta</span>
+                    ) : (
+                      <div className="flex items-center justify-end gap-2">
+                        <button type="button" onClick={() => abrirGestao(usuario, 'alterar_papel')}
+                          title="Alterar permissão" aria-label={`Alterar permissão de ${usuario.nome}`}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/15 text-white/65 transition hover:border-blue-400/50 hover:bg-blue-400/10 hover:text-blue-300">
+                          <UserRoundCog size={16}/>
+                        </button>
+                        {usuario.papel !== 'admin' && (
+                          <button type="button" title="Redefinir senha" aria-label={`Redefinir senha de ${usuario.nome}`}
+                            disabled={processando} onClick={() => {
+                              setAlvo(usuario)
+                              setConfirma(false)
+                              setSenhaProvisoria('')
+                              setCopiado(false)
+                              setErro('')
+                            }}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/15 text-white/65 transition hover:border-amber-400/50 hover:bg-amber-400/10 hover:text-amber-300 disabled:opacity-40">
+                            <KeyRound size={16}/>
+                          </button>
+                        )}
+                        <button type="button"
+                          onClick={() => abrirGestao(usuario, usuario.ativo ? 'desativar' : 'reativar')}
+                          title={usuario.ativo ? 'Desativar acesso' : 'Reativar acesso'}
+                          aria-label={`${usuario.ativo ? 'Desativar' : 'Reativar'} acesso de ${usuario.nome}`}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/15 text-white/65 transition hover:border-white/35 hover:bg-white/[0.07]">
+                          {usuario.ativo ? <UserRoundX size={16}/> : <UserRoundCheck size={16}/>}
+                        </button>
+                        <button type="button" onClick={() => abrirGestao(usuario, 'excluir')}
+                          title="Excluir usuário" aria-label={`Excluir usuário ${usuario.nome}`}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-400/20 text-red-300/65 transition hover:border-red-400/55 hover:bg-red-400/10 hover:text-red-300">
+                          <Trash2 size={16}/>
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -248,6 +274,115 @@ export default function Administracao() {
         As fotos permanecem privadas e acessíveis apenas ao titular e a administradores.
         Ao redefinir uma senha, a anterior deixa de funcionar e o colaborador deverá criar uma nova.
       </p>
+
+      {alvoGestao && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-4 backdrop-blur-sm">
+          <section role="dialog" aria-modal="true" aria-labelledby="titulo-gestao"
+            className="w-full max-w-[540px] rounded-3xl border border-white/15 bg-[#0d0e10] p-6 shadow-2xl sm:p-8">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                {acaoGestao === 'excluir'
+                  ? <Trash2 size={28} className="text-red-400"/>
+                  : <ShieldCheck size={28} className="text-blue-400"/>}
+                <h2 id="titulo-gestao" className="mt-4 text-2xl font-extrabold">
+                  {acaoGestao === 'alterar_papel' ? 'Alterar permissões'
+                    : acaoGestao === 'excluir' ? 'Excluir usuário'
+                    : acaoGestao === 'desativar' ? 'Desativar acesso' : 'Reativar acesso'}
+                </h2>
+              </div>
+              <button type="button" onClick={fecharGestao} disabled={processandoGestao}
+                aria-label="Fechar janela" className="rounded-lg border border-white/10 p-2 text-white/65 hover:text-white disabled:opacity-40"><X size={18}/></button>
+            </div>
+            <div className="mt-5 flex items-center gap-3 rounded-xl border border-white/10 p-3">
+              <Avatar id={alvoGestao.id} nome={alvoGestao.nome} tamanho={42}/>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold">{alvoGestao.nome}</p>
+                <p className="text-xs text-white/50">Atual: {nomesPapel[alvoGestao.papel]} · {alvoGestao.ativo ? 'Ativo' : 'Inativo'}</p>
+              </div>
+            </div>
+
+            {acaoGestao === 'alterar_papel' && (
+              <div className="mt-6">
+                <label htmlFor="novo-papel" className="text-xs font-semibold text-white/65">Novo perfil de acesso</label>
+                <select id="novo-papel" value={novoPapel} onChange={e => {
+                    setNovoPapel(e.target.value as Papel)
+                    setAdminDigitado('')
+                    setConfirmaGestao(false)
+                  }}
+                  className="mt-2 w-full rounded-xl border border-white/15 bg-[#050505] px-4 py-3 text-sm text-white outline-none focus:border-blue-400">
+                  <option value="leitor">Leitor — somente consulta</option>
+                  <option value="editor">Editor — gerencia materiais</option>
+                  <option value="admin">Administrador — acesso total</option>
+                </select>
+                {novoPapel === 'admin' && (
+                  <div className="mt-4 space-y-3 rounded-xl border border-amber-400/20 bg-amber-400/5 p-4">
+                    <p className="text-sm leading-5 text-amber-100">Atenção: conceder Administrador permite gerenciar usuários e materiais. Só é possível promover contas ativas com primeiro acesso concluído.</p>
+                    <label htmlFor="confirmar-admin" className="block text-xs font-semibold text-white/65">
+                      Para confirmar, digite <strong>ADMIN</strong>
+                    </label>
+                    <input id="confirmar-admin" value={adminDigitado} autoComplete="off"
+                      onChange={e => setAdminDigitado(e.target.value)} placeholder="ADMIN"
+                      className="w-full rounded-xl border border-white/15 bg-[#050505] px-4 py-3 text-sm outline-none focus:border-amber-400" />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {acaoGestao === 'excluir' && (
+              <div className="mt-6 space-y-4">
+                <p className="rounded-xl border border-red-400/25 bg-red-400/5 p-4 text-sm leading-6 text-white/75">
+                  Esta operação remove definitivamente a conta e não pode ser desfeita.
+                  Caso existam materiais, seções ou histórico ligados a esta pessoa, a exclusão será recusada.
+                  Nesse caso, use <strong>Desativar acesso</strong> para preservar os registros.
+                </p>
+                <label htmlFor="confirmar-exclusao" className="block text-xs font-semibold text-white/70">
+                  Digite exatamente <strong className="text-white">{alvoGestao.nome}</strong> para confirmar
+                </label>
+                <input id="confirmar-exclusao" value={nomeDigitado} autoComplete="off"
+                  onChange={e => setNomeDigitado(e.target.value)} placeholder="Nome do colaborador"
+                  className="w-full rounded-xl border border-white/15 bg-[#050505] px-4 py-3 text-sm outline-none focus:border-red-400" />
+              </div>
+            )}
+
+            {acaoGestao === 'desativar' && (
+              <p className="mt-5 text-sm leading-6 text-white/65">
+                A pessoa continuará registrada para preservar a autoria e o histórico, mas perderá imediatamente o acesso às informações protegidas do SCC Produção.
+              </p>
+            )}
+            {acaoGestao === 'reativar' && (
+              <p className="mt-5 text-sm leading-6 text-white/65">
+                A conta voltará a ter acesso conforme seu papel atual e situação da senha.
+              </p>
+            )}
+
+            {erro && <p role="alert" className="mt-4 rounded-xl border border-red-400/20 bg-red-400/10 p-4 text-sm text-red-200">{erro}</p>}
+
+            <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 p-4 text-sm leading-5 text-white/70">
+              <input type="checkbox" checked={confirmaGestao} onChange={e => setConfirmaGestao(e.target.checked)}
+                className="mt-0.5 h-4 w-4 accent-blue-400"/>
+              Confirmo que revisei o usuário, a ação selecionada e suas consequências.
+            </label>
+
+            <div className="mt-6 flex flex-wrap justify-end gap-3">
+              <button type="button" onClick={fecharGestao} disabled={processandoGestao}
+                className="rounded-xl border border-white/15 px-5 py-3 text-sm font-semibold text-white/75 disabled:opacity-40">
+                Cancelar
+              </button>
+              <button type="button" onClick={() => void executarGestao()}
+                disabled={processandoGestao || !confirmaGestao ||
+                  (acaoGestao === 'alterar_papel' && (novoPapel === alvoGestao.papel || (novoPapel === 'admin' && adminDigitado !== 'ADMIN'))) ||
+                  (acaoGestao === 'excluir' && nomeDigitado !== alvoGestao.nome)}
+                className={`inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-extrabold disabled:cursor-not-allowed disabled:opacity-35 ${acaoGestao === 'excluir' ? 'bg-red-500 text-white' : 'bg-white text-black'}`}>
+                {acaoGestao === 'excluir' && <Trash2 size={16}/>}
+                {processandoGestao ? 'Processando...' :
+                  acaoGestao === 'excluir' ? 'Excluir definitivamente' :
+                  acaoGestao === 'alterar_papel' ? 'Salvar permissão' :
+                  acaoGestao === 'desativar' ? 'Desativar conta' : 'Reativar conta'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
 
       {alvo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-4 backdrop-blur-sm">
