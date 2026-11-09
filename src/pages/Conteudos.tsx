@@ -1,10 +1,11 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type CSSProperties, type FormEvent } from 'react'
 import {
   Plus, Search, Palette, Pencil, Check, X, Copy, Trash2,
   ShieldAlert, ChevronDown, ArrowUpRight, FileVideo2,
 } from 'lucide-react'
 import { useLocation } from 'react-router'
 import { useCoresSecoes, corDaSecao, paletaSecoes } from '../lib/coresSecoes'
+import { useCoresIndicadores, indicadores, coresPadrao, type CoresIndicadores, type IndicadorId } from '../lib/coresIndicadores'
 import { useAuth } from '../context/AuthContext'
 import { demoMateriais, demoSecoes } from '../data/demo'
 import { modoDemo } from '../lib/supabase'
@@ -77,6 +78,7 @@ export default function Conteudos() {
   const { search } = useLocation()
   const { perfil } = useAuth()
   const { cores, definirCor } = useCoresSecoes()
+  const { cores: coresIndicadores, definirCor: definirCorIndicador } = useCoresIndicadores()
   const podeEditar = modoDemo || perfil?.papel === 'admin' || perfil?.papel === 'editor'
   const administrador = modoDemo || perfil?.papel === 'admin'
   const [secoes, setSecoes] = useState<Secao[]>(modoDemo ? demoSecoes : [])
@@ -85,6 +87,8 @@ export default function Conteudos() {
   const [busca, setBusca] = useState(() => new URLSearchParams(search).get('busca') ?? '')
   const [filtroProducao, setFiltroProducao] = useState<FiltroProducao>(() => filtroProducaoInicial(new URLSearchParams(search)))
   const [filtroGrade, setFiltroGrade] = useState<StatusGrade | 'todas'>(() => filtroGradeInicial(new URLSearchParams(search)))
+  const [personalizandoIndicadores, setPersonalizandoIndicadores] = useState(false)
+  const [coresEmEdicao, setCoresEmEdicao] = useState<CoresIndicadores>({ ...coresPadrao })
   const [novaSecao, setNovaSecao] = useState('')
   const [secaoEditando, setSecaoEditando] = useState<string | null>(null)
   const [nomeSecaoEditando, setNomeSecaoEditando] = useState('')
@@ -408,6 +412,30 @@ export default function Conteudos() {
   const totalAtualizar = materiais.filter(m => m.status_producao === 'precisa_atualizar').length
   const totalGravar = materiais.filter(m => m.status_producao === 'precisa_gravar').length
   const nomeSecaoExclusao = exclusao ? secoes.find(s => s.id === exclusao.material.secao_id)?.nome : ''
+  const totaisIndicadores: Record<IndicadorId, number> = {
+    total: materiais.length, em_utilizacao: totalUso,
+    precisa_atualizar: totalAtualizar, precisa_gravar: totalGravar,
+  }
+
+  function filtrarPorIndicador(id: IndicadorId) {
+    setBusca('')
+    setFiltroGrade(id === 'em_utilizacao' ? 'em_utilizacao' : 'todas')
+    setFiltroProducao(id === 'precisa_atualizar' ? 'precisa_atualizar' : id === 'precisa_gravar' ? 'precisa_gravar' : 'todos')
+  }
+
+  async function salvarCorIndicador(id: IndicadorId) {
+    if (!administrador || salvando || !hexValido(coresEmEdicao[id])) return
+    setSalvando(true)
+    setErro('')
+    try {
+      await definirCorIndicador(id, coresEmEdicao[id])
+      setSucesso('Cor do indicador salva para toda a equipe.')
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Não foi possível salvar a cor do indicador.')
+    } finally {
+      setSalvando(false)
+    }
+  }
 
   return (
     <main className="scc-materials-page scc-fluid-content min-h-[calc(100svh-90px)] pb-20 pt-7 sm:pt-9">
@@ -419,26 +447,78 @@ export default function Conteudos() {
             <h1 id="titulo-central" className="mt-3 text-[clamp(26px,2.4vw,48px)] font-extrabold tracking-[-.045em] text-white">Central de Materiais</h1>
             <p className="mt-2 max-w-3xl text-[clamp(13px,.85vw,18px)] leading-relaxed text-white/50">Acompanhe sua programação, encontre pendências e mantenha os conteúdos organizados.</p>
           </div>
-          {podeEditar && <button type="button" onClick={novoMaterial} disabled={!secoes.length || salvando}
-            className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#e2fa00] px-5 text-sm font-extrabold text-[#050505] transition hover:bg-[#efff70] disabled:cursor-not-allowed disabled:opacity-50">
-            <Plus size={18} /> Novo material
-          </button>}
+          <div className="flex flex-wrap items-center gap-2">
+            {administrador && <button type="button" onClick={() => {
+              setCoresEmEdicao({ ...coresIndicadores })
+              setPersonalizandoIndicadores(aberto => !aberto)
+            }}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-white/20 bg-[#151515] px-4 text-xs font-bold text-white/80 transition hover:border-white/40 hover:bg-[#292929]">
+              <Palette size={16}/> Cores dos indicadores
+            </button>}
+            {podeEditar && <button type="button" onClick={novoMaterial} disabled={!secoes.length || salvando}
+              className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#e2fa00] px-5 text-sm font-extrabold text-[#050505] transition hover:bg-[#efff70] disabled:cursor-not-allowed disabled:opacity-50">
+              <Plus size={18} /> Novo material
+            </button>}
+          </div>
         </div>
 
-        <div className="relative z-10 mt-8 grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-4">
-          {[
-            { titulo: 'Total de materiais', total: materiais.length, cor: '#e2fa00' },
-            { titulo: 'Em utilização', total: totalUso, cor: '#36d6ad' },
-            { titulo: 'Precisa atualizar', total: totalAtualizar, cor: '#b598ff' },
-            { titulo: 'Precisa gravar', total: totalGravar, cor: '#ff9a60' },
-          ].map(kpi => <div key={kpi.titulo} className="scc-materials-stat relative flex min-h-[132px] flex-col justify-between overflow-hidden rounded-[18px] border border-white/[0.085] bg-[#141414] px-5 py-5 sm:px-6">
-            <span className="absolute inset-x-0 top-0 h-[3px] opacity-80" style={{ backgroundColor: kpi.cor }} aria-hidden="true" />
-            <p className="text-[clamp(11px,.7vw,15px)] font-semibold leading-snug text-white/55">{kpi.titulo}</p>
-            <div className="mt-3 flex items-end justify-between gap-3">
-              <strong className="text-[clamp(32px,2.55vw,56px)] font-extrabold leading-none tracking-tight tabular-nums text-white">{carregando ? '—' : String(kpi.total).padStart(2, '0')}</strong>
-              <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: kpi.cor }} aria-hidden="true" />
+        {personalizandoIndicadores && administrador && <section aria-label="Personalizar cores dos indicadores"
+          className="relative z-10 mt-5 rounded-2xl border border-white/10 bg-[#161616] p-4 sm:p-5">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-bold">Personalizar indicadores</h2>
+              <p className="mt-1 text-xs text-white/45">Escolha a cor de cada indicador. Ela será usada também no brilho ao passar o mouse.</p>
             </div>
-          </div>)}
+            <button type="button" onClick={() => setPersonalizandoIndicadores(false)}
+              className="rounded-lg border border-white/15 p-2 text-white/65 transition hover:text-white" aria-label="Fechar personalização"><X size={17}/></button>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
+            {indicadores.map(kpi => <div key={kpi.id} className="min-w-0 rounded-xl border border-white/10 bg-[#1f1f1f] p-3">
+              <label htmlFor={'cor-indicador-' + kpi.id} className="mb-2 block text-xs font-semibold text-white/70">{kpi.titulo}</label>
+              <div className="flex min-w-0 items-center gap-2">
+                <label title={'Escolher cor de ' + kpi.titulo} className="relative h-9 w-9 shrink-0 cursor-pointer overflow-hidden rounded-lg border border-white/25"
+                  style={{ backgroundColor: hexValido(coresEmEdicao[kpi.id]) ? coresEmEdicao[kpi.id] : coresIndicadores[kpi.id] }}>
+                  <input type="color" aria-label={'Abrir seletor de cor para ' + kpi.titulo}
+                    value={hexValido(coresEmEdicao[kpi.id]) ? coresEmEdicao[kpi.id] : coresIndicadores[kpi.id]}
+                    onChange={e => setCoresEmEdicao(atual => ({ ...atual, [kpi.id]: e.target.value.toUpperCase() }))}
+                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0" />
+                </label>
+                <input id={'cor-indicador-' + kpi.id} type="text" maxLength={7} spellCheck={false}
+                  aria-label={'Código HEX de ' + kpi.titulo}
+                  aria-invalid={!hexValido(coresEmEdicao[kpi.id])}
+                  value={coresEmEdicao[kpi.id]}
+                  onChange={e => setCoresEmEdicao(atual => ({ ...atual, [kpi.id]: e.target.value.toUpperCase() }))}
+                  className="min-w-0 flex-1 rounded-lg border border-white/15 bg-[#050505] px-2 py-2.5 font-mono text-xs text-white outline-none focus:border-[#e2fa00]/60" />
+                <button type="button" onClick={() => void salvarCorIndicador(kpi.id)}
+                  disabled={salvando || !hexValido(coresEmEdicao[kpi.id]) || coresEmEdicao[kpi.id].toUpperCase() === coresIndicadores[kpi.id].toUpperCase()}
+                  className="rounded-lg bg-white px-3 py-2.5 text-xs font-bold text-black transition hover:bg-[#e2fa00] disabled:cursor-not-allowed disabled:opacity-30">
+                  Salvar
+                </button>
+              </div>
+            </div>)}
+          </div>
+        </section>}
+
+        <div className="relative z-10 mt-8 grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-4">
+          {indicadores.map(kpi => {
+            const cor = coresIndicadores[kpi.id]
+            const selecionado = kpi.id === 'total'
+              ? filtroGrade === 'todas' && filtroProducao === 'todos'
+              : kpi.id === 'em_utilizacao'
+                ? filtroGrade === 'em_utilizacao' && filtroProducao === 'todos'
+                : filtroGrade === 'todas' && filtroProducao === kpi.id
+            return <button key={kpi.id} type="button" aria-label={'Filtrar materiais: ' + kpi.titulo}
+              aria-pressed={selecionado} onClick={() => filtrarPorIndicador(kpi.id)}
+              style={{ '--kpi-cor': cor } as CSSProperties}
+              className="scc-materials-stat relative flex min-h-[132px] cursor-pointer flex-col justify-between overflow-hidden rounded-[18px] border border-white/[0.085] bg-[#141414] px-5 py-5 text-left sm:px-6">
+              <span className="absolute inset-x-0 top-0 h-[3px] opacity-80" style={{ backgroundColor: cor }} aria-hidden="true" />
+              <p className="text-[clamp(11px,.7vw,15px)] font-semibold leading-snug text-white/55">{kpi.titulo}</p>
+              <div className="mt-3 flex items-end justify-between gap-3">
+                <strong className="text-[clamp(32px,2.55vw,56px)] font-extrabold leading-none tracking-tight tabular-nums text-white">{carregando ? '—' : String(totaisIndicadores[kpi.id]).padStart(2, '0')}</strong>
+                <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: cor }} aria-hidden="true" />
+              </div>
+            </button>
+          })}
         </div>
 
         <div className="relative z-10 mt-8 border-t border-white/[0.085] pt-7">
