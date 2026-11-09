@@ -6,6 +6,7 @@ const responder = (dados: Record<string, unknown>, status = 200) =>
   Response.json(dados, { status, headers: { 'Cache-Control': 'no-store' } })
 
 const APP = 'https://producaosccsbt.pages.dev'
+const ORIGENS = new Set([APP, 'http://localhost:5173', 'http://127.0.0.1:5173'])
 
 export default {
   fetch: withSupabase({ auth: 'user' }, async (req, ctx) => {
@@ -29,6 +30,8 @@ export default {
     const nome = typeof form.nome === 'string' ? form.nome.trim().replace(/\s+/g, ' ') : ''
     const email = typeof form.email === 'string' ? form.email.trim().toLowerCase() : ''
     const papel = form.papel
+    const origemSolicitada = typeof form.origem === 'string' ? form.origem : APP
+    const origem = ORIGENS.has(origemSolicitada) ? origemSolicitada : APP
 
     if (nome.length < 2 || nome.length > 100 || email.length > 254 ||
         !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
@@ -47,7 +50,7 @@ export default {
     const { data, error } = await ctx.supabaseAdmin.auth.admin.generateLink({
       type: 'invite',
       email,
-      options: { data: { name: nome }, redirectTo: APP + '/definir-senha' },
+      options: { data: { name: nome }, redirectTo: origem + '/definir-senha' },
     })
     if (error || !data.user?.id || !data.properties?.hashed_token) {
       return responder({ erro: 'Não foi possível gerar o link de ativação.' }, 502)
@@ -69,7 +72,7 @@ export default {
       return responder({ erro: 'Não foi possível configurar a conta. Nenhum convite foi liberado.' }, 500)
     }
 
-    const url = APP + '/definir-senha?token_hash=' +
+    const url = origem + '/definir-senha?token_hash=' +
       encodeURIComponent(data.properties.hashed_token) + '&type=invite'
 
     // Link contém credencial temporária: exibir uma só vez e nunca registrá-lo em logs.
