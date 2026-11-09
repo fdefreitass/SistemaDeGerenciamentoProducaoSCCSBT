@@ -6,7 +6,11 @@
   --font-heading: "TikTok Sans", "Geist", ui-sans-serif, sans-serif;
 }
 
-:root { --scc-black: #050505; }
+:root {
+  --scc-black: #050505;
+  --scc-surface: #1f1f1f;
+  --scc-surface-hover: #292929;
+}
 
 
 html, body, #root {
@@ -309,10 +313,10 @@ button { cursor: pointer; }
   border: 1px solid rgba(255,255,255,.10);
   border-radius: 20px;
   padding: 24px;
-  background: var(--scc-black);
-  transition: border-color .2s;
+  background: var(--scc-surface);
+  transition: border-color .2s, background-color .2s;
 }
-.scc-stat-card:hover { border-color: rgba(255,255,255,.22); }
+.scc-stat-card:hover { border-color: rgba(255,255,255,.22); background: var(--scc-surface-hover); }
 
 @media (min-width: 1500px) {
   .scc-showcase-cards { margin-top: 105px; }
