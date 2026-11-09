@@ -65,7 +65,7 @@ export default function Modulo({ titulo, descricao, cor }: ModuloProps) {
       : '/conteudos'
 
   return (
-    <main className="mx-auto max-w-[1460px] px-5 pb-20 pt-9 sm:px-9">
+    <main className="scc-fluid-content pb-20 pt-9">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[.18em] text-white/45">FLUXO DE PRODUÇÃO · SCC SBT</p>
