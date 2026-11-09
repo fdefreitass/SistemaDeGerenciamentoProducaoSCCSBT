@@ -53,7 +53,7 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto max-w-[1520px] px-5 pb-20 pt-7 sm:px-8 lg:px-12">
+    <main className="scc-fluid-content pb-20 pt-7">
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
           <span className="inline-flex items-center gap-2 rounded-full border border-[#d7fb00]/20 bg-[#d7fb00]/[0.06] px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[.18em] text-[#e0ff57]">
