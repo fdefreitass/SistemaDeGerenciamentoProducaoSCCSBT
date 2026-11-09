@@ -438,3 +438,14 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/trocar-senha-inicial/deno.json"
 entrypoint = "./functions/trocar-senha-inicial/index.ts"
+[functions.redefinir-senha-usuario]
+enabled = true
+verify_jwt = true
+import_map = "./functions/redefinir-senha-usuario/deno.json"
+entrypoint = "./functions/redefinir-senha-usuario/index.ts"
+
+[functions.concluir-ativacao]
+enabled = true
+verify_jwt = false
+import_map = "./functions/concluir-ativacao/deno.json"
+entrypoint = "./functions/concluir-ativacao/index.ts"
