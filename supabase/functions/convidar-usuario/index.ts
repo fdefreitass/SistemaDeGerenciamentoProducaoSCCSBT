@@ -1,165 +1,84 @@
-
 import { withSupabase } from '@supabase/server'
+
+// Convites reais por link de ativação, sem depender de SMTP.
+// Somente administradores ativos, com senha inicial já trocada, podem gerar links.
+const responder = (dados: Record<string, unknown>, status = 200) =>
+  Response.json(dados, { status, headers: { 'Cache-Control': 'no-store' } })
+
+const APP = 'https://producaosccsbt.pages.dev'
 
 export default {
   fetch: withSupabase({ auth: 'user' }, async (req, ctx) => {
-    if (req.method !== 'POST') {
-      return Response.json(
-        { erro: 'Método não permitido' },
-        { status: 405 }
-      )
-    }
-
-    // Identidade validada pelo Supabase Auth.
+    if (req.method !== 'POST') return responder({ erro: 'Método não permitido.' }, 405)
     const usuarioId = ctx.userClaims?.id
+    if (!usuarioId) return responder({ erro: 'Não autenticado.' }, 401)
 
-    if (!usuarioId) {
-      return Response.json(
-        { erro: 'Não autenticado' },
-        { status: 401 }
-      )
+    const { data: administrador, error: erroAutorizacao } = await ctx.supabaseAdmin
+      .from('perfis').select('papel, ativo, troca_senha_pendente')
+      .eq('id', usuarioId).maybeSingle()
+    if (erroAutorizacao || administrador?.papel !== 'admin' ||
+        administrador.ativo !== true || administrador.troca_senha_pendente !== false) {
+      return responder({ erro: 'Apenas administradores podem convidar.' }, 403)
     }
 
-    // A autorização deve ser consultada no banco,
-    // nunca recebida do navegador.
-    const { data: perfil, error: erroPerfil } =
-      await ctx.supabase
-        .from('perfis')
-        .select('papel, ativo, troca_senha_pendente')
-        .eq('id', usuarioId)
-        .single()
+    const dados: unknown = await req.json().catch(() => null)
+    if (!dados || typeof dados !== 'object' || Array.isArray(dados)) {
+      return responder({ erro: 'Dados inválidos.' }, 400)
+    }
+    const form = dados as Record<string, unknown>
+    const nome = typeof form.nome === 'string' ? form.nome.trim().replace(/\s+/g, ' ') : ''
+    const email = typeof form.email === 'string' ? form.email.trim().toLowerCase() : ''
+    const papel = form.papel
 
-    if (
-      erroPerfil ||
-      !perfil?.ativo ||
-      perfil.papel !== 'admin' ||
-      perfil.troca_senha_pendente !== false
-    ) {
-      return Response.json(
-        { erro: 'Acesso exclusivo de administradores' },
-        { status: 403 }
-      )
+    if (nome.length < 2 || nome.length > 100 || email.length > 254 ||
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+        (papel !== 'leitor' && papel !== 'editor')) {
+      return responder({ erro: 'Confira nome, e-mail e perfil (Leitor ou Editor).' }, 400)
     }
 
-    let entrada: unknown
-
-    try {
-      entrada = await req.json()
-    } catch {
-      return Response.json(
-        { erro: 'JSON inválido' },
-        { status: 400 }
-      )
+    // Não reutilizar um convite para uma conta existente.
+    const { data: lista, error: erroLista } =
+      await ctx.supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 })
+    if (erroLista) return responder({ erro: 'Não foi possível conferir os usuários.' }, 503)
+    if (lista.users.some(u => u.email?.toLowerCase() === email)) {
+      return responder({ erro: 'Já existe uma conta com este e-mail.' }, 409)
     }
 
-    if (!entrada || typeof entrada !== 'object') {
-      return Response.json(
-        { erro: 'Dados inválidos' },
-        { status: 400 }
-      )
-    }
-
-    const dados = entrada as Record<string, unknown>
-    const nome =
-      typeof dados.nome === 'string'
-        ? dados.nome.trim()
-        : ''
-
-    const email =
-      typeof dados.email === 'string'
-        ? dados.email.trim().toLowerCase()
-        : ''
-
-    if (
-      nome.length < 2 ||
-      nome.length > 120 ||
-      email.length > 254 ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-    ) {
-      return Response.json(
-        { erro: 'Confira nome e e-mail' },
-        { status: 400 }
-      )
-    }
-
-    // Nesta fase, somente e-mails de teste autorizados.
-    const permitidos = (
-      Deno.env.get('INVITE_ALLOWED_EMAILS') ?? ''
-    )
-      .split(',')
-      .map((item) => item.trim().toLowerCase())
-      .filter(Boolean)
-
-    if (!permitidos.includes(email)) {
-      return Response.json(
-        { erro: 'E-mail não autorizado para testes' },
-        { status: 403 }
-      )
-    }
-
-    // Modo de segurança: não cria usuários nem envia e-mails.
-    if (Deno.env.get('INVITES_ENABLED') !== 'true') {
-      return Response.json({
-        ok: true,
-        simulacao: true,
-        mensagem: 'Autorização e dados validados',
-      })
-    }
-
-    const redirectTo = Deno.env.get('INVITE_REDIRECT_URL')
-
-    if (!redirectTo) {
-      return Response.json(
-        { erro: 'URL de ativação não configurada' },
-        { status: 503 }
-      )
-    }
-
-    // Operação privilegiada, somente após verificar admin.
-    const { data: convite, error: erroConvite } =
-      await ctx.supabaseAdmin.auth.admin.inviteUserByEmail(
-        email,
-        {
-          data: { nome },
-          redirectTo,
-        }
-      )
-
-    if (erroConvite) {
-      console.error('Falha no convite:', erroConvite.message)
-
-      return Response.json(
-        { erro: 'Não foi possível enviar o convite' },
-        { status: 502 }
-      )
-    }
-
-    // Atualiza o nome no perfil criado pelo trigger.
-    let perfilSincronizado = false
-
-    if (convite.user?.id) {
-      const { data: atualizado, error: erroNome } =
-        await ctx.supabaseAdmin
-          .from('perfis')
-          .update({ nome })
-          .eq('id', convite.user.id)
-          .select('id')
-
-      perfilSincronizado =
-        !erroNome && atualizado?.length === 1
-
-      if (!perfilSincronizado) {
-        console.error(
-          'Convite criado, mas o perfil precisa de revisão.'
-        )
-      }
-    }
-
-    return Response.json({
-      ok: true,
-      simulacao: false,
-      perfilSincronizado,
-      mensagem: 'Convite solicitado com sucesso',
+    const { data, error } = await ctx.supabaseAdmin.auth.admin.generateLink({
+      type: 'invite',
+      email,
+      options: { data: { name: nome }, redirectTo: APP + '/definir-senha' },
     })
+    if (error || !data.user?.id || !data.properties?.hashed_token) {
+      return responder({ erro: 'Não foi possível gerar o link de ativação.' }, 502)
+    }
+
+    // O gatilho da base cria automaticamente perfil inativo e pendente.
+    // A conta não pode acessar conteúdo enquanto a senha não é definida.
+    const { data: perfil, error: erroPerfil } = await ctx.supabaseAdmin
+      .from('perfis')
+      .update({ nome, papel, ativo: true, troca_senha_pendente: true })
+      .eq('id', data.user.id)
+      .eq('ativo', false)
+      .eq('troca_senha_pendente', true)
+      .select('id')
+      .maybeSingle()
+    if (erroPerfil || !perfil) {
+      // A conta recém-criada não pode ficar parcialmente configurada.
+      await ctx.supabaseAdmin.auth.admin.deleteUser(data.user.id)
+      return responder({ erro: 'Não foi possível configurar a conta. Nenhum convite foi liberado.' }, 500)
+    }
+
+    const url = APP + '/definir-senha?token_hash=' +
+      encodeURIComponent(data.properties.hashed_token) + '&type=invite'
+
+    // Link contém credencial temporária: exibir uma só vez e nunca registrá-lo em logs.
+    return responder({
+      ok: true,
+      usuario_id: data.user.id,
+      nome, email, papel,
+      link_ativacao: url,
+      mensagem: 'Conta criada. Compartilhe o link em canal privado.',
+    }, 201)
   }),
 }
