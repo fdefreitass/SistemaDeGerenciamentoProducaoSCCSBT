@@ -148,9 +148,9 @@ export default function Home() {
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/[.05] text-[#e2fa4a]"><Clapperboard size={18}/></span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-white/85">{material.titulo}</p>
-                    <p className="mt-1 text-[11px] text-white/40">{secoes.find(s => s.id === material.secao_id)?.nome ?? 'Seção'} · {material.codigo} · {material.duracao_segundos}s</p>
+                    <p className="mt-1 text-[11px] text-white/40">{secoes.find(s => s.id === material.secao_id)?.nome ?? 'Seção'} · {material.codigo ?? 'Sem código'} · {material.duracao_segundos === null ? 'Duração pendente' : `${material.duracao_segundos}s`}</p>
                   </div>
-                  <span className="hidden shrink-0 rounded-lg border border-white/10 bg-black/15 px-2.5 py-2 text-[11px] text-white/60 sm:block">{descricoesStatus[material.status_producao] ?? material.status_producao}</span>
+                  <span className="hidden shrink-0 rounded-lg border border-white/10 bg-black/15 px-2.5 py-2 text-[11px] text-white/60 sm:block">{material.status_producao ? (descricoesStatus[material.status_producao] ?? material.status_producao) : 'Sem classificação'}</span>
                 </div>
               ))}
             </div>
