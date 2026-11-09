@@ -5,7 +5,7 @@ import Avatar from '../components/Avatar'
 import { useAuth } from '../context/AuthContext'
 import { modoDemo, obterSupabase } from '../lib/supabase'
 
-const campo = 'mt-2 w-full rounded-xl border border-white/10 bg-[#0a0c10] px-4 py-3 text-sm text-white outline-none transition focus:border-[#dff900]/60 disabled:opacity-50'
+const campo = 'mt-2 w-full rounded-xl border border-white/10 bg-bg-[#050505] px-4 py-3 text-sm text-white outline-none transition focus:border-[#dff900]/60 disabled:opacity-50'
 const papeis: Record<string, string> = { admin: 'Administrador', editor: 'Editor', leitor: 'Leitor' }
 const bucket = 'scc-avatars'
 const limiteFoto = 2 * 1024 * 1024
@@ -149,7 +149,7 @@ export default function MeuPerfil() {
 
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,.9fr)]">
       <div className="space-y-6">
-        <section className="rounded-[22px] border border-white/10 bg-[#15171b] p-6 sm:p-8">
+        <section className="rounded-[22px] border border-white/10 bg-bg-[#050505] p-6 sm:p-8">
           <h2 className="flex items-center gap-2 text-lg font-bold"><Camera size={19} className="text-[#e2fa00]" /> Foto de perfil</h2>
           <p className="mt-2 text-xs leading-5 text-white/45">Imagem privada, visível apenas na sua conta. JPG, PNG ou WebP, até 2 MB.</p>
           <div className="mt-6 flex flex-wrap items-center gap-5">
@@ -168,7 +168,7 @@ export default function MeuPerfil() {
           </div>
         </section>
 
-        <section className="rounded-[22px] border border-white/10 bg-[#15171b] p-6 sm:p-8">
+        <section className="rounded-[22px] border border-white/10 bg-bg-[#050505] p-6 sm:p-8">
           <h2 className="flex items-center gap-2 text-lg font-bold"><UserRound size={19} className="text-[#e2fa00]" /> Dados pessoais</h2>
           <form onSubmit={e => void salvarNome(e)} className="mt-6 space-y-5">
             <div>
@@ -194,7 +194,7 @@ export default function MeuPerfil() {
         </section>
       </div>
 
-      <section className="h-fit rounded-[22px] border border-white/10 bg-[#15171b] p-6 sm:p-8">
+      <section className="h-fit rounded-[22px] border border-white/10 bg-bg-[#050505] p-6 sm:p-8">
         <h2 className="flex items-center gap-2 text-lg font-bold"><LockKeyhole size={19} className="text-[#e2fa00]" /> Alterar senha</h2>
         <p className="mt-2 text-xs leading-5 text-white/45">Informe a senha atual para confirmar que a conta pertence a você. Após a alteração, será necessário entrar novamente.</p>
         <form onSubmit={e => void trocarSenha(e)} className="mt-6 space-y-5">
