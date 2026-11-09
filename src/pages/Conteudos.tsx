@@ -4,7 +4,6 @@ import {
   ShieldAlert, ChevronDown, ArrowUpRight,
 } from 'lucide-react'
 import { useLocation } from 'react-router'
-import laco from '../assets/LAÇO_COLORIDO.png'
 import { useCoresSecoes, corDaSecao, paletaSecoes } from '../lib/coresSecoes'
 import { useAuth } from '../context/AuthContext'
 import { demoMateriais, demoSecoes } from '../data/demo'
@@ -335,66 +334,96 @@ export default function Conteudos() {
   const nomeSecaoExclusao = exclusao ? secoes.find(s => s.id === exclusao.material.secao_id)?.nome : ''
 
   return (
-    <main className="scc-materials-page scc-fluid-content relative isolate min-h-[calc(100vh-90px)] pb-20 pt-7">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-cover bg-center opacity-55"
-        style={{ backgroundImage: 'linear-gradient(180deg, rgba(5,5,5,.45), rgba(5,5,5,.65)), url("' + laco + '")' }} />
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-5">
-        <div>
-          <p className="text-[11px] font-extrabold uppercase tracking-[.18em] text-[#e2fa00]">GERENCIAMENTO DE CONTEÚDOS · SCC SBT</p>
-          <h1 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">Central de Materiais</h1>
-          <p className="mt-2 text-sm text-white/55">Tudo organizado por seção, com informações e ações sempre alinhadas.</p>
-        </div>
-        {podeEditar && <button type="button" onClick={novoMaterial} disabled={!secoes.length || salvando}
-          className="inline-flex items-center gap-2 rounded-xl bg-[#e2fa00] px-5 py-3 text-sm font-extrabold text-black transition hover:bg-[#f1ff7c] disabled:cursor-not-allowed disabled:opacity-50">
-          <Plus size={18} /> Novo material
-        </button>}
-      </div>
-
-      <div className="scc-kpi-band grid grid-cols-2 gap-3 rounded-[20px] border border-white/10 bg-[#151515]/95 p-3 lg:grid-cols-4">
-        {[
-          { titulo: 'TOTAL DE MATERIAIS', total: materiais.length },
-          { titulo: 'EM UTILIZAÇÃO', total: totalUso },
-          { titulo: 'PRECISA ATUALIZAR', total: totalAtualizar },
-          { titulo: 'PRECISA GRAVAR', total: totalGravar },
-        ].map(kpi => <div key={kpi.titulo} className="min-w-0 text-center">
-          <p className="truncate px-1 py-2 text-[11px] font-extrabold tracking-[.035em] text-white/85 sm:text-xs">{kpi.titulo}</p>
-          <div className="flex min-h-[78px] items-center justify-center rounded-xl bg-[#0b0b0d] px-2 text-[clamp(29px,2.6vw,62px)] font-extrabold tabular-nums tracking-tight">
-            {carregando ? '—' : String(kpi.total).padStart(2, '0')}
+    <main className="scc-materials-page scc-fluid-content min-h-[calc(100svh-90px)] pb-20 pt-7 sm:pt-9">
+      {/* ÁREA 01 — cabeçalho, indicadores e filtros. */}
+      <section aria-labelledby="titulo-central" className="scc-materials-overview relative isolate overflow-hidden rounded-[26px] border border-white/[0.09] bg-[#121419] p-5 shadow-[0_24px_80px_rgba(0,0,0,.16)] sm:p-7 xl:p-9">
+        <div className="relative z-10 flex flex-wrap items-end justify-between gap-5">
+          <div className="min-w-0">
+            <p className="text-[11px] font-extrabold uppercase tracking-[.18em] text-[#e2fa00]">SCC PRODUÇÃO <span className="mx-2 text-white/30">/</span> GESTÃO DE CONTEÚDOS</p>
+            <h1 id="titulo-central" className="mt-3 text-[clamp(26px,2.4vw,48px)] font-extrabold tracking-[-.045em] text-white">Central de Materiais</h1>
+            <p className="mt-2 max-w-3xl text-[clamp(13px,.85vw,18px)] leading-relaxed text-white/50">Acompanhe sua programação, encontre pendências e mantenha os conteúdos organizados.</p>
           </div>
-        </div>)}
-      </div>
-
-      <div className="mt-4 rounded-[18px] border border-white/10 bg-[#151515]/95 p-3">
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <div className="relative min-w-0 flex-1">
-            <Search size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/35" />
-            <input aria-label="Pesquisar materiais" type="search" placeholder="Pesquisar código, título ou seção..." value={busca}
-              onChange={e => setBusca(e.target.value)} className={campo + ' h-11 pl-11'} />
-          </div>
-          <label className="sr-only" htmlFor="filtro-materiais">Filtrar materiais</label>
-          <select id="filtro-materiais" className={campo + ' h-11 sm:w-52'} value={filtro}
-            onChange={e => setFiltro(e.target.value as Filtro)}>
-            <option value="todos">Todos os materiais</option>
-            <option value="uso">Em utilização</option>
-            <option value="atualizar">Precisa atualizar</option>
-            <option value="gravar">Precisa gravar</option>
-          </select>
+          {podeEditar && <button type="button" onClick={novoMaterial} disabled={!secoes.length || salvando}
+            className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#e2fa00] px-5 text-sm font-extrabold text-[#121212] transition hover:bg-[#efff70] disabled:cursor-not-allowed disabled:opacity-50">
+            <Plus size={18} /> Novo material
+          </button>}
         </div>
-        {administrador && <form onSubmit={cadastrarSecao} className="mt-2 flex flex-col gap-2 sm:flex-row">
-          <input aria-label="Nome da nova seção" required minLength={2} maxLength={100} value={novaSecao}
-            onChange={e => setNovaSecao(e.target.value)} placeholder="Nome da nova seção..."
-            className={campo + ' h-11 min-w-0 flex-1'} />
-          <button type="submit" disabled={salvando} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 px-5 text-sm font-bold transition hover:bg-white/15 disabled:opacity-40">
-            <Plus size={16} /> Criar seção
-          </button>
-        </form>}
-      </div>
 
-      {erro && <div role="alert" className="mt-4 rounded-xl border border-red-400/25 bg-[#301719] p-4 text-sm text-red-200">{erro}</div>}
-      {sucesso && <div role="status" className="mt-4 rounded-xl border border-emerald-400/20 bg-[#103025] p-4 text-sm text-emerald-200">{sucesso}</div>}
-      {carregando && <p className="mt-5 text-sm text-white/60">Carregando materiais...</p>}
+        <div className="relative z-10 mt-8 grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-4">
+          {[
+            { titulo: 'Total de materiais', total: materiais.length, cor: '#e2fa00' },
+            { titulo: 'Em utilização', total: totalUso, cor: '#36d6ad' },
+            { titulo: 'Precisa atualizar', total: totalAtualizar, cor: '#b598ff' },
+            { titulo: 'Precisa gravar', total: totalGravar, cor: '#ff9a60' },
+          ].map(kpi => <div key={kpi.titulo} className="scc-materials-stat relative flex min-h-[132px] flex-col justify-between overflow-hidden rounded-[18px] border border-white/[0.085] bg-[#0b0d11] px-5 py-5 sm:px-6">
+            <span className="absolute inset-x-0 top-0 h-[3px] opacity-80" style={{ backgroundColor: kpi.cor }} aria-hidden="true" />
+            <p className="text-[clamp(11px,.7vw,15px)] font-semibold leading-snug text-white/55">{kpi.titulo}</p>
+            <div className="mt-3 flex items-end justify-between gap-3">
+              <strong className="text-[clamp(32px,2.55vw,56px)] font-extrabold leading-none tracking-tight tabular-nums text-white">{carregando ? '—' : String(kpi.total).padStart(2, '0')}</strong>
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: kpi.cor }} aria-hidden="true" />
+            </div>
+          </div>)}
+        </div>
 
-      <div className="mt-4 space-y-4">
+        <div className="relative z-10 mt-8 border-t border-white/[0.085] pt-7">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-bold text-white/90">Encontre o que precisa</h2>
+              <p className="mt-1 text-xs text-white/40">Busque pelo código, título ou nome da seção.</p>
+            </div>
+            {(busca || filtro !== 'todos') && <button type="button" onClick={() => { setBusca(''); setFiltro('todos') }}
+              className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-white/60 transition hover:bg-white/5 hover:text-white">
+              Limpar filtros
+            </button>}
+          </div>
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(220px,260px)]">
+            <div className="relative min-w-0">
+              <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/35" />
+              <input aria-label="Pesquisar materiais" type="search" placeholder="Pesquisar materiais ou seções..." value={busca}
+                onChange={e => setBusca(e.target.value)} className="scc-materials-input h-12 w-full rounded-xl border border-white/10 bg-[#080a0e] pl-12 pr-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#e2fa00]/45" />
+            </div>
+            <div>
+              <label className="sr-only" htmlFor="filtro-materiais">Filtrar materiais</label>
+              <select id="filtro-materiais" className="scc-materials-input h-12 w-full rounded-xl border border-white/10 bg-[#080a0e] px-4 text-sm text-white outline-none focus:border-[#e2fa00]/45" value={filtro}
+                onChange={e => setFiltro(e.target.value as Filtro)}>
+                <option value="todos">Todos os materiais</option>
+                <option value="uso">Em utilização</option>
+                <option value="atualizar">Precisa atualizar</option>
+                <option value="gravar">Precisa gravar</option>
+              </select>
+            </div>
+          </div>
+          {administrador && <form onSubmit={cadastrarSecao} className="mt-3 flex flex-col gap-3 sm:flex-row">
+            <input aria-label="Nome da nova seção" required minLength={2} maxLength={100} value={novaSecao}
+              onChange={e => setNovaSecao(e.target.value)} placeholder="Nome da nova seção..."
+              className="scc-materials-input h-12 min-w-0 flex-1 rounded-xl border border-white/10 bg-[#080a0e] px-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#e2fa00]/45" />
+            <button type="submit" disabled={salvando} className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.07] px-5 text-sm font-bold text-white transition hover:bg-white/[0.13] disabled:opacity-40">
+              <Plus size={16} /> Criar seção
+            </button>
+          </form>}
+        </div>
+      </section>
+
+      {erro && <div role="alert" className="mt-5 rounded-xl border border-red-400/25 bg-[#301719] p-4 text-sm text-red-200">{erro}</div>}
+      {sucesso && <div role="status" className="mt-5 rounded-xl border border-emerald-400/20 bg-[#103025] p-4 text-sm text-emerald-200">{sucesso}</div>}
+
+      {/* ÁREA 02 — seções e dados, visualmente independentes do cabeçalho. */}
+      <section aria-labelledby="titulo-secoes" className="scc-materials-workspace mt-8 rounded-[26px] border border-white/[0.085] bg-[#0e1014] p-4 sm:p-6 xl:p-8">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-extrabold uppercase tracking-[.19em] text-white/35">ACERVO DE PRODUÇÃO</p>
+            <h2 id="titulo-secoes" className="mt-2 text-[clamp(20px,1.5vw,32px)] font-extrabold tracking-tight text-white">Seções e materiais</h2>
+            <p className="mt-1 text-xs text-white/45">{carregando ? 'Carregando informações...' : `${secoesVisiveis.length} ${secoesVisiveis.length === 1 ? 'seção' : 'seções'} · ${filtrados.length} ${filtrados.length === 1 ? 'material' : 'materiais'} exibidos`}</p>
+          </div>
+          {secoesVisiveis.length > 0 && <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => setAbertas({})}
+              className="rounded-lg border border-white/10 bg-white/[0.035] px-3.5 py-2.5 text-xs font-semibold text-white/60 transition hover:border-white/20 hover:text-white">Expandir todas</button>
+            <button type="button" onClick={() => setAbertas(Object.fromEntries(secoesVisiveis.map(secao => [secao.id, false])))}
+              className="rounded-lg border border-white/10 bg-white/[0.035] px-3.5 py-2.5 text-xs font-semibold text-white/60 transition hover:border-white/20 hover:text-white">Recolher todas</button>
+          </div>}
+        </div>
+        {carregando && <p className="py-8 text-sm text-white/60">Carregando materiais...</p>}
+        <div className="space-y-4">
         {secoesVisiveis.map(secao => {
           const itens = filtrados.filter(m => m.secao_id === secao.id)
             .sort((a, b) => a.codigo.localeCompare(b.codigo, 'pt-BR', { numeric: true }))
@@ -501,9 +530,10 @@ export default function Conteudos() {
             </div>}
           </section>
         })}
-        {!carregando && !secoesVisiveis.length && <div className="rounded-xl border border-white/10 bg-[#151515] p-10 text-center text-sm text-white/50">Nenhuma seção ou material encontrado.</div>}
-      </div>
-      <p className="mt-8 text-center text-xs text-white/40">SCC Produção · {modoDemo ? 'Protótipo local' : 'Ambiente de desenvolvimento protegido'}</p>
+        {!carregando && !secoesVisiveis.length && <div className="rounded-xl border border-dashed border-white/15 bg-[#15171b] p-12 text-center text-sm text-white/50">Nenhuma seção ou material encontrado.</div>}
+        </div>
+      </section>
+      <p className="mt-8 text-center text-xs text-white/30">SCC Produção · {modoDemo ? 'Protótipo local' : 'Ambiente de desenvolvimento protegido'}</p>
 
       {dialogo && <div className="scc-modal-backdrop fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/85 px-4 py-8 backdrop-blur-md sm:items-center" role="presentation">
         <section role="dialog" aria-modal="true" aria-labelledby="titulo-formulario" className="w-full max-w-[780px] rounded-[22px] border border-white/15 bg-[#191919] p-5 shadow-2xl sm:p-8">
