@@ -38,8 +38,8 @@ type Formulario = {
   codigo: string
   titulo: string
   duracao_segundos: string
-  status_grade: StatusGrade
-  status_producao: StatusProducao
+  status_grade: StatusGrade | ''
+  status_producao: StatusProducao | ''
   link_externo: string
   observacoes: string
 }
@@ -61,7 +61,7 @@ function sugerirCodigo(original: Material, materiais: Material[]) {
   const existentes = new Set(materiais.filter(m => m.secao_id === original.secao_id).map(m => m.codigo))
   for (let n = 2; n < 10000; n++) {
     const sufixo = '-' + n
-    const candidato = original.codigo.slice(0, 20 - sufixo.length) + sufixo
+    const candidato = (original.codigo ?? 'SEM-COD').slice(0, 20 - sufixo.length) + sufixo
     if (!existentes.has(candidato)) return candidato
   }
   return ''
@@ -154,11 +154,11 @@ export default function Conteudos() {
     if (!podeEditar) return
     setFormulario({
       secao_id: material.secao_id,
-      codigo: modo === 'duplicar' ? sugerirCodigo(material, materiais) : material.codigo,
+      codigo: modo === 'duplicar' ? sugerirCodigo(material, materiais) : material.codigo ?? '',
       titulo: material.titulo,
-      duracao_segundos: String(material.duracao_segundos),
-      status_grade: modo === 'duplicar' ? 'aguardando_entrada' : material.status_grade,
-      status_producao: modo === 'duplicar' ? 'precisa_gravar' : material.status_producao,
+      duracao_segundos: material.duracao_segundos === null ? '' : String(material.duracao_segundos),
+      status_grade: modo === 'duplicar' ? '' : material.status_grade ?? '',
+      status_producao: modo === 'duplicar' ? '' : material.status_producao ?? '',
       link_externo: material.link_externo ?? '',
       observacoes: material.observacoes ?? '',
     })
@@ -179,15 +179,15 @@ export default function Conteudos() {
     event.preventDefault()
     if (!podeEditar || !dialogo || salvando) return
     const entrada = formulario
-    const codigo = entrada.codigo.trim()
+    const codigo = entrada.codigo.trim() || null
     const titulo = entrada.titulo.trim()
-    const duracao = Number(entrada.duracao_segundos)
+    const duracao = entrada.duracao_segundos.trim() ? Number(entrada.duracao_segundos) : null
     const link = entrada.link_externo.trim() || null
     const observacoes = entrada.observacoes.trim() || null
     if (!secoes.some(s => s.id === entrada.secao_id) ||
-        !/^[a-zA-Z0-9._-]{1,20}$/.test(codigo) ||
+        (codigo !== null && !/^[a-zA-Z0-9._-]{1,20}$/.test(codigo)) ||
         titulo.length < 2 || titulo.length > 180 ||
-        !Number.isInteger(duracao) || duracao < 1 || duracao > 36000 ||
+        (duracao !== null && (!Number.isInteger(duracao) || duracao < 1 || duracao > 36000)) ||
         (observacoes?.length ?? 0) > 4000) {
       setErro('Revise a seção, o código (até 20 caracteres), o título e a duração.')
       return
@@ -201,7 +201,7 @@ export default function Conteudos() {
       }
     }
     if (materiais.some(m => m.secao_id === entrada.secao_id &&
-      m.codigo === codigo && m.id !== (dialogo.modo === 'editar' ? dialogo.original?.id : undefined))) {
+      codigo !== null && m.codigo === codigo && m.id !== (dialogo.modo === 'editar' ? dialogo.original?.id : undefined))) {
       setErro('Já existe um material com esse código na seção escolhida.')
       return
     }
@@ -211,7 +211,7 @@ export default function Conteudos() {
       const campos = {
         secao_id: entrada.secao_id, codigo, titulo,
         duracao_segundos: duracao, link_externo: link, observacoes,
-        status_grade: entrada.status_grade, status_producao: entrada.status_producao,
+        status_grade: entrada.status_grade || null, status_producao: entrada.status_producao || null,
       }
       if (dialogo.modo === 'editar' && dialogo.original) {
         // Atualiza somente os campos realmente alterados: alterações comuns
@@ -252,7 +252,7 @@ export default function Conteudos() {
 
   async function atualizarStatus(
     material: Material, chave: 'status_grade' | 'status_producao',
-    valor: StatusGrade | StatusProducao,
+    valor: StatusGrade | StatusProducao | null,
   ) {
     if (!podeEditar || salvando) return
     setSalvando(true)
@@ -270,7 +270,7 @@ export default function Conteudos() {
 
   async function confirmarExclusao() {
     if (!administrador || !exclusao || exclusao.etapa !== 2 || salvando ||
-        confirmacao !== exclusao.material.codigo) return
+        confirmacao !== (exclusao.material.codigo ?? exclusao.material.titulo)) return
     setSalvando(true)
     setErro('')
     try {
@@ -400,7 +400,7 @@ export default function Conteudos() {
 
   const filtrados = materiais.filter(m => {
     const secao = secoes.find(s => s.id === m.secao_id)
-    const texto = (m.codigo + ' ' + m.titulo + ' ' + (secao?.nome ?? '')).toLocaleLowerCase('pt-BR')
+    const texto = ((m.codigo ?? '') + ' ' + m.titulo + ' ' + (secao?.nome ?? '')).toLocaleLowerCase('pt-BR')
     const achou = texto.includes(busca.trim().toLocaleLowerCase('pt-BR'))
     return achou && (filtroProducao === 'todos' || m.status_producao === filtroProducao) &&
       (filtroGrade === 'todas' || m.status_grade === filtroGrade)
@@ -592,7 +592,7 @@ export default function Conteudos() {
         <div className="space-y-4">
         {secoesVisiveis.map(secao => {
           const itens = filtrados.filter(m => m.secao_id === secao.id)
-            .sort((a, b) => a.codigo.localeCompare(b.codigo, 'pt-BR', { numeric: true }))
+            .sort((a, b) => (a.codigo ?? '').localeCompare(b.codigo ?? '', 'pt-BR', { numeric: true }))
           const aberta = abertas[secao.id] !== false
           const cor = corDaSecao(cores, secao.id, Math.max(0, secoes.findIndex(s => s.id === secao.id)))
           const editandoSecao = secaoEditando === secao.id
@@ -697,20 +697,22 @@ export default function Conteudos() {
                 </tr></thead>
                 <tbody>
                   {itens.map(m => <tr key={m.id} className="scc-material-row border-t border-white/[0.06] bg-[#1f1f1f] transition hover:bg-[#292929]">
-                    <td className="px-4 py-4 font-mono text-[12px] font-bold text-white">{m.codigo}</td>
+                    <td className="px-4 py-4 font-mono text-[12px] font-bold text-white">{m.codigo || '—'}</td>
                     <td className="px-4 py-4 text-[12px] font-semibold text-white/90"><span className="block truncate" title={m.titulo}>{m.titulo}</span></td>
-                    <td className="px-4 py-4 text-xs tabular-nums text-white/75">{m.duracao_segundos}s</td>
+                    <td className="px-4 py-4 text-xs tabular-nums text-white/75">{m.duracao_segundos === null ? '—' : `${m.duracao_segundos}s`}</td>
                     <td className="px-4 py-3">
-                      <select aria-label={'Situação na grade: ' + m.titulo} value={m.status_grade}
-                        disabled={!podeEditar || salvando} onChange={e => void atualizarStatus(m, 'status_grade', e.target.value as StatusGrade)}
+                      <select aria-label={'Situação na grade: ' + m.titulo} value={m.status_grade ?? ''}
+                        disabled={!podeEditar || salvando} onChange={e => void atualizarStatus(m, 'status_grade', e.target.value ? e.target.value as StatusGrade : null)}
                         className="w-full min-w-0 rounded-lg border border-white/10 bg-[#050505] px-2 py-2 text-xs text-white/85 outline-none focus:border-[#e2fa00]/50 disabled:opacity-55">
+                        <option value="">Sem classificação</option>
                         {statusGrade.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
                       </select>
                     </td>
                     <td className="px-4 py-3">
-                      <select aria-label={'Status de produção: ' + m.titulo} value={m.status_producao}
-                        disabled={!podeEditar || salvando} onChange={e => void atualizarStatus(m, 'status_producao', e.target.value as StatusProducao)}
+                      <select aria-label={'Status de produção: ' + m.titulo} value={m.status_producao ?? ''}
+                        disabled={!podeEditar || salvando} onChange={e => void atualizarStatus(m, 'status_producao', e.target.value ? e.target.value as StatusProducao : null)}
                         className="w-full min-w-0 rounded-lg border border-white/10 bg-[#050505] px-2 py-2 text-xs text-white/85 outline-none focus:border-[#e2fa00]/50 disabled:opacity-55">
+                        <option value="">Sem classificação</option>
                         {statusProducao.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
                       </select>
                     </td>
@@ -761,21 +763,23 @@ export default function Conteudos() {
               </select>
             </div>
             <div><label htmlFor="material-codigo" className={rotulo}>Código</label>
-              <input id="material-codigo" className={campo} required maxLength={20} value={formulario.codigo} onChange={e => mudar('codigo', e.target.value)} placeholder="0001" />
+              <input id="material-codigo" className={campo} maxLength={20} value={formulario.codigo} onChange={e => mudar('codigo', e.target.value)} placeholder="0001" />
             </div>
             <div className="sm:col-span-2"><label htmlFor="material-titulo" className={rotulo}>Título</label>
               <input id="material-titulo" className={campo} required minLength={2} maxLength={180} value={formulario.titulo} onChange={e => mudar('titulo', e.target.value)} />
             </div>
             <div><label htmlFor="material-duracao" className={rotulo}>Duração em segundos</label>
-              <input id="material-duracao" className={campo} type="number" min={1} max={36000} step={1} required value={formulario.duracao_segundos} onChange={e => mudar('duracao_segundos', e.target.value)} />
+              <input id="material-duracao" className={campo} type="number" min={1} max={36000} step={1} value={formulario.duracao_segundos} onChange={e => mudar('duracao_segundos', e.target.value)} />
             </div>
             <div><label htmlFor="material-grade" className={rotulo}>Situação na grade</label>
               <select id="material-grade" className={campo} value={formulario.status_grade} onChange={e => mudar('status_grade', e.target.value as StatusGrade)}>
+                <option value="">Sem classificação</option>
                 {statusGrade.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
               </select>
             </div>
             <div><label htmlFor="material-producao" className={rotulo}>Status de produção</label>
               <select id="material-producao" className={campo} value={formulario.status_producao} onChange={e => mudar('status_producao', e.target.value as StatusProducao)}>
+                <option value="">Sem classificação</option>
                 {statusProducao.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
               </select>
             </div>
@@ -801,7 +805,7 @@ export default function Conteudos() {
         const itensOrigem = materiais.filter(m => m.secao_id === origem.id)
         const opcoesDestino = secoes.filter(s => s.id !== origem.id)
         const colisao = destinoSecao && itensOrigem.some(m => materiais.some(outro =>
-          outro.secao_id === destinoSecao && outro.codigo === m.codigo))
+          outro.secao_id === destinoSecao && m.codigo !== null && outro.codigo === m.codigo))
         const destinoValido = itensOrigem.length === 0 ||
           (opcoesDestino.some(s => s.id === destinoSecao) && !colisao)
 
@@ -895,15 +899,15 @@ export default function Conteudos() {
           <p id="descricao-excluir" className="mt-4 text-sm leading-6 text-white/65">
             {exclusao.etapa === 1
               ? 'Você está prestes a excluir este material do banco. A ação é irreversível. O histórico de auditoria será preservado.'
-              : 'Para confirmar, digite exatamente o código do material abaixo.'}
+              : 'Para confirmar, digite exatamente o código (ou o título, caso não exista código) do material abaixo.'}
           </p>
           <div className="mt-5 rounded-xl border border-white/10 bg-black/25 p-4">
             <p className="break-words text-sm font-semibold text-white">{exclusao.material.titulo}</p>
             <p className="mt-2 text-xs text-white/55">Seção: {nomeSecaoExclusao ?? '—'}</p>
-            <p className="mt-1 font-mono text-sm font-bold text-red-300">Código: {exclusao.material.codigo}</p>
+            <p className="mt-1 font-mono text-sm font-bold text-red-300">{exclusao.material.codigo ? `Código: ${exclusao.material.codigo}` : 'Sem código — confirmar pelo título'}</p>
           </div>
           {exclusao.etapa === 2 && <div className="mt-5">
-            <label className={rotulo} htmlFor="confirmacao-exclusao">Digite o código: {exclusao.material.codigo}</label>
+            <label className={rotulo} htmlFor="confirmacao-exclusao">Digite {exclusao.material.codigo ? 'o código' : 'o título'}: {exclusao.material.codigo ?? exclusao.material.titulo}</label>
             <input id="confirmacao-exclusao" autoComplete="off" spellCheck={false}
               value={confirmacao} onChange={e => setConfirmacao(e.target.value)} className={campo} />
           </div>}
@@ -914,7 +918,7 @@ export default function Conteudos() {
             {exclusao.etapa === 1
               ? <button type="button" onClick={() => setExclusao({ ...exclusao, etapa: 2 })}
                   className="rounded-xl border border-red-400/45 px-5 py-3 text-sm font-bold text-red-200 hover:bg-red-400/10">Continuar para confirmação</button>
-              : <button type="button" disabled={salvando || confirmacao !== exclusao.material.codigo}
+              : <button type="button" disabled={salvando || confirmacao !== (exclusao.material.codigo ?? exclusao.material.titulo)}
                   onClick={() => void confirmarExclusao()}
                   className="inline-flex items-center gap-2 rounded-xl bg-red-500 px-5 py-3 text-sm font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-35">
                   <Trash2 size={16}/>{salvando ? 'Excluindo...' : 'Excluir definitivamente'}
