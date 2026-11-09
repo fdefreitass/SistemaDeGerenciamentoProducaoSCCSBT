@@ -12,23 +12,23 @@ export default function BoasVindas() {
   const destino = autorizado ? '/painel' : '/login'
 
   return (
-    <main className="scc-landing min-h-screen overflow-hidden bg-[#030303] text-white">
-      <header className="relative z-30 mx-auto flex h-[88px] max-w-[1640px] items-center gap-4 px-5 sm:px-10 lg:px-14">
+    <main className="scc-landing flex min-h-[100svh] flex-col overflow-hidden bg-[#030303] text-white">
+      <header className="scc-brand-header relative z-30 flex w-full items-center gap-4">
         <Link to="/" aria-label="Página inicial SCC Produção" className="flex shrink-0 items-center">
-          <img src={logoBranca} alt="SCC SBT" className="h-[42px] w-auto max-w-[112px] object-contain" />
+          <img src={logoBranca} alt="SCC SBT" className="scc-brand-logo w-auto object-contain" />
         </Link>
-        <div className="mx-auto hidden h-[46px] w-full max-w-[920px] items-center justify-center rounded-2xl border border-white/[0.05] bg-[#161616] text-[12px] font-extrabold tracking-[.12em] text-white/90 md:flex">
+        <div className="scc-brand-title mx-auto hidden w-full items-center justify-center rounded-2xl border border-white/[0.05] bg-[#161616] font-extrabold tracking-[.12em] text-white/90 md:flex">
           PRODUÇÃO SCC SBT
         </div>
-        <Link to={destino} className="ml-auto inline-flex h-[44px] shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-5 text-xs font-extrabold text-black transition hover:bg-white/85 sm:px-7">
+        <Link to={destino} className="scc-brand-action ml-auto inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-white text-xs font-extrabold text-black transition hover:bg-white/85">
           {autorizado ? 'ACESSAR PAINEL' : 'EFETUAR LOGIN'} <ArrowUpRight size={15} />
         </Link>
       </header>
 
-      <section className="scc-landing-stage relative mx-auto max-w-[1640px]" aria-label="Boas-vindas ao SCC Produção">
+      <section className="scc-landing-stage relative isolate w-full flex-1" aria-label="Boas-vindas ao SCC Produção">
         <div className="scc-landing-stage-glow" aria-hidden="true" />
         <img src={laco} alt="" className="scc-landing-ribbon pointer-events-none absolute select-none" draggable={false} />
-        <div className="scc-landing-intro relative z-10">
+        <div className="scc-landing-intro absolute z-10">
           <div className="mb-4 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.23em] text-white/60">
             <Sparkles size={14} className="text-[#e8f500]" /> Um novo jeito de produzir
           </div>
@@ -41,7 +41,7 @@ export default function BoasVindas() {
           </p>
         </div>
 
-        <div className="scc-landing-programs relative z-20" aria-label="Programas em destaque">
+        <div className="scc-landing-programs absolute z-20" aria-label="Programas em destaque">
           <Link to="/conteudos?busca=SCC%20NEWS" className="scc-showcase-card scc-news-card scc-landing-card-news" aria-label="Consultar SCC News">
             <span className="scc-news-deco" aria-hidden="true" />
             <span className="scc-news-logo"><strong>SCC</strong><em>NEWS</em></span>
@@ -68,7 +68,7 @@ export default function BoasVindas() {
           <ArrowRight size={16} className="text-white/55" />
         </Link>
       </section>
-      <footer className="relative z-10 mx-auto flex max-w-[1640px] items-center justify-between gap-3 border-t border-white/[.07] px-6 py-5 text-[11px] text-white/30 sm:px-12">
+      <footer className="scc-landing-footer relative z-10 flex w-full items-center justify-between gap-3 border-t border-white/[.07] text-[11px] text-white/30">
         <span>SCC Produção · Tecnologia a serviço da nossa equipe.</span>
         <span className="hidden sm:inline">SCC SBT · Santa Catarina</span>
       </footer>
