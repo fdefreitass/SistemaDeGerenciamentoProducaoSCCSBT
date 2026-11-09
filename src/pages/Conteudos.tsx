@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link } from 'react-router'
+import { Link, useLocation } from 'react-router'
 import { useAuth } from '../context/AuthContext'
 import { demoMateriais, demoSecoes } from '../data/demo'
 import { modoDemo } from '../lib/supabase'
@@ -17,6 +17,7 @@ const campo = 'w-full rounded-lg border border-white/10 bg-[#101010] px-3 py-2 t
 const rotulo = 'mb-2 block text-xs text-white/60'
 
 export default function Conteudos() {
+  const { search } = useLocation()
   const { perfil } = useAuth()
   const podeEditar = modoDemo || perfil?.papel === 'admin' || perfil?.papel === 'editor'
   const podeCriarSecao = modoDemo || perfil?.papel === 'admin'
@@ -24,7 +25,7 @@ export default function Conteudos() {
   const [secoes, setSecoes] = useState<Secao[]>(modoDemo ? demoSecoes : [])
   const [materiais, setMateriais] = useState<Material[]>(modoDemo ? demoMateriais : [])
   const [abertas, setAbertas] = useState<Record<string, boolean>>({})
-  const [busca, setBusca] = useState('')
+  const [busca, setBusca] = useState(() => new URLSearchParams(search).get('busca') ?? '')
   const [filtro, setFiltro] = useState<Filtro>('todos')
   const [novaSecao, setNovaSecao] = useState('')
   const [mostrarCadastro, setMostrarCadastro] = useState(false)
@@ -32,6 +33,10 @@ export default function Conteudos() {
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
   const [cadastro, setCadastro] = useState({ secao_id: '', codigo: '', titulo: '', duracao_segundos: '15', link_externo: '' })
+
+  useEffect(() => {
+    setBusca(new URLSearchParams(search).get('busca') ?? '')
+  }, [search])
 
   useEffect(() => {
     if (modoDemo) return
