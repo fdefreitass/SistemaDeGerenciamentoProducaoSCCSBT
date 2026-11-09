@@ -1,4 +1,5 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useNavigate } from 'react-router'
 import { Camera, Check, LockKeyhole, ShieldCheck, Trash2, UserRound } from 'lucide-react'
 import Avatar from '../components/Avatar'
 import { useAuth } from '../context/AuthContext'
@@ -11,6 +12,7 @@ const limiteFoto = 2 * 1024 * 1024
 const formatos = ['image/jpeg', 'image/png', 'image/webp']
 
 export default function MeuPerfil() {
+  const navegar = useNavigate()
   const { perfil, email, recarregarPerfil, atualizarAvatar, sair } = useAuth()
   const [nome, setNome] = useState(perfil?.nome ?? '')
   const [senhaAtual, setSenhaAtual] = useState('')
@@ -19,7 +21,6 @@ export default function MeuPerfil() {
   const [ocupado, setOcupado] = useState(false)
   const [erro, setErro] = useState('')
   const [sucesso, setSucesso] = useState('')
-  const [senhaModificada, setSenhaModificada] = useState(false)
 
   useEffect(() => { setNome(perfil?.nome ?? '') }, [perfil?.nome])
 
@@ -128,15 +129,14 @@ export default function MeuPerfil() {
       setSenhaAtual('')
       setSenhaNova('')
       setConfirmarSenha('')
-      setSenhaModificada(true)
       await sair()
+      navegar('/login?senha=alterada', { replace: true })
     } catch {
       setErro('Não foi possível alterar a senha. Confira a senha atual e os requisitos de segurança.')
     } finally { setOcupado(false) }
   }
 
-  if (senhaModificada) {
-    return <main className="scc-fluid-content py-16">
+  return <main className="scc-fluid-content py-16">
       <div className="mx-auto max-w-lg rounded-2xl border border-white/10 bg-[#15171b] p-8 text-center">
         <ShieldCheck size={36} className="mx-auto text-[#e2fa00]" />
         <h1 className="mt-4 text-2xl font-bold">Senha atualizada</h1>
