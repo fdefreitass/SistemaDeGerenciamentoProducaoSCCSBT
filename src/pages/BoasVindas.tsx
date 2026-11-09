@@ -5,6 +5,9 @@ import { modoDemo } from '../lib/supabase'
 import logoBranca from '../assets/SCC SBT BRANCA.png'
 import laco from '../assets/LAÇO_COLORIDO.png'
 import apresentador from '../assets/APRESENTADOR_AVIÃO.png'
+import logoNews from '../assets/SCC-NEWS.png'
+import logoMeioDia from '../assets/MEIO-DIA.png'
+import logoATarde from '../assets/A-TARDE-E-NOSSA.png'
 
 export default function BoasVindas() {
   const { email, perfil } = useAuth()
@@ -43,19 +46,15 @@ export default function BoasVindas() {
 
         <div className="scc-landing-programs absolute z-20" aria-label="Programas em destaque">
           <Link to="/conteudos?busca=SCC%20NEWS" className="scc-showcase-card scc-news-card scc-landing-card-news" aria-label="Consultar SCC News">
-            <span className="scc-news-deco" aria-hidden="true" />
-            <span className="scc-news-logo"><strong>SCC</strong><em>NEWS</em></span>
+            <img src={logoNews} alt="SCC News" className="scc-program-logo" draggable={false} />
             <span className="scc-card-hint">Ver conteúdos <ArrowRight size={14}/></span>
           </Link>
           <Link to="/conteudos?busca=SCC%20MEIO-DIA" className="scc-showcase-card scc-meiodia-card scc-landing-card-meiodia" aria-label="Consultar SCC Meio-Dia">
-            <span className="scc-meiodia-top">SCC</span>
-            <span className="scc-meiodia-logo">MEI<span className="scc-sol">O</span>DIA</span>
+            <img src={logoMeioDia} alt="SCC Meio-Dia" className="scc-program-logo" draggable={false} />
             <span className="scc-card-hint">Ver conteúdos <ArrowRight size={14}/></span>
           </Link>
-          <Link to="/conteudos?busca=QUESO" className="scc-showcase-card scc-queso-card scc-landing-card-queso" aria-label="Consultar A Tarde é Queso">
-            <span className="scc-queso-sparks" aria-hidden="true">✦ · ✧</span>
-            <span className="scc-queso-top">A TARDE É</span>
-            <span className="scc-queso-logo"><b>Q</b><b>U</b><b>E</b><b>S</b><b>O</b></span>
+          <Link to="/conteudos?busca=A%20TARDE%20%C3%89%20NOSSA" className="scc-showcase-card scc-queso-card scc-landing-card-queso" aria-label="Consultar A Tarde é Nossa">
+            <img src={logoATarde} alt="A Tarde é Nossa" className="scc-program-logo" draggable={false} />
             <span className="scc-card-hint">Ver conteúdos <ArrowRight size={14}/></span>
           </Link>
         </div>
