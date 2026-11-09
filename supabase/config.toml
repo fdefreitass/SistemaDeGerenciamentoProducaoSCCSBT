@@ -449,3 +449,9 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/concluir-ativacao/deno.json"
 entrypoint = "./functions/concluir-ativacao/index.ts"
+
+[functions.gerenciar-usuario]
+enabled = true
+verify_jwt = true
+import_map = "./functions/gerenciar-usuario/deno.json"
+entrypoint = "./functions/gerenciar-usuario/index.ts"
