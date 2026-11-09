@@ -58,18 +58,6 @@ export default {
         )
       }
 
-      // Trava de seguranca: nao altera senhas nos testes.
-      if (
-        Deno.env.get('FIRST_PASSWORD_CHANGE_ENABLED') !==
-        'true'
-      ) {
-        return resposta({
-          ok: true,
-          simulacao: true,
-          mensagem: 'Validacao aprovada. Senha nao alterada.',
-        })
-      }
-
       const entrada: unknown =
         await req.json().catch(() => null)
 
