@@ -1,9 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import {
-  Plus, Search, Palette, Pencil, Check, X, FolderOpen, Copy, Trash2,
-  FileVideo2, ShieldAlert, ChevronDown, ArrowUpRight,
+  Plus, Search, Palette, Pencil, Check, X, Copy, Trash2,
+  ShieldAlert, ChevronDown, ArrowUpRight,
 } from 'lucide-react'
-import { Link, useLocation } from 'react-router'
+import { useLocation } from 'react-router'
 import laco from '../assets/LAÇO_COLORIDO.png'
 import { useCoresSecoes, corDaSecao, paletaSecoes } from '../lib/coresSecoes'
 import { useAuth } from '../context/AuthContext'
@@ -123,7 +123,7 @@ export default function Conteudos() {
     return () => window.removeEventListener('keydown', aoTeclar)
   }, [dialogo, exclusao, salvando])
 
-  const mudar = <K extends keyof Formulario>(chave: K, valor: Formulario[K]) => {
+  const mudar = <K extends keyof Formulario,>(chave: K, valor: Formulario[K]) => {
     setFormulario(atual => ({ ...atual, [chave]: valor }))
   }
 
@@ -383,7 +383,7 @@ export default function Conteudos() {
       {carregando && <p className="mt-5 text-sm text-white/60">Carregando materiais...</p>}
 
       <div className="mt-4 space-y-4">
-        {secoesVisiveis.map((secao, indice) => {
+        {secoesVisiveis.map(secao => {
           const itens = filtrados.filter(m => m.secao_id === secao.id)
             .sort((a, b) => a.codigo.localeCompare(b.codigo, 'pt-BR', { numeric: true }))
           const aberta = abertas[secao.id] !== false
