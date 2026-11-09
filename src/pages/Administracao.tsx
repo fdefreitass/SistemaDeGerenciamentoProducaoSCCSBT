@@ -54,7 +54,7 @@ export default function Administracao() {
 
   if (!administrador) {
     return (
-      <section className="mx-auto max-w-6xl px-8 py-20">
+      <section className="scc-fluid-content py-20">
         <h1 className="text-3xl font-bold">Acesso restrito</h1>
         <p className="mt-3 text-white/50">
           Esta área é exclusiva para administradores.
@@ -75,7 +75,7 @@ export default function Administracao() {
   const ativos = usuarios.filter((u) => u.ativo).length
 
   return (
-    <section className="mx-auto max-w-7xl px-6 py-12">
+    <section className="scc-fluid-content py-12">
       <Link to="/" className="text-sm text-white/50 hover:text-white">
         ← Voltar ao início
       </Link>
