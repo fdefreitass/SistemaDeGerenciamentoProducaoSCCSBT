@@ -1,37 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import {
-  ArrowRight, ArrowUpRight, ArchiveX, CheckCircle2, Clapperboard,
-  Clock3, LibraryBig, RefreshCcw, ShieldCheck, Activity, Layers3,
-} from 'lucide-react'
-import { useAuth } from '../context/AuthContext'
+import { ArrowRight, Clapperboard, Film, Layers3, RefreshCcw, ArchiveX, CheckCircle2 } from 'lucide-react'
 import { demoMateriais, demoSecoes } from '../data/demo'
 import { modoDemo } from '../lib/supabase'
 import { listarDados } from '../services/materiais'
 import type { Material, Secao } from '../types/materiais'
 
-const modulos = [
-  { rota: '/conteudos', titulo: 'Central de materiais', descricao: 'Organize e acompanhe os conteúdos', cor: 'blue', Icone: LibraryBig },
-  { rota: '/gravacao', titulo: 'Gravações', descricao: 'Demandas e produções em andamento', cor: 'orange', Icone: Clapperboard },
-  { rota: '/atualizacao', titulo: 'Atualizações', descricao: 'Mantenha as chamadas sempre atuais', cor: 'purple', Icone: RefreshCcw },
-  { rota: '/remocao', titulo: 'Remoções', descricao: 'Controle o que saiu da grade', cor: 'pink', Icone: ArchiveX },
-] as const
-
-const nomeStatus: Record<string, string> = {
-  em_utilizacao: 'Em utilização',
-  fora_da_grade: 'Fora da grade',
-  aguardando_entrada: 'Aguardando entrada',
-  removido: 'Removido',
-  em_dia: 'Em dia',
-  precisa_atualizar: 'Precisa atualizar',
-  precisa_gravar: 'Precisa gravar',
-  em_producao: 'Em produção',
-  aguardando_aprovacao: 'Aguardando aprovação',
-  pronto_para_envio: 'Pronto para envio',
-}
-
 export default function Home() {
-  const { perfil } = useAuth()
   const [materiais, setMateriais] = useState<Material[]>(modoDemo ? demoMateriais : [])
   const [secoes, setSecoes] = useState<Secao[]>(modoDemo ? demoSecoes : [])
   const [carregando, setCarregando] = useState(!modoDemo)
@@ -40,164 +15,163 @@ export default function Home() {
   useEffect(() => {
     if (modoDemo) return
     let ativo = true
-    listarDados()
-      .then(dados => {
-        if (!ativo) return
-        setMateriais(dados.materiais)
-        setSecoes(dados.secoes)
-      })
-      .catch(() => { if (ativo) setErro('Não foi possível carregar os indicadores. Confira sua conexão e suas permissões.') })
-      .finally(() => { if (ativo) setCarregando(false) })
+    listarDados().then(dados => {
+      if (!ativo) return
+      setMateriais(dados.materiais)
+      setSecoes(dados.secoes)
+    }).catch(() => {
+      if (ativo) setErro('Não foi possível consultar os indicadores da produção.')
+    }).finally(() => {
+      if (ativo) setCarregando(false)
+    })
     return () => { ativo = false }
   }, [])
 
-  const totais = useMemo(() => ({
-    todos: materiais.length,
-    grade: materiais.filter(m => m.status_grade === 'em_utilizacao').length,
-    atualizacao: materiais.filter(m => m.status_producao === 'precisa_atualizar').length,
-    gravacao: materiais.filter(m => m.status_producao === 'precisa_gravar').length,
-    remocao: materiais.filter(m => m.status_grade === 'removido' || m.status_grade === 'fora_da_grade').length,
+  const contagem = useMemo(() => ({
+    total: materiais.length,
+    emGrade: materiais.filter(item => item.status_grade === 'em_utilizacao').length,
+    atualizar: materiais.filter(item => item.status_producao === 'precisa_atualizar').length,
+    gravar: materiais.filter(item => item.status_producao === 'precisa_gravar').length,
+    remover: materiais.filter(item => item.status_grade === 'removido' || item.status_grade === 'fora_da_grade').length,
   }), [materiais])
 
-  const recentes = materiais.slice(-5).reverse()
-  const taxa = totais.todos ? Math.round(totais.grade / totais.todos * 100) : 0
-
   return (
-    <div className="scc-page mx-auto max-w-[1500px] px-5 py-8 md:px-9 md:py-11">
-      <div className="mb-9 flex flex-wrap items-start justify-between gap-5">
-        <div>
-          <div className="mb-4 flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-blue-400 shadow-[0_0_12px_rgba(96,165,250,.5)]" />
-            <span className="scc-eyebrow">CENTRAL DE PRODUÇÃO · SCC SBT</span>
-          </div>
-          <h1 className="text-3xl font-extrabold tracking-tight md:text-[42px]">
-            Visão geral<span className="text-blue-400">.</span>
-          </h1>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-white/45 md:text-base">
-            Acompanhe a situação dos materiais, identifique pendências e mantenha a operação organizada em um só lugar.
+    <main>
+      <section className="scc-showcase relative isolate mx-auto max-w-[1760px] overflow-hidden" aria-labelledby="boas-vindas">
+        <div className="scc-showcase-glow" aria-hidden="true" />
+        <svg className="scc-spectrum pointer-events-none absolute" viewBox="0 0 1680 690" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+          <defs>
+            <linearGradient id="faixa-scc" x1="0" y1="0.8" x2="1" y2="0.1">
+              <stop offset="0%" stopColor="#f7559f" />
+              <stop offset="14%" stopColor="#ff8a00" />
+              <stop offset="28%" stopColor="#ee0785" />
+              <stop offset="43%" stopColor="#7c22db" />
+              <stop offset="56%" stopColor="#2059e8" />
+              <stop offset="68%" stopColor="#00a9c9" />
+              <stop offset="80%" stopColor="#30c755" />
+              <stop offset="92%" stopColor="#bde50e" />
+              <stop offset="100%" stopColor="#ffde00" />
+            </linearGradient>
+            <filter id="faixa-brilho" x="-15%" y="-35%" width="130%" height="170%">
+              <feGaussianBlur stdDeviation="27" />
+            </filter>
+          </defs>
+          <path
+            d="M -140 455 C -30 590 125 738 258 606 C 365 500 364 341 461 404 C 566 473 591 674 705 637 C 850 592 807 165 987 140 C 1140 119 1120 436 1194 428 C 1312 413 1386 173 1790 269"
+            fill="none" stroke="url(#faixa-scc)" strokeWidth="144" strokeLinecap="round" opacity=".35" filter="url(#faixa-brilho)"
+          />
+          <path
+            d="M -140 455 C -30 590 125 738 258 606 C 365 500 364 341 461 404 C 566 473 591 674 705 637 C 850 592 807 165 987 140 C 1140 119 1120 436 1194 428 C 1312 413 1386 173 1790 269"
+            fill="none" stroke="url(#faixa-scc)" strokeWidth="113" strokeLinecap="round"
+          />
+        </svg>
+
+        <div className="scc-showcase-content relative z-10 mx-auto w-full max-w-[1270px] px-7 sm:px-12">
+          <p className="scc-showcase-eyebrow">BEM-VINDO AO SEU ESPAÇO DE PRODUÇÃO</p>
+          <h1 id="boas-vindas" className="scc-showcase-heading">SEJA BEM-VINDO!</h1>
+          <p className="scc-showcase-description">
+            Esse espaço foi projetado para o controle de demandas, gestão de conteúdos
+            e para melhorar a integração entre os setores do SCC SBT!
           </p>
-          {perfil?.nome && <p className="mt-3 text-xs text-white/35">Bem-vindo, {perfil.nome}.</p>}
         </div>
-        <Link to="/conteudos" className="scc-primary flex items-center gap-2">
-          Explorar materiais <ArrowUpRight size={16} />
-        </Link>
-      </div>
 
-      {modoDemo && <div className="mb-6 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-xs font-semibold text-amber-300">Demonstração local: dados de exemplo não persistidos.</div>}
-      {erro && <div role="alert" className="mb-6 rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-sm text-red-300">{erro}</div>}
-
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {[
-          { titulo: 'Total de materiais', valor: totais.todos, Icone: Layers3, tom: 'blue' },
-          { titulo: 'Em utilização', valor: totais.grade, Icone: CheckCircle2, tom: 'green' },
-          { titulo: 'Precisam atualizar', valor: totais.atualizacao, Icone: RefreshCcw, tom: 'purple' },
-          { titulo: 'Precisam gravar', valor: totais.gravacao, Icone: Clapperboard, tom: 'orange' },
-        ].map(info => (
-          <div key={info.titulo} className="scc-panel group relative overflow-hidden p-5 transition-all hover:-translate-y-0.5 hover:border-white/20 md:p-6">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-white/50">{info.titulo}</span>
-              <span className={`scc-icon scc-icon-${info.tom}`}><info.Icone size={18} strokeWidth={1.8} /></span>
-            </div>
-            <div className="mt-4 text-[38px] font-extrabold tracking-tight tabular-nums">{carregando ? '—' : info.valor}</div>
-            <div className="mt-4 h-px bg-white/[0.07]" />
-            <p className="mt-3 text-[11px] text-white/35">Informações dos materiais cadastrados</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-7 grid gap-6 xl:grid-cols-[1.7fr_1fr]">
-        <section className="scc-panel overflow-hidden">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.07] px-6 py-6">
-            <div>
-              <p className="scc-eyebrow">CONTROLE OPERACIONAL</p>
-              <h2 className="mt-2 text-lg font-bold">Visão dos materiais</h2>
-            </div>
-            <Link to="/conteudos" className="flex items-center gap-1.5 text-xs font-semibold text-blue-400 hover:text-blue-300">
-              Ver todos <ArrowRight size={15} />
-            </Link>
-          </div>
-          {carregando ? (
-            <p className="px-6 py-10 text-sm text-white/40">Carregando materiais...</p>
-          ) : recentes.length === 0 ? (
-            <div className="px-6 py-14 text-center">
-              <LibraryBig className="mx-auto mb-4 text-white/25" size={34} />
-              <p className="font-semibold text-white/75">Nenhum material cadastrado</p>
-              <p className="mt-2 text-xs text-white/40">Os materiais aparecerão aqui quando forem adicionados à central.</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-white/[0.055]">
-              {recentes.map(material => (
-                <div key={material.id} className="flex items-center gap-4 px-6 py-4 transition-colors hover:bg-white/[0.025]">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-400/10 text-blue-300"><Clapperboard size={18} /></span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-white/85">{material.titulo}</p>
-                    <p className="mt-1 truncate text-[11px] text-white/40">
-                      {secoes.find(s => s.id === material.secao_id)?.nome ?? 'Seção'} · {material.codigo} · {material.duracao_segundos}s
-                    </p>
-                  </div>
-                  <span className="hidden rounded-lg border border-white/[0.09] bg-white/[0.035] px-2.5 py-1.5 text-[10px] font-semibold text-white/60 sm:inline">
-                    {nomeStatus[material.status_producao] ?? material.status_producao}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <section className="scc-panel flex flex-col p-6">
-          <p className="scc-eyebrow">PANORAMA DA GRADE</p>
-          <h2 className="mt-2 text-lg font-bold">Situação operacional</h2>
-          <div className="mt-8 flex items-center gap-5">
-            <div className="relative flex h-28 w-28 shrink-0 items-center justify-center rounded-full" style={{ background: `conic-gradient(#4d8bff ${taxa}%,rgba(255,255,255,.07) ${taxa}% 100%)` }}>
-              <div className="flex h-23 w-23 flex-col items-center justify-center rounded-full bg-[#121925]">
-                <strong className="text-2xl font-extrabold">{carregando ? '—' : `${taxa}%`}</strong>
-                <small className="text-[10px] text-white/40">em uso</small>
-              </div>
-            </div>
-            <div>
-              <p className="text-sm font-semibold">Materiais na grade</p>
-              <p className="mt-2 text-xs leading-5 text-white/40">Proporção dos materiais cadastrados que estão em utilização.</p>
-            </div>
-          </div>
-          <div className="mt-8 space-y-4 border-t border-white/[0.07] pt-6">
-            {[
-              { nome: 'Em utilização', valor: totais.grade, cor: 'bg-blue-400' },
-              { nome: 'Fora da grade / removidos', valor: totais.remocao, cor: 'bg-pink-400' },
-              { nome: 'Total de seções', valor: secoes.length, cor: 'bg-violet-400' },
-            ].map(item => (
-              <div key={item.nome} className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-2.5 text-white/55"><i className={`h-2 w-2 rounded-full ${item.cor}`} />{item.nome}</span>
-                <strong className="tabular-nums text-white/85">{carregando ? '—' : item.valor}</strong>
-              </div>
-            ))}
-          </div>
-          <div className="mt-auto pt-9">
-            <p className="flex items-center gap-2 text-[11px] text-white/35"><ShieldCheck size={14} /> Indicadores calculados com base nos registros acessíveis.</p>
-          </div>
-        </section>
-      </div>
-
-      <section className="mt-7">
-        <div className="mb-5 flex items-center gap-3">
-          <Activity size={17} className="text-blue-400" />
-          <h2 className="text-base font-bold">Acesso rápido</h2>
+        <div className="scc-showcase-cards relative z-20 mx-auto max-w-[1250px]">
+          <Link className="scc-showcase-card scc-news-card" to="/conteudos?busca=SCC%20NEWS" aria-label="Ver materiais de SCC News">
+            <span className="scc-news-deco" aria-hidden="true" />
+            <span className="scc-news-logo"><strong>SCC</strong><em>NEWS</em></span>
+            <span className="scc-card-hint">Explorar materiais <ArrowRight size={14} /></span>
+          </Link>
+          <Link className="scc-showcase-card scc-meiodia-card" to="/conteudos?busca=SCC%20MEIO-DIA" aria-label="Ver materiais do SCC Meio-Dia">
+            <span className="scc-meiodia-top">SCC</span>
+            <span className="scc-meiodia-logo">MEI<span className="scc-sol">O</span>DIA</span>
+            <span className="scc-card-hint">Explorar materiais <ArrowRight size={14} /></span>
+          </Link>
+          <Link className="scc-showcase-card scc-queso-card" to="/conteudos?busca=QUESO" aria-label="Buscar materiais de A tarde é Queso">
+            <span className="scc-queso-sparks" aria-hidden="true">✦ · ✧</span>
+            <span className="scc-queso-top">A TARDE É</span>
+            <span className="scc-queso-logo"><b>Q</b><b>U</b><b>E</b><b>S</b><b>O</b></span>
+            <span className="scc-card-hint">Explorar materiais <ArrowRight size={14} /></span>
+          </Link>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {modulos.map(({ rota, titulo, descricao, cor, Icone }) => (
-            <Link key={rota} to={rota} className="scc-panel group flex items-start gap-4 p-5 transition-all hover:-translate-y-0.5 hover:border-white/20">
-              <span className={`scc-icon scc-icon-${cor}`}><Icone size={20} strokeWidth={1.8} /></span>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-white/90">{titulo}</p>
-                <p className="mt-2 text-xs leading-5 text-white/40">{descricao}</p>
-              </div>
-              <ArrowUpRight size={15} className="mt-1 shrink-0 text-white/25 transition-colors group-hover:text-blue-400" />
-            </Link>
-          ))}
+
+        <div className="scc-showcase-signature" aria-hidden="true">
+          <div className="scc-showcase-mark">SCC<span>SBT</span></div>
+          <div className="scc-showcase-mark-sub">A TV MAIS QUERIDA DE SANTA CATARINA</div>
         </div>
       </section>
-      <footer className="mt-12 flex items-center justify-between border-t border-white/[0.06] pt-6 text-[11px] text-white/25">
-        <span>SCC Produção · SCC SBT</span><span className="flex items-center gap-1.5"><Clock3 size={12} /> Gestão de materiais</span>
-      </footer>
-    </div>
+
+      <section className="scc-home-lower mx-auto max-w-[1460px] px-5 pb-20 pt-9 sm:px-9" aria-label="Painel operacional">
+        <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-blue-400">CENTRAL OPERACIONAL</p>
+            <h2 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">Sua produção em um só lugar.</h2>
+            <p className="mt-2 text-sm text-white/45">Indicadores calculados com os materiais que você já cadastrou.</p>
+          </div>
+          <Link to="/conteudos" className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold transition hover:bg-white/10">
+            Abrir central de materiais <ArrowRight size={16} />
+          </Link>
+        </div>
+
+        {erro && <p className="mb-5 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-300" role="alert">{erro}</p>}
+        {modoDemo && <p className="mb-5 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-300">Demonstração local: as alterações não são persistidas.</p>}
+
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            { label: 'Materiais cadastrados', numero: contagem.total, Icone: Layers3, cor: 'text-blue-400' },
+            { label: 'Em utilização', numero: contagem.emGrade, Icone: CheckCircle2, cor: 'text-green-400' },
+            { label: 'Precisam atualizar', numero: contagem.atualizar, Icone: RefreshCcw, cor: 'text-violet-400' },
+            { label: 'Precisam gravar', numero: contagem.gravar, Icone: Clapperboard, cor: 'text-orange-400' },
+          ].map(indicador => (
+            <div key={indicador.label} className="scc-stat-card group">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-semibold text-white/55">{indicador.label}</p>
+                <indicador.Icone size={19} className={indicador.cor} />
+              </div>
+              <p className="mt-6 text-4xl font-extrabold tracking-tight tabular-nums">{carregando ? '—' : indicador.numero}</p>
+              <div className="mt-6 h-1 w-10 rounded-full bg-white/15 transition-all group-hover:w-16 group-hover:bg-blue-400/60" />
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-7 grid gap-4 lg:grid-cols-[1.3fr_1fr]">
+          <div className="scc-stat-card">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-lg font-bold">Programas e seções</h3>
+              <Film size={19} className="text-blue-400" />
+            </div>
+            <p className="mt-2 text-xs text-white/40">Acesse os conteúdos organizados na Central de Materiais.</p>
+            {carregando ? <p className="mt-8 text-sm text-white/40">Carregando seções...</p> : secoes.length ? (
+              <div className="mt-6 flex flex-wrap gap-2">
+                {secoes.map(secao => (
+                  <Link key={secao.id} to={`/conteudos?busca=${encodeURIComponent(secao.nome)}`} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-bold transition hover:border-blue-400/35 hover:bg-blue-400/10">
+                    {secao.nome}
+                  </Link>
+                ))}
+              </div>
+            ) : <p className="mt-7 text-sm text-white/35">Nenhuma seção cadastrada ainda.</p>}
+          </div>
+          <div className="scc-stat-card flex flex-col justify-between">
+            <div>
+              <h3 className="text-lg font-bold">Fluxo de produção</h3>
+              <p className="mt-2 text-xs text-white/40">Acompanhe gravações, atualizações e remoções.</p>
+            </div>
+            <div className="mt-6 grid gap-2">
+              {[
+                { to: '/gravacao', titulo: 'Gravação', Icone: Clapperboard },
+                { to: '/atualizacao', titulo: 'Atualização', Icone: RefreshCcw },
+                { to: '/remocao', titulo: 'Remoção', Icone: ArchiveX },
+              ].map(item => (
+                <Link key={item.to} to={item.to} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/75 transition hover:bg-white/10">
+                  <item.Icone size={17} className="text-blue-400" />
+                  <span className="flex-1">{item.titulo}</span>
+                  <ArrowRight size={15} className="text-white/40" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+        <p className="mt-10 text-center text-[11px] text-white/25">SCC Produção · Gestão de conteúdos e demandas</p>
+      </section>
+    </main>
   )
 }
