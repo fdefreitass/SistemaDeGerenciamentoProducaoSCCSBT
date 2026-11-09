@@ -55,6 +55,11 @@ export default function Login() {
             <h1 id="titulo-login" className="scc-login-title font-extrabold tracking-tight">Bem-vindo de volta.</h1>
             <p className="mt-2 text-sm text-white/50">Entre com sua conta autorizada para continuar.</p>
           </div>
+          {new URLSearchParams(window.location.search).get('senha') === 'alterada' && (
+            <p role="status" className="mt-5 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3 text-center text-sm text-emerald-200">
+              Senha alterada com sucesso. Entre novamente com sua nova senha.
+            </p>
+          )}
           <form onSubmit={entrar} className="scc-login-fields mt-8 space-y-5">
             <div>
               <label htmlFor="email" className="mb-2 block text-xs font-semibold text-white/75">E-mail corporativo</label>
