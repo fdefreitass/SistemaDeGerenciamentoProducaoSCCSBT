@@ -208,7 +208,7 @@ export default function Conteudos() {
   )
 
   return (
-    <div className="mx-auto max-w-[1460px] px-5 pb-20 pt-9 md:px-8">
+    <div className="scc-fluid-content pb-20 pt-9">
       <Link to="/painel" className="text-sm text-white/50 hover:text-white">← Voltar ao painel</Link>
       <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
         <div>
