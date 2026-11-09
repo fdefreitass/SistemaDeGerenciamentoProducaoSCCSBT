@@ -558,8 +558,22 @@ body { overflow-x: hidden; }
   max-width: none;
   margin-inline: auto;
 }
-.scc-app-header-inner { padding-inline: var(--scc-page-gutter); }
-.scc-app-crumbs { padding-inline: var(--scc-page-gutter); }
+.scc-app-header-inner {
+  padding-inline: var(--scc-page-gutter);
+  min-height: clamp(82px, 7svh, 140px);
+}
+.scc-app-header-inner > div:nth-child(2) {
+  height: clamp(48px, 4svh, 82px);
+  font-size: clamp(12px, .78vw, 22px);
+}
+.scc-app-header-inner button {
+  min-height: clamp(43px, 3.3svh, 67px);
+  font-size: clamp(12px, .75vw, 19px);
+}
+.scc-app-crumbs {
+  padding-inline: var(--scc-page-gutter);
+  font-size: clamp(12px, .65vw, 18px);
+}
 
 @media (min-width: 2560px) {
   .scc-fluid-content .text-xs { font-size: 15px; }
