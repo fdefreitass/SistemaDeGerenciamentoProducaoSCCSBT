@@ -102,7 +102,7 @@ export default function Administracao() {
         ].map((indicador) => (
           <div
             key={indicador.titulo}
-            className="rounded-2xl border border-white/10 bg-[#151515] p-6"
+            className="rounded-2xl border border-white/10 bg-bg-[#050505] p-6"
           >
             <p className="text-xs font-semibold text-white/50">
               {indicador.titulo}
@@ -120,13 +120,13 @@ export default function Administracao() {
           placeholder="Pesquisar nome ou perfil..."
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
-          className="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-3 text-sm outline-none focus:border-blue-500"
+          className="w-full rounded-xl border border-white/10 bg-bg-[#050505] px-4 py-3 text-sm outline-none focus:border-blue-500"
         />
       </div>
 
       <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10">
         <table className="w-full min-w-160 text-left text-sm">
-          <thead className="bg-[#202020] text-xs text-white/50">
+          <thead className="bg-bg-[#050505] text-xs text-white/50">
             <tr>
               <th className="px-5 py-4">NOME</th>
               <th className="px-5 py-4">PERFIL</th>
