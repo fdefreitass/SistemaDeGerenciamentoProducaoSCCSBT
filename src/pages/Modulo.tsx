@@ -81,29 +81,29 @@ export default function Modulo({ titulo, descricao, cor }: ModuloProps) {
 
       {erro && <p role="alert" className="mt-7 rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-sm text-red-300">{erro}</p>}
       <div className="mt-9 grid gap-4 sm:grid-cols-3">
-        <div className="relative overflow-hidden rounded-[22px] border border-white/10 bg-[#141517] p-6">
+        <div className="relative overflow-hidden rounded-[22px] border border-white/10 bg-bg-[#050505] p-6">
           <div className="absolute left-0 top-0 h-1 w-full" style={{ backgroundColor: cor }}/>
           <span className="text-xs font-semibold text-white/50">Materiais nesta etapa</span>
           <p className="mt-5 text-4xl font-extrabold tabular-nums">{carregando ? '—' : itens.length}</p>
         </div>
-        <div className="rounded-[22px] border border-white/10 bg-[#141517] p-6">
+        <div className="rounded-[22px] border border-white/10 bg-bg-[#050505] p-6">
           <span className="text-xs font-semibold text-white/50">Seções cadastradas</span>
           <p className="mt-5 text-4xl font-extrabold tabular-nums">{carregando ? '—' : secoes.length}</p>
         </div>
-        <div className="rounded-[22px] border border-white/10 bg-[#141517] p-6">
+        <div className="rounded-[22px] border border-white/10 bg-bg-[#050505] p-6">
           <span className="text-xs font-semibold text-white/50">Materiais na central</span>
           <p className="mt-5 text-4xl font-extrabold tabular-nums">{carregando ? '—' : materiais.length}</p>
         </div>
       </div>
 
-      <section className="mt-8 overflow-hidden rounded-[24px] border border-white/10 bg-[#141517]">
+      <section className="mt-8 overflow-hidden rounded-[24px] border border-white/10 bg-bg-[#050505]">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/[.08] px-6 py-5">
           <div>
             <h2 className="text-lg font-bold">Materiais relacionados</h2>
             <p className="mt-1 text-xs text-white/40">Visualização da etapa atual, com dados da sua Central de Materiais.</p>
           </div>
           <label className="sr-only" htmlFor="busca-modulo">Pesquisar materiais</label>
-          <input id="busca-modulo" type="search" placeholder="Pesquisar nesta etapa..." value={busca} onChange={e => setBusca(e.target.value)} className="w-full rounded-xl border border-white/10 bg-[#0a0b0d] px-4 py-3 text-sm outline-none focus:border-white/30 sm:max-w-68" />
+          <input id="busca-modulo" type="search" placeholder="Pesquisar nesta etapa..." value={busca} onChange={e => setBusca(e.target.value)} className="w-full rounded-xl border border-white/10 bg-bg-[#050505] px-4 py-3 text-sm outline-none focus:border-white/30 sm:max-w-68" />
         </div>
         {carregando ? (
           <p className="p-10 text-center text-sm text-white/45">Carregando dados...</p>
@@ -124,7 +124,7 @@ export default function Modulo({ titulo, descricao, cor }: ModuloProps) {
                     <p className="truncate text-sm font-semibold">{m.titulo}</p>
                     <p className="mt-1 text-[11px] text-white/45">{secao?.nome ?? 'Seção'} · {m.codigo} · {m.duracao_segundos}s</p>
                   </div>
-                  <span className="rounded-lg border border-white/10 bg-[#0e0f11] px-3 py-2 text-[11px] text-white/65">{nomesStatus[m.status_producao] ?? m.status_producao}</span>
+                  <span className="rounded-lg border border-white/10 bg-bg-[#050505] px-3 py-2 text-[11px] text-white/65">{nomesStatus[m.status_producao] ?? m.status_producao}</span>
                   <Link to={`/conteudos?busca=${encodeURIComponent(m.codigo)}`} className="flex items-center gap-1.5 text-xs font-semibold hover:text-white" style={{ color: cor }}>Ver na central <ArrowRight size={15}/></Link>
                 </div>
               )
