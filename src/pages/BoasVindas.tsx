@@ -20,7 +20,7 @@ export default function BoasVindas() {
         <div className="scc-brand-title mx-auto hidden w-full items-center justify-center rounded-2xl border border-white/[0.05] bg-[#161616] font-extrabold tracking-[.12em] text-white/90 md:flex">
           PRODUÇÃO SCC SBT
         </div>
-        <Link to={destino} className="scc-brand-action ml-auto inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-white text-xs font-extrabold text-black transition hover:bg-white/85">
+        <Link to={destino} className="scc-brand-action scc-brand-action-quiet ml-auto inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.07] text-xs font-semibold text-white/80 transition hover:border-white/25 hover:bg-white/[0.12] hover:text-white">
           {autorizado ? 'ACESSAR PAINEL' : 'EFETUAR LOGIN'} <ArrowUpRight size={15} />
         </Link>
       </header>
@@ -69,8 +69,7 @@ export default function BoasVindas() {
         </Link>
       </section>
       <footer className="scc-landing-footer relative z-10 flex w-full items-center justify-between gap-3 border-t border-white/[.07] text-[11px] text-white/30">
-        <span>SCC Produção · Tecnologia a serviço da nossa equipe.</span>
-        <span className="hidden sm:inline">SCC SBT · Santa Catarina</span>
+        <span className="w-full text-center">Todos direitos reservados ao SCC SBT ®</span>
       </footer>
     </main>
   )
