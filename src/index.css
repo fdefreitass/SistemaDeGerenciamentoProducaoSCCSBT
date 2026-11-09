@@ -1016,3 +1016,51 @@ body { overflow-x: hidden; }
 .scc-materials-overview .scc-materials-stat:hover {
   background-color: #232323;
 }
+
+
+/* Indicadores interativos: glow vinculado à cor definida no Supabase. */
+.scc-materials-overview button.scc-materials-stat {
+  --kpi-cor: #e2fa00;
+  isolation: isolate;
+  cursor: pointer;
+  background-color: #141414;
+  transition: transform .23s ease, box-shadow .23s ease, border-color .23s ease, background-color .23s ease;
+}
+.scc-materials-overview button.scc-materials-stat::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(ellipse 90% 110% at 87% 0%, color-mix(in srgb, var(--kpi-cor) 24%, transparent), transparent 80%);
+  transition: opacity .23s ease;
+}
+.scc-materials-overview button.scc-materials-stat > p,
+.scc-materials-overview button.scc-materials-stat > div {
+  position: relative;
+  z-index: 1;
+}
+.scc-materials-overview button.scc-materials-stat > span.absolute { z-index: 2; }
+.scc-materials-overview button.scc-materials-stat:hover,
+.scc-materials-overview button.scc-materials-stat:focus-visible {
+  background-color: #1a1a1a;
+  border-color: color-mix(in srgb, var(--kpi-cor) 48%, transparent);
+  transform: translateY(-3px);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--kpi-cor) 24%, transparent),
+    0 12px 34px -12px color-mix(in srgb, var(--kpi-cor) 44%, transparent),
+    inset 0 0 24px color-mix(in srgb, var(--kpi-cor) 12%, transparent);
+}
+.scc-materials-overview button.scc-materials-stat:hover::before,
+.scc-materials-overview button.scc-materials-stat:focus-visible::before { opacity: 1; }
+.scc-materials-overview button.scc-materials-stat:focus-visible {
+  outline: 2px solid var(--kpi-cor);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scc-materials-overview button.scc-materials-stat,
+  .scc-materials-overview button.scc-materials-stat::before { transition: none; }
+  .scc-materials-overview button.scc-materials-stat:hover,
+  .scc-materials-overview button.scc-materials-stat:focus-visible { transform: none; }
+}
