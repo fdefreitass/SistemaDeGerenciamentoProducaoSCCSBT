@@ -1003,3 +1003,16 @@ body { overflow-x: hidden; }
     backdrop-filter: blur(14px);
   }
 }
+
+/* Topo da Central sempre opaco; a área inferior mantém o vidro fosco. */
+.scc-materials-overview {
+  background-color: #1f1f1f;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.scc-materials-overview .scc-materials-stat {
+  background-color: #141414;
+}
+.scc-materials-overview .scc-materials-stat:hover {
+  background-color: #232323;
+}
