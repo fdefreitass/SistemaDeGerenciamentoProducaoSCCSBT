@@ -20,7 +20,7 @@ export type Perfil = {
   troca_senha_pendente: boolean
 }
 
-export type Secao = { id: string; nome: string }
+export type Secao = { id: string; nome: string; cor_hex?: string | null }
 export type Material = {
   id: string
   secao_id: string
