@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
+import { modoDemo, supabase } from './supabase'
 
-// Cores de apresentação armazenadas somente neste navegador.
-// Não modificam a estrutura das seções nem as permissões do Supabase.
+// A cor oficial fica em public.secoes.cor_hex (migração 03).
+// Cache local é apenas um fallback no período anterior à aplicação da migração.
 const CHAVE = 'scc-producao-cores-secoes-v1'
 const EVENTO = 'scc-producao-cores-atualizadas'
 
@@ -10,12 +11,11 @@ export const paletaSecoes = [
   '#00d6b2', '#ff5796', '#ffc64f', '#70d98f',
 ]
 
-function corValida(cor: string): boolean {
-  return /^#[\da-fA-F]{6}$/.test(cor)
+function corValida(cor: unknown): cor is string {
+  return typeof cor === 'string' && /^#[\da-fA-F]{6}$/.test(cor)
 }
 
-function carregar(): Record<string, string> {
-  if (typeof window === 'undefined') return {}
+function carregarCache(): Record<string, string> {
   try {
     const valor = window.localStorage.getItem(CHAVE)
     if (!valor) return {}
@@ -23,7 +23,7 @@ function carregar(): Record<string, string> {
     if (!entrada || typeof entrada !== 'object' || Array.isArray(entrada)) return {}
     const resultado: Record<string, string> = {}
     Object.entries(entrada).forEach(([id, cor]) => {
-      if (typeof cor === 'string' && corValida(cor)) resultado[id] = cor
+      if (corValida(cor)) resultado[id] = cor
     })
     return resultado
   } catch {
@@ -31,31 +31,67 @@ function carregar(): Record<string, string> {
   }
 }
 
+function salvarCache(cores: Record<string, string>) {
+  try { window.localStorage.setItem(CHAVE, JSON.stringify(cores)) } catch { /* opcional */ }
+}
+
 export function corDaSecao(cores: Record<string, string>, id: string, indice: number) {
   return cores[id] ?? paletaSecoes[indice % paletaSecoes.length]
 }
 
 export function useCoresSecoes() {
-  const [cores, setCores] = useState<Record<string, string>>(carregar)
+  const [cores, setCores] = useState<Record<string, string>>(carregarCache)
 
   useEffect(() => {
-    const atualizar = () => setCores(carregar())
-    window.addEventListener('storage', atualizar)
-    window.addEventListener(EVENTO, atualizar)
+    let ativo = true
+
+    async function carregarDoBanco() {
+      if (modoDemo || !supabase) {
+        if (ativo) setCores(carregarCache())
+        return
+      }
+      const { data, error } = await supabase.from('secoes').select('id, cor_hex')
+      if (!ativo) return
+      if (error) {
+        // Compatibilidade com o banco ainda sem a migração 03.
+        // Não fingimos que a cor foi salva no servidor.
+        setCores(carregarCache())
+        return
+      }
+      const globais: Record<string, string> = {}
+      for (const item of data ?? []) {
+        if (corValida(item.cor_hex)) globais[item.id] = item.cor_hex
+      }
+      setCores(globais)
+      salvarCache(globais)
+    }
+
+    const sincronizar = () => { void carregarDoBanco() }
+    const aoMudarOutraAba = (e: StorageEvent) => {
+      if (e.key === CHAVE) sincronizar()
+    }
+    window.addEventListener(EVENTO, sincronizar)
+    window.addEventListener('storage', aoMudarOutraAba)
+    void carregarDoBanco()
     return () => {
-      window.removeEventListener('storage', atualizar)
-      window.removeEventListener(EVENTO, atualizar)
+      ativo = false
+      window.removeEventListener(EVENTO, sincronizar)
+      window.removeEventListener('storage', aoMudarOutraAba)
     }
   }, [])
 
-  function definirCor(id: string, cor: string) {
-    if (!corValida(cor)) return
-    const proximas = { ...carregar(), [id]: cor }
-    try {
-      window.localStorage.setItem(CHAVE, JSON.stringify(proximas))
-    } catch {
-      // O preview continua utilizável mesmo se o navegador bloquear armazenamento.
+  async function definirCor(id: string, cor: string): Promise<void> {
+    if (!corValida(cor)) throw new Error('Cor inválida.')
+
+    if (!modoDemo) {
+      if (!supabase) throw new Error('Banco de dados não configurado.')
+      const { data, error } = await supabase.from('secoes')
+        .update({ cor_hex: cor }).eq('id', id).select('id, cor_hex').single()
+      if (error || !data) throw new Error('Não foi possível salvar a cor. Verifique as permissões e a migração 03.')
     }
+
+    const proximas = { ...carregarCache(), [id]: cor }
+    salvarCache(proximas)
     setCores(proximas)
     window.dispatchEvent(new Event(EVENTO))
   }
