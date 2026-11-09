@@ -66,3 +66,18 @@ export async function excluirMaterial(id: string): Promise<void> {
   if (error) throw error
   if (!data) throw new Error('Exclusão não permitida ou material inexistente.')
 }
+
+/**
+ * Remove uma seção com segurança. Se existirem materiais, eles são movidos
+ * na MESMA transação para a seção de destino. Códigos repetidos impedem tudo.
+ * O servidor valida administrador ativo, não confiamos só no frontend.
+ */
+export async function removerSecaoSegura(secaoId: string, destinoId?: string): Promise<number> {
+  const { data, error } = await obterSupabase().rpc('remover_secao_segura', {
+    p_secao_id: secaoId,
+    p_destino_id: destinoId ?? null,
+  })
+  if (error) throw error
+  if (typeof data !== 'number') throw new Error('O servidor não confirmou a exclusão.')
+  return data
+}
