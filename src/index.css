@@ -733,3 +733,19 @@ body { overflow-x: hidden; }
   .scc-landing-programs .scc-showcase-card { transition: none; }
   .scc-landing-programs .scc-showcase-card:hover { transform: none; }
 }
+
+/* Boas-vindas: acesso discreto, preservando contraste e responsividade. */
+.scc-brand-action-quiet {
+  height: clamp(38px, 2.65vw, 53px);
+  padding-inline: clamp(12px, 1.05vw, 27px);
+  font-size: clamp(10px, .63vw, 14px);
+  font-weight: 650;
+  color: rgba(255, 255, 255, .82);
+  background: rgba(255, 255, 255, .075);
+  border-color: rgba(255, 255, 255, .16);
+}
+.scc-brand-action-quiet:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, .14);
+  border-color: rgba(255, 255, 255, .28);
+}
