@@ -49,7 +49,7 @@ export default function Modulo({ titulo, descricao, cor }: ModuloProps) {
 
   const itens = useMemo(() => materiais.filter(m => {
     const corresponde = titulo === 'Gravação'
-      ? ['precisa_gravar', 'em_producao', 'aguardando_aprovacao'].includes(m.status_producao)
+      ? (m.status_producao !== null && ['precisa_gravar', 'em_producao', 'aguardando_aprovacao'].includes(m.status_producao))
       : titulo === 'Atualização'
         ? m.status_producao === 'precisa_atualizar'
         : m.status_grade === 'removido' || m.status_grade === 'fora_da_grade'
