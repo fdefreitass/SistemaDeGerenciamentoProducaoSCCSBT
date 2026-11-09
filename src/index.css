@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* Identidade visual SCC Produção: uma única base escura e duas famílias. */
+@theme {
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-heading: "TikTok Sans", "Geist", ui-sans-serif, sans-serif;
+}
+
+:root { --scc-black: #050505; }
+
+
 html, body, #root {
   min-height: 100%;
 }
@@ -8,8 +17,10 @@ html { scroll-behavior: smooth; }
 
 body {
   margin: 0;
-  background: #050505;
+  background: var(--scc-black);
   color: #fff;
+  font-family: var(--font-sans);
+  font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -19,8 +30,7 @@ button { cursor: pointer; }
 .scc-showcase {
   min-height: 760px;
   background:
-    radial-gradient(ellipse 53% 45% at 54% 63%, rgba(30, 30, 35, .23), transparent 76%),
-    linear-gradient(180deg, #030303 0%, #090909 65%, #030303 100%);
+    var(--scc-black);
 }
 
 .scc-showcase-glow {
@@ -299,7 +309,7 @@ button { cursor: pointer; }
   border: 1px solid rgba(255,255,255,.10);
   border-radius: 20px;
   padding: 24px;
-  background: linear-gradient(150deg,#171717,#0e0e0e);
+  background: var(--scc-black);
   transition: border-color .2s;
 }
 .scc-stat-card:hover { border-color: rgba(255,255,255,.22); }
@@ -397,7 +407,7 @@ body { overflow-x: hidden; }
   height: auto;
   max-height: none;
   overflow: hidden;
-  background: radial-gradient(ellipse at 52% 54%, #171717 0%, #080808 51%, #030303 90%);
+  background: var(--scc-black);
 }
 .scc-landing-stage-glow {
   position: absolute;
@@ -848,7 +858,7 @@ body { overflow-x: hidden; }
 
 /* Central de Materiais — dois blocos autônomos e leitura escalável. */
 .scc-materials-page {
-  background: #08090b;
+  background: var(--scc-black);
   --scc-materials-spacing: clamp(20px, 2vw, 48px);
 }
 .scc-materials-overview::before {
@@ -866,7 +876,7 @@ body { overflow-x: hidden; }
 }
 .scc-materials-stat:hover {
   border-color: rgba(255,255,255,.2);
-  background-color: #0e1117;
+  background-color: rgba(255,255,255,.045);
 }
 .scc-materials-workspace {
   box-shadow: 0 22px 70px rgba(0,0,0,.1);
@@ -883,7 +893,7 @@ body { overflow-x: hidden; }
 }
 .scc-materials-page .overflow-x-auto {
   scrollbar-width: thin;
-  scrollbar-color: #40454f #101217;
+  scrollbar-color: rgba(255,255,255,.24) var(--scc-black);
 }
 @media (min-width: 2560px) {
   .scc-materials-page .scc-material-table th {
@@ -912,4 +922,21 @@ body { overflow-x: hidden; }
 }
 @media (prefers-reduced-motion: reduce) {
   .scc-materials-stat { transition: none; }
+}
+
+/* Tipografia oficial: TikTok Sans em títulos, Geist em toda a interface. */
+:is(h1, h2, h3, h4, h5, h6),
+.scc-brand-title,
+.scc-showcase-heading,
+.scc-showcase-mark,
+.scc-login-title,
+.scc-materials-stat strong,
+.scc-kpi-band strong,
+.scc-materials-page .scc-section-card strong,
+.scc-app-header-inner > div:nth-child(2) {
+  font-family: var(--font-heading);
+  font-optical-sizing: auto;
+}
+:is(button, input, select, textarea), .scc-material-table, .scc-app-crumbs {
+  font-family: var(--font-sans);
 }
