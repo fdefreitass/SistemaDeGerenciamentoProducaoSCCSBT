@@ -715,6 +715,96 @@ export default function Conteudos() {
         </section>
       </div>}
 
+      {exclusaoSecao && (() => {
+        const origem = exclusaoSecao.secao
+        const itensOrigem = materiais.filter(m => m.secao_id === origem.id)
+        const opcoesDestino = secoes.filter(s => s.id !== origem.id)
+        const colisao = destinoSecao && itensOrigem.some(m => materiais.some(outro =>
+          outro.secao_id === destinoSecao && outro.codigo === m.codigo))
+        const destinoValido = itensOrigem.length === 0 ||
+          (opcoesDestino.some(s => s.id === destinoSecao) && !colisao)
+
+        return <div className="scc-modal-backdrop fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-4 backdrop-blur-md">
+          <section role="alertdialog" aria-modal="true" aria-labelledby="titulo-excluir-secao"
+            aria-describedby="descricao-excluir-secao"
+            className="w-full max-w-[570px] rounded-[22px] border border-red-400/30 bg-[#1f1f1f] p-6 shadow-2xl sm:p-8">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <ShieldAlert size={32} className="text-red-400" />
+                <p className="mt-4 text-xs font-extrabold uppercase tracking-wider text-red-300">
+                  CONFIRMAÇÃO {exclusaoSecao.etapa} DE 2
+                </p>
+                <h2 id="titulo-excluir-secao" className="mt-2 text-2xl font-extrabold">Excluir seção?</h2>
+              </div>
+              <button type="button" disabled={salvando}
+                onClick={() => { setExclusaoSecao(null); setErro(''); setConfirmacaoSecao('') }}
+                className="rounded-lg border border-white/15 p-2 text-white/60 transition hover:text-white disabled:opacity-40"
+                aria-label="Fechar exclusão de seção"><X size={18}/></button>
+            </div>
+            <div className="mt-5 rounded-xl border border-white/10 bg-[#141414] p-4">
+              <p className="break-words text-sm font-bold text-white">{origem.nome}</p>
+              <p className="mt-1 text-xs text-white/50">
+                {itensOrigem.length} {itensOrigem.length === 1 ? 'material cadastrado' : 'materiais cadastrados'}
+              </p>
+            </div>
+
+            <p id="descricao-excluir-secao" className="mt-5 text-sm leading-6 text-white/65">
+              {exclusaoSecao.etapa === 1
+                ? itensOrigem.length > 0
+                  ? 'Os materiais não serão apagados. Escolha a seção que receberá todos eles antes de remover esta seção.'
+                  : 'A seção está vazia. Somente a seção será removida; nenhum material ou histórico será excluído.'
+                : 'Para confirmar a exclusão, digite o nome exato da seção abaixo.'}
+            </p>
+
+            {itensOrigem.length > 0 && <div className="mt-5">
+              <label htmlFor="destino-exclusao-secao" className={rotulo}>Transferir materiais para</label>
+              <select id="destino-exclusao-secao" value={destinoSecao}
+                disabled={salvando || exclusaoSecao.etapa === 2}
+                onChange={e => setDestinoSecao(e.target.value)}
+                className={campo}>
+                <option value="">Selecione outra seção...</option>
+                {opcoesDestino.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
+              </select>
+              {opcoesDestino.length === 0 && <p className="mt-2 text-xs text-amber-300">
+                Crie outra seção antes de excluir esta.
+              </p>}
+              {Boolean(colisao) && <p role="alert" className="mt-2 text-xs leading-5 text-amber-300">
+                Existem códigos repetidos no destino. Altere os códigos dos materiais antes de transferir.
+              </p>}
+            </div>}
+
+            {exclusaoSecao.etapa === 2 && <div className="mt-5">
+              <label htmlFor="confirmar-nome-secao" className={rotulo}>
+                Digite exatamente: <strong className="text-white">{origem.nome}</strong>
+              </label>
+              <input id="confirmar-nome-secao" type="text" autoComplete="off" spellCheck={false}
+                value={confirmacaoSecao} onChange={e => setConfirmacaoSecao(e.target.value)}
+                className={campo} />
+            </div>}
+
+            {erro && <p role="alert" className="mt-5 rounded-xl border border-red-400/25 bg-red-400/10 p-3 text-sm text-red-200">{erro}</p>}
+            <div className="mt-7 flex flex-wrap justify-end gap-3">
+              <button type="button" disabled={salvando}
+                onClick={() => { setExclusaoSecao(null); setConfirmacaoSecao(''); setErro('') }}
+                className="rounded-xl border border-white/15 px-5 py-3 text-sm font-bold text-white/70">
+                Cancelar
+              </button>
+              {exclusaoSecao.etapa === 1
+                ? <button type="button" disabled={!destinoValido || salvando}
+                    onClick={() => { setExclusaoSecao({ ...exclusaoSecao, etapa: 2 }); setErro('') }}
+                    className="rounded-xl border border-red-400/50 px-5 py-3 text-sm font-bold text-red-200 transition hover:bg-red-400/10 disabled:cursor-not-allowed disabled:opacity-35">
+                    Continuar para confirmação
+                  </button>
+                : <button type="button" disabled={salvando || confirmacaoSecao !== origem.nome || !destinoValido}
+                    onClick={() => void confirmarExclusaoSecao()}
+                    className="inline-flex items-center gap-2 rounded-xl bg-red-500 px-5 py-3 text-sm font-extrabold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-35">
+                    <Trash2 size={16}/>{salvando ? 'Processando...' : 'Excluir seção com segurança'}
+                  </button>}
+            </div>
+          </section>
+        </div>
+      })()}
+
       {exclusao && <div className="scc-modal-backdrop fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-4 backdrop-blur-md">
         <section role="alertdialog" aria-modal="true" aria-labelledby="titulo-excluir" aria-describedby="descricao-excluir"
           className="w-full max-w-[530px] rounded-[22px] border border-red-500/35 bg-[#1b1718] p-6 shadow-2xl sm:p-8">
