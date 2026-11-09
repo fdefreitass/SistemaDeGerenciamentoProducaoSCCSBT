@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import {
   Plus, Search, Palette, Pencil, Check, X, Copy, Trash2,
-  ShieldAlert, ChevronDown, ArrowUpRight,
+  ShieldAlert, ChevronDown, ArrowUpRight, FileVideo2,
 } from 'lucide-react'
 import { useLocation } from 'react-router'
 import { useCoresSecoes, corDaSecao, paletaSecoes } from '../lib/coresSecoes'
@@ -39,13 +39,6 @@ const formularioInicial = (secao_id: string): Formulario => ({
   status_grade: 'aguardando_entrada', status_producao: 'precisa_gravar',
   link_externo: '', observacoes: '',
 })
-
-function contraste(hex: string) {
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  return r * .299 + g * .587 + b * .114 > 155 ? '#0c0c0c' : '#ffffff'
-}
 
 function sugerirCodigo(original: Material, materiais: Material[]) {
   const existentes = new Set(materiais.filter(m => m.secao_id === original.secao_id).map(m => m.codigo))
@@ -429,20 +422,24 @@ export default function Conteudos() {
             .sort((a, b) => a.codigo.localeCompare(b.codigo, 'pt-BR', { numeric: true }))
           const aberta = abertas[secao.id] !== false
           const cor = corDaSecao(cores, secao.id, Math.max(0, secoes.findIndex(s => s.id === secao.id)))
-          const corTexto = contraste(cor)
           const editandoSecao = secaoEditando === secao.id
-          return <section key={secao.id} className="overflow-hidden rounded-[17px] border border-white/10 bg-[#141414]/95 shadow-xl shadow-black/20">
-            <div className="relative flex items-center gap-3 px-3 py-2 sm:px-5" style={{ backgroundColor: cor, color: corTexto }}>
-              <button type="button" className="flex min-w-0 flex-1 items-center justify-center gap-3 py-1 text-center"
+          return <section key={secao.id} className="scc-section-card overflow-hidden rounded-[18px] border border-white/[0.09] bg-[#17191e] shadow-[0_8px_24px_rgba(0,0,0,.12)]">
+            <div className="relative flex min-h-[76px] flex-wrap items-center gap-3 border-b border-white/[0.075] bg-[#1a1d22] px-4 py-3 sm:px-6" style={{ borderLeft: `4px solid ${cor}` }}>
+              <button type="button" className="flex min-w-0 flex-1 items-center gap-3.5 py-1 text-left text-white"
                 onClick={() => setAbertas(atual => ({ ...atual, [secao.id]: !aberta }))}
                 aria-expanded={aberta} aria-label={(aberta ? 'Recolher ' : 'Expandir ') + secao.nome}>
-                <strong className="min-w-0 truncate text-[clamp(15px,1.2vw,24px)] font-black uppercase tracking-tight">{secao.nome}</strong>
-                <span className="shrink-0 text-[clamp(12px,.95vw,18px)] font-medium italic">— {itens.length} {itens.length === 1 ? 'material' : 'materiais'}</span>
-                <ChevronDown size={17} className={'shrink-0 transition-transform ' + (aberta ? 'rotate-180' : '')} />
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border" style={{ color: cor, borderColor: cor + '44', backgroundColor: cor + '16' }}>
+                  <FileVideo2 size={19} strokeWidth={1.8} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <strong className="block truncate text-[clamp(14px,1vw,22px)] font-extrabold tracking-tight" title={secao.nome}>{secao.nome}</strong>
+                  <span className="mt-1 block text-[11px] font-medium text-white/40">{itens.length} {itens.length === 1 ? 'material' : 'materiais'} nesta seção</span>
+                </span>
+                <ChevronDown size={17} className={'shrink-0 text-white/45 transition-transform ' + (aberta ? 'rotate-180' : '')} />
               </button>
               {administrador && <button type="button" title="Personalizar seção" aria-label={'Personalizar ' + secao.nome}
                 onClick={() => { setSecaoEditando(editandoSecao ? null : secao.id); setNomeSecaoEditando(secao.nome) }}
-                className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-current/20 px-2.5 py-2 text-xs font-bold transition hover:bg-black/10">
+                className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.045] px-3.5 py-2.5 text-xs font-semibold text-white/65 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white">
                 <Palette size={15} /><span className="hidden sm:inline">Personalizar</span>
               </button>}
             </div>
@@ -483,14 +480,14 @@ export default function Conteudos() {
                   <col style={{ width: '11%' }} />
                   <col style={{ width: '12%' }} />
                 </colgroup>
-                <thead><tr className="bg-[#191919] text-[11px] font-bold uppercase tracking-wide text-white/65">
-                  {['Código', 'Título', 'Duração', 'Situação na grade', 'Status produção', 'Arquivo', 'Ações'].map(nome => <th key={nome} scope="col" className="px-4 py-3.5">{nome}</th>)}
+                <thead><tr className="bg-[#131519] text-[11px] font-bold uppercase tracking-[.04em] text-white/50">
+                  {['Código', 'Título', 'Duração', 'Situação na grade', 'Status produção', 'Arquivo', 'Ações'].map(nome => <th key={nome} scope="col" className="px-4 py-4">{nome}</th>)}
                 </tr></thead>
                 <tbody>
-                  {itens.map(m => <tr key={m.id} className="border-t border-white/[0.07] bg-[#141414] transition hover:bg-[#202020]">
-                    <td className="px-4 py-3 font-mono text-[12px] font-bold" style={{ color: cor }}>{m.codigo}</td>
-                    <td className="truncate px-4 py-3 text-[12px] font-semibold text-white/90" title={m.titulo}>{m.titulo}</td>
-                    <td className="px-4 py-3 text-xs tabular-nums text-white/75">{m.duracao_segundos}s</td>
+                  {itens.map(m => <tr key={m.id} className="border-t border-white/[0.06] bg-[#17191e] transition hover:bg-[#21242a]">
+                    <td className="px-4 py-4 font-mono text-[12px] font-bold" style={{ color: cor }}>{m.codigo}</td>
+                    <td className="px-4 py-4 text-[12px] font-semibold text-white/90"><span className="block truncate" title={m.titulo}>{m.titulo}</span></td>
+                    <td className="px-4 py-4 text-xs tabular-nums text-white/75">{m.duracao_segundos}s</td>
                     <td className="px-4 py-3">
                       <select aria-label={'Situação na grade: ' + m.titulo} value={m.status_grade}
                         disabled={!podeEditar || salvando} onChange={e => void atualizarStatus(m, 'status_grade', e.target.value as StatusGrade)}
@@ -505,12 +502,12 @@ export default function Conteudos() {
                         {statusProducao.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
                       </select>
                     </td>
-                    <td className="px-4 py-3 text-xs">
+                    <td className="px-4 py-4 text-xs">
                       {m.link_externo
                         ? <a href={m.link_externo} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-bold text-[#e2fa00] hover:underline">Abrir arquivo <ArrowUpRight size={13} /></a>
                         : <span className="text-white/35">Sem link</span>}
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="px-3 py-4">
                       {podeEditar ? <div className="flex items-center justify-end gap-1.5">
                         <button type="button" disabled={salvando} onClick={() => abrirMaterial('editar', m)}
                           title={'Editar ' + m.titulo} aria-label={'Editar ' + m.titulo}
