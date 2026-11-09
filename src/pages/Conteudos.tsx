@@ -31,7 +31,7 @@ type Formulario = {
 type Dialogo = { modo: ModoFormulario; original?: Material }
 type Exclusao = { material: Material; etapa: 1 | 2 }
 
-const campo = 'w-full min-w-0 rounded-xl border border-white/15 bg-bg-[#050505] px-4 py-3 text-sm text-white outline-none transition focus:border-[#ddfa00]/60 disabled:opacity-40'
+const campo = 'w-full min-w-0 rounded-xl border border-white/15 bg-[#050505] px-4 py-3 text-sm text-white outline-none transition focus:border-[#ddfa00]/60 disabled:opacity-40'
 const rotulo = 'mb-2 block text-xs font-semibold text-white/60'
 
 const formularioInicial = (secao_id: string): Formulario => ({
@@ -344,7 +344,7 @@ export default function Conteudos() {
   return (
     <main className="scc-materials-page scc-fluid-content min-h-[calc(100svh-90px)] pb-20 pt-7 sm:pt-9">
       {/* ÁREA 01 — cabeçalho, indicadores e filtros. */}
-      <section aria-labelledby="titulo-central" className="scc-materials-overview relative isolate overflow-hidden rounded-[26px] border border-white/[0.09] bg-bg-[#050505] p-5 shadow-[0_24px_80px_rgba(0,0,0,.16)] sm:p-7 xl:p-9">
+      <section aria-labelledby="titulo-central" className="scc-materials-overview relative isolate overflow-hidden rounded-[26px] border border-white/[0.09] bg-[#050505] p-5 shadow-[0_24px_80px_rgba(0,0,0,.16)] sm:p-7 xl:p-9">
         <div className="relative z-10 flex flex-wrap items-end justify-between gap-5">
           <div className="min-w-0">
             <p className="text-[11px] font-extrabold uppercase tracking-[.18em] text-[#e2fa00]">SCC PRODUÇÃO <span className="mx-2 text-white/30">/</span> GESTÃO DE CONTEÚDOS</p>
@@ -363,7 +363,7 @@ export default function Conteudos() {
             { titulo: 'Em utilização', total: totalUso, cor: '#36d6ad' },
             { titulo: 'Precisa atualizar', total: totalAtualizar, cor: '#b598ff' },
             { titulo: 'Precisa gravar', total: totalGravar, cor: '#ff9a60' },
-          ].map(kpi => <div key={kpi.titulo} className="scc-materials-stat relative flex min-h-[132px] flex-col justify-between overflow-hidden rounded-[18px] border border-white/[0.085] bg-bg-[#050505] px-5 py-5 sm:px-6">
+          ].map(kpi => <div key={kpi.titulo} className="scc-materials-stat relative flex min-h-[132px] flex-col justify-between overflow-hidden rounded-[18px] border border-white/[0.085] bg-[#050505] px-5 py-5 sm:px-6">
             <span className="absolute inset-x-0 top-0 h-[3px] opacity-80" style={{ backgroundColor: kpi.cor }} aria-hidden="true" />
             <p className="text-[clamp(11px,.7vw,15px)] font-semibold leading-snug text-white/55">{kpi.titulo}</p>
             <div className="mt-3 flex items-end justify-between gap-3">
@@ -388,11 +388,11 @@ export default function Conteudos() {
             <div className="relative min-w-0">
               <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/35" />
               <input aria-label="Pesquisar materiais" type="search" placeholder="Pesquisar materiais ou seções..." value={busca}
-                onChange={e => setBusca(e.target.value)} className="scc-materials-input h-12 w-full rounded-xl border border-white/10 bg-bg-[#050505] pl-12 pr-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#e2fa00]/45" />
+                onChange={e => setBusca(e.target.value)} className="scc-materials-input h-12 w-full rounded-xl border border-white/10 bg-[#050505] pl-12 pr-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#e2fa00]/45" />
             </div>
             <div>
               <label className="sr-only" htmlFor="filtro-materiais">Filtrar materiais</label>
-              <select id="filtro-materiais" className="scc-materials-input h-12 w-full rounded-xl border border-white/10 bg-bg-[#050505] px-4 text-sm text-white outline-none focus:border-[#e2fa00]/45" value={filtro}
+              <select id="filtro-materiais" className="scc-materials-input h-12 w-full rounded-xl border border-white/10 bg-[#050505] px-4 text-sm text-white outline-none focus:border-[#e2fa00]/45" value={filtro}
                 onChange={e => setFiltro(e.target.value as Filtro)}>
                 <option value="todos">Todos os materiais</option>
                 <option value="uso">Em utilização</option>
@@ -404,7 +404,7 @@ export default function Conteudos() {
           {administrador && <form onSubmit={cadastrarSecao} className="mt-3 flex flex-col gap-3 sm:flex-row">
             <input aria-label="Nome da nova seção" required minLength={2} maxLength={100} value={novaSecao}
               onChange={e => setNovaSecao(e.target.value)} placeholder="Nome da nova seção..."
-              className="scc-materials-input h-12 min-w-0 flex-1 rounded-xl border border-white/10 bg-bg-[#050505] px-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#e2fa00]/45" />
+              className="scc-materials-input h-12 min-w-0 flex-1 rounded-xl border border-white/10 bg-[#050505] px-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#e2fa00]/45" />
             <button type="submit" disabled={salvando} className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.07] px-5 text-sm font-bold text-white transition hover:bg-white/[0.13] disabled:opacity-40">
               <Plus size={16} /> Criar seção
             </button>
@@ -416,7 +416,7 @@ export default function Conteudos() {
       {sucesso && <div role="status" className="mt-5 rounded-xl border border-emerald-400/20 bg-[#103025] p-4 text-sm text-emerald-200">{sucesso}</div>}
 
       {/* ÁREA 02 — seções e dados, visualmente independentes do cabeçalho. */}
-      <section aria-labelledby="titulo-secoes" className="scc-materials-workspace mt-8 rounded-[26px] border border-white/[0.085] bg-bg-[#050505] p-4 sm:p-6 xl:p-8">
+      <section aria-labelledby="titulo-secoes" className="scc-materials-workspace mt-8 rounded-[26px] border border-white/[0.085] bg-[#050505] p-4 sm:p-6 xl:p-8">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-[10px] font-extrabold uppercase tracking-[.19em] text-white/35">ACERVO DE PRODUÇÃO</p>
@@ -438,8 +438,8 @@ export default function Conteudos() {
           const aberta = abertas[secao.id] !== false
           const cor = corDaSecao(cores, secao.id, Math.max(0, secoes.findIndex(s => s.id === secao.id)))
           const editandoSecao = secaoEditando === secao.id
-          return <section key={secao.id} className="scc-section-card overflow-hidden rounded-[18px] border border-white/[0.09] bg-bg-[#050505] shadow-[0_8px_24px_rgba(0,0,0,.12)]">
-            <div className="relative flex min-h-[76px] flex-wrap items-center gap-3 border-b border-white/[0.075] bg-bg-[#050505] px-4 py-3 sm:px-6" style={{ borderLeft: `4px solid ${cor}` }}>
+          return <section key={secao.id} className="scc-section-card overflow-hidden rounded-[18px] border border-white/[0.09] bg-[#050505] shadow-[0_8px_24px_rgba(0,0,0,.12)]">
+            <div className="relative flex min-h-[76px] flex-wrap items-center gap-3 border-b border-white/[0.075] bg-[#050505] px-4 py-3 sm:px-6" style={{ borderLeft: `4px solid ${cor}` }}>
               <button type="button" className="flex min-w-0 flex-1 items-center gap-3.5 py-1 text-left text-white"
                 onClick={() => setAbertas(atual => ({ ...atual, [secao.id]: !aberta }))}
                 aria-expanded={aberta} aria-label={(aberta ? 'Recolher ' : 'Expandir ') + secao.nome}>
@@ -459,7 +459,7 @@ export default function Conteudos() {
               </button>}
             </div>
 
-            {editandoSecao && administrador && <div className="border-b border-white/10 bg-bg-[#050505] px-5 py-5">
+            {editandoSecao && administrador && <div className="border-b border-white/10 bg-[#050505] px-5 py-5">
               <form onSubmit={e => void salvarNomeSecao(e, secao)} className="flex flex-wrap items-end gap-3">
                 <div className="min-w-[200px] flex-1">
                   <label htmlFor={'nome-' + secao.id} className={rotulo}>Nome da seção</label>
@@ -495,25 +495,25 @@ export default function Conteudos() {
                   <col style={{ width: '11%' }} />
                   <col style={{ width: '12%' }} />
                 </colgroup>
-                <thead><tr className="bg-bg-[#050505] text-[11px] font-bold uppercase tracking-[.04em] text-white/50">
+                <thead><tr className="bg-[#050505] text-[11px] font-bold uppercase tracking-[.04em] text-white/50">
                   {['Código', 'Título', 'Duração', 'Situação na grade', 'Status produção', 'Arquivo', 'Ações'].map(nome => <th key={nome} scope="col" className="px-4 py-4">{nome}</th>)}
                 </tr></thead>
                 <tbody>
-                  {itens.map(m => <tr key={m.id} className="border-t border-white/[0.06] bg-bg-[#050505] transition hover:bg-bg-white/[0.05]">
+                  {itens.map(m => <tr key={m.id} className="border-t border-white/[0.06] bg-[#050505] transition hover:bg-white/[0.05]">
                     <td className="px-4 py-4 font-mono text-[12px] font-bold" style={{ color: cor }}>{m.codigo}</td>
                     <td className="px-4 py-4 text-[12px] font-semibold text-white/90"><span className="block truncate" title={m.titulo}>{m.titulo}</span></td>
                     <td className="px-4 py-4 text-xs tabular-nums text-white/75">{m.duracao_segundos}s</td>
                     <td className="px-4 py-3">
                       <select aria-label={'Situação na grade: ' + m.titulo} value={m.status_grade}
                         disabled={!podeEditar || salvando} onChange={e => void atualizarStatus(m, 'status_grade', e.target.value as StatusGrade)}
-                        className="w-full min-w-0 rounded-lg border border-white/10 bg-bg-[#050505] px-2 py-2 text-xs text-white/85 outline-none focus:border-[#e2fa00]/50 disabled:opacity-55">
+                        className="w-full min-w-0 rounded-lg border border-white/10 bg-[#050505] px-2 py-2 text-xs text-white/85 outline-none focus:border-[#e2fa00]/50 disabled:opacity-55">
                         {statusGrade.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
                       </select>
                     </td>
                     <td className="px-4 py-3">
                       <select aria-label={'Status de produção: ' + m.titulo} value={m.status_producao}
                         disabled={!podeEditar || salvando} onChange={e => void atualizarStatus(m, 'status_producao', e.target.value as StatusProducao)}
-                        className="w-full min-w-0 rounded-lg border border-white/10 bg-bg-[#050505] px-2 py-2 text-xs text-white/85 outline-none focus:border-[#e2fa00]/50 disabled:opacity-55">
+                        className="w-full min-w-0 rounded-lg border border-white/10 bg-[#050505] px-2 py-2 text-xs text-white/85 outline-none focus:border-[#e2fa00]/50 disabled:opacity-55">
                         {statusProducao.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
                       </select>
                     </td>
@@ -542,13 +542,13 @@ export default function Conteudos() {
             </div>}
           </section>
         })}
-        {!carregando && !secoesVisiveis.length && <div className="rounded-xl border border-dashed border-white/15 bg-bg-[#050505] p-12 text-center text-sm text-white/50">Nenhuma seção ou material encontrado.</div>}
+        {!carregando && !secoesVisiveis.length && <div className="rounded-xl border border-dashed border-white/15 bg-[#050505] p-12 text-center text-sm text-white/50">Nenhuma seção ou material encontrado.</div>}
         </div>
       </section>
       <p className="mt-8 text-center text-xs text-white/30">SCC Produção · {modoDemo ? 'Protótipo local' : 'Ambiente de desenvolvimento protegido'}</p>
 
       {dialogo && <div className="scc-modal-backdrop fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/85 px-4 py-8 backdrop-blur-md sm:items-center" role="presentation">
-        <section role="dialog" aria-modal="true" aria-labelledby="titulo-formulario" className="w-full max-w-[780px] rounded-[22px] border border-white/15 bg-bg-[#050505] p-5 shadow-2xl sm:p-8">
+        <section role="dialog" aria-modal="true" aria-labelledby="titulo-formulario" className="w-full max-w-[780px] rounded-[22px] border border-white/15 bg-[#050505] p-5 shadow-2xl sm:p-8">
           <div className="mb-6 flex items-start justify-between gap-4">
             <div>
               <p className="mb-2 text-[11px] font-bold tracking-widest text-[#e2fa00]">CENTRAL DE MATERIAIS</p>
