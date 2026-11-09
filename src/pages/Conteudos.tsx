@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext'
 import { demoMateriais, demoSecoes } from '../data/demo'
 import { modoDemo } from '../lib/supabase'
 import {
-  atualizarMaterial, criarMaterial, criarSecao, excluirMaterial, listarDados, renomearSecao,
+  atualizarMaterial, criarMaterial, criarSecao, excluirMaterial, listarDados, renomearSecao, removerSecaoSegura,
 } from '../services/materiais'
 import {
   statusGrade, statusProducao,
@@ -30,6 +30,8 @@ type Formulario = {
 }
 type Dialogo = { modo: ModoFormulario; original?: Material }
 type Exclusao = { material: Material; etapa: 1 | 2 }
+type ExclusaoSecao = { secao: Secao; etapa: 1 | 2 }
+const hexValido = (valor: string) => /^#[0-9A-F]{6}$/i.test(valor)
 
 const campo = 'w-full min-w-0 rounded-xl border border-white/15 bg-[#050505] px-4 py-3 text-sm text-white outline-none transition focus:border-[#ddfa00]/60 disabled:opacity-40'
 const rotulo = 'mb-2 block text-xs font-semibold text-white/60'
@@ -78,6 +80,10 @@ export default function Conteudos() {
   const [novaSecao, setNovaSecao] = useState('')
   const [secaoEditando, setSecaoEditando] = useState<string | null>(null)
   const [nomeSecaoEditando, setNomeSecaoEditando] = useState('')
+  const [corSecaoEditando, setCorSecaoEditando] = useState('#E2FA00')
+  const [exclusaoSecao, setExclusaoSecao] = useState<ExclusaoSecao | null>(null)
+  const [destinoSecao, setDestinoSecao] = useState('')
+  const [confirmacaoSecao, setConfirmacaoSecao] = useState('')
   const [dialogo, setDialogo] = useState<Dialogo | null>(null)
   const [formulario, setFormulario] = useState<Formulario>(formularioInicial(''))
   const [exclusao, setExclusao] = useState<Exclusao | null>(null)
@@ -110,16 +116,17 @@ export default function Conteudos() {
   }, [])
 
   useEffect(() => {
-    if (!dialogo && !exclusao) return
+    if (!dialogo && !exclusao && !exclusaoSecao) return
     const aoTeclar = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !salvando) {
         setDialogo(null)
         setExclusao(null)
+        setExclusaoSecao(null)
       }
     }
     window.addEventListener('keydown', aoTeclar)
     return () => window.removeEventListener('keydown', aoTeclar)
-  }, [dialogo, exclusao, salvando])
+  }, [dialogo, exclusao, exclusaoSecao, salvando])
 
   const mudar = <K extends keyof Formulario,>(chave: K, valor: Formulario[K]) => {
     setFormulario(atual => ({ ...atual, [chave]: valor }))
@@ -225,6 +232,7 @@ export default function Conteudos() {
       setDialogo(null)
       setBusca('')
       setFiltro('todos')
+      setFiltroGrade('todas')
     } catch (e) {
       setErro(erroAmigavel(e, 'Não foi possível salvar. Verifique as permissões e tente novamente.'))
     } finally {
@@ -320,9 +328,61 @@ export default function Conteudos() {
     setSalvando(true)
     try {
       await definirCor(id, cor)
+      setCorSecaoEditando(cor.toUpperCase())
       setSucesso('Cor da seção salva para toda a equipe.')
     } catch {
       setErro('Não foi possível sincronizar a cor. Verifique a migração 03 e as permissões.')
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  function solicitarExclusaoSecao(secao: Secao) {
+    if (!administrador || salvando) return
+    setExclusaoSecao({ secao, etapa: 1 })
+    setDestinoSecao('')
+    setConfirmacaoSecao('')
+    setErro('')
+    setSucesso('')
+  }
+
+  async function confirmarExclusaoSecao() {
+    if (!administrador || salvando || !exclusaoSecao || exclusaoSecao.etapa !== 2 ||
+        confirmacaoSecao !== exclusaoSecao.secao.nome) return
+    const origem = exclusaoSecao.secao
+    const quantidade = materiais.filter(m => m.secao_id === origem.id).length
+    if (quantidade > 0 && (!destinoSecao || destinoSecao === origem.id ||
+      !secoes.some(s => s.id === destinoSecao))) {
+      setErro('Selecione outra seção para receber todos os materiais antes da exclusão.')
+      return
+    }
+    setSalvando(true)
+    setErro('')
+    try {
+      const transferidos = modoDemo ? quantidade : await removerSecaoSegura(
+        origem.id, quantidade > 0 ? destinoSecao : undefined,
+      )
+      setMateriais(atual => atual.map(m => m.secao_id === origem.id
+        ? { ...m, secao_id: destinoSecao } : m))
+      setSecoes(atual => atual.filter(s => s.id !== origem.id))
+      setAbertas(atual => ({ ...atual, [destinoSecao]: true }))
+      setSecaoEditando(null)
+      setExclusaoSecao(null)
+      setConfirmacaoSecao('')
+      setDestinoSecao('')
+      setBusca('')
+      setFiltro('todos')
+      setFiltroGrade('todas')
+      setSucesso(transferidos > 0
+        ? `Seção removida. ${transferidos} ${transferidos === 1 ? 'material transferido' : 'materiais transferidos'} com histórico preservado.`
+        : 'Seção vazia excluída com sucesso.')
+    } catch (e) {
+      const codigo = e && typeof e === 'object' && 'code' in e ? String(e.code) : ''
+      setErro(codigo === '23505'
+        ? 'Há códigos de materiais repetidos na seção de destino. Ajuste os códigos antes de transferir.'
+        : codigo === '23503'
+          ? 'A seção ainda contém materiais. Selecione uma seção de destino.'
+          : 'Não foi possível excluir a seção. Nenhuma transferência ou exclusão parcial foi realizada.')
     } finally {
       setSalvando(false)
     }
@@ -351,7 +411,7 @@ export default function Conteudos() {
   return (
     <main className="scc-materials-page scc-fluid-content min-h-[calc(100svh-90px)] pb-20 pt-7 sm:pt-9">
       {/* ÁREA 01 — cabeçalho, indicadores e filtros. */}
-      <section aria-labelledby="titulo-central" className="scc-glass-panel scc-materials-overview relative isolate overflow-hidden rounded-[26px] border border-white/[0.09] bg-[#1f1f1f] p-5 shadow-[0_24px_80px_rgba(0,0,0,.16)] sm:p-7 xl:p-9">
+      <section aria-labelledby="titulo-central" className="scc-materials-overview relative isolate overflow-hidden rounded-[26px] border border-white/[0.09] bg-[#1f1f1f] p-5 shadow-[0_24px_80px_rgba(0,0,0,.16)] sm:p-7 xl:p-9">
         <div className="relative z-10 flex flex-wrap items-end justify-between gap-5">
           <div className="min-w-0">
             <p className="text-[11px] font-extrabold uppercase tracking-[.18em] text-[#e2fa00]">SCC PRODUÇÃO <span className="mx-2 text-white/30">/</span> GESTÃO DE CONTEÚDOS</p>
@@ -470,7 +530,7 @@ export default function Conteudos() {
                 <ChevronDown size={17} className={'shrink-0 text-white/45 transition-transform ' + (aberta ? 'rotate-180' : '')} />
               </button>
               {administrador && <button type="button" title="Personalizar seção" aria-label={'Personalizar ' + secao.nome}
-                onClick={() => { setSecaoEditando(editandoSecao ? null : secao.id); setNomeSecaoEditando(secao.nome) }}
+                onClick={() => { setSecaoEditando(editandoSecao ? null : secao.id); setNomeSecaoEditando(secao.nome); setCorSecaoEditando(cor.toUpperCase()) }}
                 className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.045] px-3.5 py-2.5 text-xs font-semibold text-white/65 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white">
                 <Palette size={15} /><span className="hidden sm:inline">Personalizar</span>
               </button>}
@@ -517,7 +577,7 @@ export default function Conteudos() {
                 </tr></thead>
                 <tbody>
                   {itens.map(m => <tr key={m.id} className="scc-material-row border-t border-white/[0.06] bg-[#1f1f1f] transition hover:bg-[#292929]">
-                    <td className="px-4 py-4 font-mono text-[12px] font-bold" style={{ color: cor }}>{m.codigo}</td>
+                    <td className="px-4 py-4 font-mono text-[12px] font-bold text-white">{m.codigo}</td>
                     <td className="px-4 py-4 text-[12px] font-semibold text-white/90"><span className="block truncate" title={m.titulo}>{m.titulo}</span></td>
                     <td className="px-4 py-4 text-xs tabular-nums text-white/75">{m.duracao_segundos}s</td>
                     <td className="px-4 py-3">
