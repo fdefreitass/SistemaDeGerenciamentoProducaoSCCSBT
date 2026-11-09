@@ -81,22 +81,22 @@ export default function Modulo({ titulo, descricao, cor }: ModuloProps) {
 
       {erro && <p role="alert" className="mt-7 rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-sm text-red-300">{erro}</p>}
       <div className="mt-9 grid gap-4 sm:grid-cols-3">
-        <div className="relative overflow-hidden rounded-[22px] border border-white/10 bg-[#050505] p-6">
+        <div className="relative overflow-hidden rounded-[22px] border border-white/10 bg-[#1f1f1f] p-6">
           <div className="absolute left-0 top-0 h-1 w-full" style={{ backgroundColor: cor }}/>
           <span className="text-xs font-semibold text-white/50">Materiais nesta etapa</span>
           <p className="mt-5 text-4xl font-extrabold tabular-nums">{carregando ? '—' : itens.length}</p>
         </div>
-        <div className="rounded-[22px] border border-white/10 bg-[#050505] p-6">
+        <div className="rounded-[22px] border border-white/10 bg-[#1f1f1f] p-6">
           <span className="text-xs font-semibold text-white/50">Seções cadastradas</span>
           <p className="mt-5 text-4xl font-extrabold tabular-nums">{carregando ? '—' : secoes.length}</p>
         </div>
-        <div className="rounded-[22px] border border-white/10 bg-[#050505] p-6">
+        <div className="rounded-[22px] border border-white/10 bg-[#1f1f1f] p-6">
           <span className="text-xs font-semibold text-white/50">Materiais na central</span>
           <p className="mt-5 text-4xl font-extrabold tabular-nums">{carregando ? '—' : materiais.length}</p>
         </div>
       </div>
 
-      <section className="mt-8 overflow-hidden rounded-[24px] border border-white/10 bg-[#050505]">
+      <section className="mt-8 overflow-hidden rounded-[24px] border border-white/10 bg-[#1f1f1f]">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/[.08] px-6 py-5">
           <div>
             <h2 className="text-lg font-bold">Materiais relacionados</h2>
