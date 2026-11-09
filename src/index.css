@@ -844,3 +844,72 @@ body { overflow-x: hidden; }
     transform: none;
   }
 }
+
+
+/* Central de Materiais — dois blocos autônomos e leitura escalável. */
+.scc-materials-page {
+  background: #08090b;
+  --scc-materials-spacing: clamp(20px, 2vw, 48px);
+}
+.scc-materials-overview::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  content: '';
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 48% 70% at 95% 0%, rgba(97, 114, 146, .09), transparent 75%),
+    linear-gradient(130deg, rgba(255,255,255,.012), transparent 70%);
+}
+.scc-materials-stat {
+  transition: border-color .2s ease, background-color .2s ease;
+}
+.scc-materials-stat:hover {
+  border-color: rgba(255,255,255,.2);
+  background-color: #0e1117;
+}
+.scc-materials-workspace {
+  box-shadow: 0 22px 70px rgba(0,0,0,.1);
+}
+.scc-material-table th,
+.scc-material-table td {
+  vertical-align: middle;
+}
+.scc-material-table th {
+  white-space: nowrap;
+}
+.scc-material-table td select {
+  min-height: 38px;
+}
+.scc-materials-page .overflow-x-auto {
+  scrollbar-width: thin;
+  scrollbar-color: #40454f #101217;
+}
+@media (min-width: 2560px) {
+  .scc-materials-page .scc-material-table th {
+    font-size: clamp(12px, .55vw, 20px);
+  }
+  .scc-materials-page .scc-material-table td {
+    font-size: clamp(13px, .68vw, 24px);
+  }
+  .scc-materials-page .scc-material-table select,
+  .scc-materials-page .scc-materials-input {
+    font-size: clamp(13px, .68vw, 22px);
+  }
+  .scc-materials-page .scc-material-table td button {
+    padding: clamp(8px, .45vw, 15px);
+  }
+}
+@media (max-width: 768px) {
+  .scc-materials-overview,
+  .scc-materials-workspace {
+    border-radius: 20px;
+  }
+  .scc-materials-stat {
+    min-height: 118px;
+    padding: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scc-materials-stat { transition: none; }
+}
