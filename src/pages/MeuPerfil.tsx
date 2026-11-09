@@ -136,16 +136,6 @@ export default function MeuPerfil() {
     } finally { setOcupado(false) }
   }
 
-  return <main className="scc-fluid-content py-16">
-      <div className="mx-auto max-w-lg rounded-2xl border border-white/10 bg-[#15171b] p-8 text-center">
-        <ShieldCheck size={36} className="mx-auto text-[#e2fa00]" />
-        <h1 className="mt-4 text-2xl font-bold">Senha atualizada</h1>
-        <p className="mt-3 text-sm text-white/55">Sua sessão foi encerrada. Entre novamente com a senha nova.</p>
-        <a href="/login" className="mt-6 inline-flex rounded-xl bg-[#e2fa00] px-5 py-3 text-sm font-bold text-black">Entrar novamente</a>
-      </div>
-    </main>
-  }
-
   return <main className="scc-fluid-content pb-20 pt-9">
     <div className="mb-8">
       <p className="text-xs font-bold uppercase tracking-[.18em] text-[#e2fa00]">CONFIGURAÇÕES DE CONTA</p>
