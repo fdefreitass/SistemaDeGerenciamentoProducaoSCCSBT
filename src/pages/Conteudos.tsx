@@ -307,6 +307,21 @@ export default function Conteudos() {
     } finally { setSalvando(false) }
   }
 
+  async function salvarCorSecao(id: string, cor: string) {
+    if (!administrador || salvando) return
+    setErro('')
+    setSucesso('')
+    setSalvando(true)
+    try {
+      await definirCor(id, cor)
+      setSucesso('Cor da seção salva para toda a equipe.')
+    } catch {
+      setErro('Não foi possível sincronizar a cor. Verifique a migração 03 e as permissões.')
+    } finally {
+      setSalvando(false)
+    }
+  }
+
   const filtrados = materiais.filter(m => {
     const secao = secoes.find(s => s.id === m.secao_id)
     const texto = (m.codigo + ' ' + m.titulo + ' ' + (secao?.nome ?? '')).toLocaleLowerCase('pt-BR')
@@ -459,13 +474,13 @@ export default function Conteudos() {
                 <div className="flex flex-wrap items-center gap-2">
                   {paletaSecoes.map(tom => <button key={tom} type="button" style={{ backgroundColor: tom }}
                     title={'Usar cor ' + tom} aria-label={'Usar cor ' + tom} aria-pressed={cor.toLowerCase() === tom.toLowerCase()}
-                    onClick={() => definirCor(secao.id, tom)}
+                    onClick={() => void salvarCorSecao(secao.id, tom)}
                     className={'h-9 w-9 rounded-full border-[3px] transition hover:scale-105 ' + (cor.toLowerCase() === tom.toLowerCase() ? 'border-white' : 'border-transparent')} />)}
                   <label className="ml-3 flex items-center gap-2 text-xs text-white/65">Outra cor
-                    <input type="color" aria-label="Escolher cor personalizada" value={cor} onChange={e => definirCor(secao.id, e.target.value)} className="h-9 w-10 cursor-pointer bg-transparent" />
+                    <input type="color" aria-label="Escolher cor personalizada" value={cor} onChange={e => void salvarCorSecao(secao.id, e.target.value)} className="h-9 w-10 cursor-pointer bg-transparent" />
                   </label>
                 </div>
-                <p className="mt-2 text-[11px] text-white/40">A cor é salva neste navegador. O nome é sincronizado com o banco.</p>
+                <p className="mt-2 text-[11px] text-white/40">Nome e cor são sincronizados entre todos os usuários após a migração 03.</p>
               </div>
             </div>}
 
