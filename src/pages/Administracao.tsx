@@ -174,7 +174,7 @@ export default function Administracao() {
           { titulo: 'USUÁRIOS ATIVOS', valor: ativos },
           { titulo: 'USUÁRIOS INATIVOS', valor: usuarios.length - ativos },
           { titulo: 'ATIVAÇÃO PENDENTE', valor: pendentes },
-        ].map(indicador => <div key={indicador.titulo} className="rounded-2xl border border-white/10 bg-[#050505] px-5 py-5">
+        ].map(indicador => <div key={indicador.titulo} className="rounded-2xl border border-white/10 bg-[#1f1f1f] px-5 py-5">
           <p className="text-[11px] font-semibold tracking-wide text-white/55">{indicador.titulo}</p>
           <p className="mt-3 text-3xl font-extrabold tabular-nums">{carregando ? '—' : indicador.valor}</p>
         </div>)}
@@ -190,14 +190,14 @@ export default function Administracao() {
       {sucesso && <p role="status" className="mt-5 rounded-xl border border-emerald-400/25 bg-emerald-400/10 p-4 text-sm text-emerald-200">{sucesso}</p>}
       {erro && <p role="alert" className="mt-5 rounded-xl border border-red-400/25 bg-red-400/10 p-4 text-sm text-red-200">{erro}</p>}
 
-      <section className="mt-4 overflow-hidden rounded-2xl border border-white/10">
+      <section className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-[#1f1f1f]">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1080px] table-fixed text-left text-sm">
             <colgroup>
               <col style={{width:'28%'}}/><col style={{width:'13%'}}/>
               <col style={{width:'17%'}}/><col style={{width:'14%'}}/><col style={{width:'28%'}}/>
             </colgroup>
-            <thead className="bg-white/[0.04] text-[11px] uppercase tracking-wider text-white/55">
+            <thead className="bg-[#262626] text-[11px] uppercase tracking-wider text-white/55">
               <tr>
                 <th scope="col" className="px-5 py-4">Colaborador</th>
                 <th scope="col" className="px-5 py-4">Perfil</th>
@@ -278,7 +278,7 @@ export default function Administracao() {
       {alvoGestao && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-4 backdrop-blur-sm">
           <section role="dialog" aria-modal="true" aria-labelledby="titulo-gestao"
-            className="w-full max-w-[540px] rounded-3xl border border-white/15 bg-[#0d0e10] p-6 shadow-2xl sm:p-8">
+            className="w-full max-w-[540px] rounded-3xl border border-white/15 bg-[#1f1f1f] p-6 shadow-2xl sm:p-8">
             <div className="flex items-start justify-between gap-3">
               <div>
                 {acaoGestao === 'excluir'
@@ -387,7 +387,7 @@ export default function Administracao() {
       {alvo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 p-4 backdrop-blur-sm">
           <section role="dialog" aria-modal="true" aria-labelledby="titulo-redefinicao"
-            className="w-full max-w-[520px] rounded-3xl border border-white/15 bg-[#0d0e10] p-6 shadow-2xl sm:p-8">
+            className="w-full max-w-[520px] rounded-3xl border border-white/15 bg-[#1f1f1f] p-6 shadow-2xl sm:p-8">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <ShieldAlert size={28} className={senhaProvisoria ? 'text-emerald-400' : 'text-amber-400'} />
