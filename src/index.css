@@ -347,3 +347,158 @@ button { cursor: pointer; }
   .scc-showcase-card, .scc-card-hint { transition: none; }
   .scc-showcase-card:hover { transform: none; }
 }
+
+
+/* EXPERIÊNCIA SCC PRODUÇÃO — APRESENTAÇÃO, LOGIN E PAINEL */
+
+.scc-landing {
+  background: #030303;
+}
+.scc-landing-stage {
+  min-height: 700px;
+  height: min(850px, calc(100svh - 90px));
+  max-height: 920px;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 50%, #141414 0%, #080808 49%, #030303 90%);
+}
+.scc-landing-stage-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 45% 35% at 55% 48%, rgba(255,255,255,.055), transparent 78%);
+  pointer-events: none;
+}
+.scc-landing-ribbon {
+  width: 115%;
+  max-width: none;
+  height: auto;
+  left: 50%;
+  top: 6%;
+  transform: translateX(-50%);
+  object-fit: contain;
+  opacity: .98;
+}
+.scc-landing-intro {
+  padding-top: clamp(80px, 10vh, 130px);
+  padding-left: clamp(30px, 12%, 200px);
+  padding-right: 22px;
+  text-shadow: 0 7px 35px #000;
+}
+.scc-landing-intro p { text-shadow: 0 4px 18px #000; }
+.scc-landing-programs {
+  position: absolute !important;
+  inset: 39% 11% 11%;
+  pointer-events: none;
+}
+.scc-landing-programs a { pointer-events: auto; }
+.scc-landing-programs .scc-showcase-card {
+  width: clamp(160px, 15vw, 236px);
+  height: clamp(160px, 15vw, 236px);
+}
+.scc-landing-card-news { left: 0 !important; top: 22% !important; }
+.scc-landing-card-meiodia { left: 42% !important; top: -8% !important; }
+.scc-landing-card-queso { right: 0 !important; top: 19% !important; }
+.scc-landing-host {
+  bottom: -2%;
+  right: 15%;
+  width: clamp(220px, 27vw, 415px);
+  max-height: 49%;
+  object-fit: contain;
+  object-position: bottom;
+  filter: drop-shadow(0 24px 50px rgba(0,0,0,.55));
+}
+.scc-landing-cta { bottom: 8%; left: 12%; }
+.scc-login-ribbon {
+  opacity: .9;
+  object-position: center;
+  filter: saturate(1.15);
+}
+.scc-login-panel {
+  box-shadow: 0 35px 100px rgba(0,0,0,.7), 0 0 90px rgba(0,0,0,.4);
+}
+.scc-landing .scc-showcase-card {
+  transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+}
+
+@media (max-width: 1024px) {
+  .scc-landing-stage {
+    min-height: 770px;
+    height: calc(100svh - 88px);
+  }
+  .scc-landing-ribbon {
+    width: 165%;
+    top: 19%;
+  }
+  .scc-landing-intro { padding-left: 7%; padding-top: 115px; }
+  .scc-landing-programs { inset: 42% 5% 12%; }
+  .scc-landing-card-meiodia { left: 39% !important; top: -4% !important; }
+  .scc-landing-card-queso { right: 0 !important; top: 28% !important; }
+  .scc-landing-host { right: 18%; width: 30vw; max-height: 38%; }
+  .scc-landing-cta { left: 7%; bottom: 8%; }
+}
+@media (max-width: 680px) {
+  .scc-landing-stage {
+    min-height: 940px;
+    height: auto;
+    padding-bottom: 40px;
+  }
+  .scc-landing-ribbon {
+    width: 280%;
+    top: 150px;
+    left: 52%;
+    opacity: .73;
+  }
+  .scc-landing-intro {
+    padding-top: 92px;
+    padding-left: 7%;
+    max-width: 98%;
+  }
+  .scc-landing-programs {
+    position: relative !important;
+    inset: auto;
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    align-items: center;
+    justify-items: center;
+    gap: 18px;
+    height: auto;
+    margin: 85px 22px 0;
+  }
+  .scc-landing-programs .scc-showcase-card {
+    position: relative;
+    inset: auto !important;
+    width: min(100%, 215px);
+    height: auto;
+    aspect-ratio: 1;
+  }
+  .scc-landing-card-queso {
+    grid-column: 2;
+    margin-top: 0;
+  }
+  .scc-landing-host {
+    width: min(58vw, 250px);
+    height: auto;
+    max-height: 320px;
+    right: auto;
+    left: 0;
+    bottom: 70px;
+  }
+  .scc-landing-cta {
+    left: auto;
+    right: 6%;
+    bottom: 68px;
+    max-width: 52%;
+    padding: 12px;
+    font-size: 11px;
+    gap: 7px;
+  }
+  .scc-login-ribbon {
+    object-fit: cover;
+    object-position: 42% center;
+    transform: scale(1.25);
+  }
+  .scc-login-panel { padding: 28px 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scc-landing .scc-showcase-card { transition: none; }
+  .scc-landing .scc-showcase-card:hover { transform: none; }
+}
