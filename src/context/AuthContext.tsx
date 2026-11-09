@@ -8,6 +8,9 @@ type AuthState = {
   perfil: Perfil | null
   erro: string | null
   sair: () => Promise<void>
+  recarregarPerfil: () => Promise<void>
+  revisaoAvatar: number
+  atualizarAvatar: () => void
 }
 
 const AuthContext = createContext<AuthState | null>(null)
@@ -17,6 +20,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [email, setEmail] = useState<string | null>(null)
   const [perfil, setPerfil] = useState<Perfil | null>(null)
   const [erro, setErro] = useState<string | null>(null)
+  const [revisaoAvatar, setRevisaoAvatar] = useState(0)
 
   useEffect(() => {
     if (modoDemo) return
@@ -58,6 +62,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { ativo = false; subscription.unsubscribe() }
   }, [])
 
+  async function recarregarPerfil() {
+    if (!supabase || modoDemo) return
+    const { data: usuario, error: erroUsuario } = await supabase.auth.getUser()
+    if (erroUsuario || !usuario.user) throw new Error('Sessão não identificada.')
+    const { data, error } = await supabase.from('perfis')
+      .select('id, nome, papel, ativo, troca_senha_pendente')
+      .eq('id', usuario.user.id).single()
+    if (error || !data) throw new Error('Não foi possível atualizar seu perfil.')
+    setPerfil(data as Perfil)
+    setEmail(usuario.user.email ?? null)
+  }
+
+  function atualizarAvatar() {
+    setRevisaoAvatar(valor => valor + 1)
+  }
+
   async function sair() {
     if (supabase) await supabase.auth.signOut()
     setEmail(null)
@@ -65,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ carregando, email, perfil, erro, sair }}>
+    <AuthContext.Provider value={{ carregando, email, perfil, erro, sair, recarregarPerfil, revisaoAvatar, atualizarAvatar }}>
       {children}
     </AuthContext.Provider>
   )
