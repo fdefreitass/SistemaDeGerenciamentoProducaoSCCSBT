@@ -136,11 +136,11 @@ export default function DefinirSenha() {
   }
 
   const campo =
-    'mt-2 w-full rounded-lg border border-white/10 bg-black px-4 py-3 text-white outline-none focus:border-blue-500'
+    'mt-2 w-full rounded-lg border border-white/10 bg-[#050505] px-4 py-3 text-white outline-none focus:border-blue-500'
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#080808] px-5 text-white">
-      <section className="w-full max-w-md rounded-2xl border border-white/10 bg-[#151515] p-8">
+    <main className="flex min-h-screen items-center justify-center bg-bg-[#050505] px-5 text-white">
+      <section className="w-full max-w-md rounded-2xl border border-white/10 bg-bg-[#050505] p-8">
         <p className="text-xs font-black tracking-widest text-blue-400">
           SCC PRODUÇÃO
         </p>
