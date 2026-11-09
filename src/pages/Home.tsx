@@ -4,6 +4,7 @@ import { ArrowRight, ArrowUpRight, CheckCircle2, Clapperboard, Clock3, FolderOpe
 import { demoMateriais, demoSecoes } from '../data/demo'
 import { modoDemo } from '../lib/supabase'
 import { useCoresSecoes, corDaSecao } from '../lib/coresSecoes'
+import { useCoresIndicadores } from '../lib/coresIndicadores'
 import { listarDados } from '../services/materiais'
 import type { Material, Secao } from '../types/materiais'
 import { useAuth } from '../context/AuthContext'
@@ -21,6 +22,7 @@ export default function Home() {
   const navigate = useNavigate()
   const { perfil } = useAuth()
   const { cores } = useCoresSecoes()
+  const { cores: coresIndicadores } = useCoresIndicadores()
   const [materiais, setMateriais] = useState<Material[]>(modoDemo ? demoMateriais : [])
   const [secoes, setSecoes] = useState<Secao[]>(modoDemo ? demoSecoes : [])
   const [carregando, setCarregando] = useState(!modoDemo)
@@ -71,10 +73,10 @@ export default function Home() {
 
       <div className="mt-9 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
-          { nome: 'Materiais cadastrados', numero: contagem.total, cor: '#ddf900', Icone: Layers3, rota: '/conteudos' },
-          { nome: 'Em utilização', numero: contagem.uso, cor: '#49d9ad', Icone: CheckCircle2, rota: '/conteudos?filtro=uso' },
-          { nome: 'Precisam atualizar', numero: contagem.atualizar, cor: '#b28aff', Icone: RefreshCcw, rota: '/conteudos?filtro=atualizar' },
-          { nome: 'Precisam gravar', numero: contagem.gravar, cor: '#ff9861', Icone: Clapperboard, rota: '/conteudos?filtro=gravar' },
+          { nome: 'Materiais cadastrados', numero: contagem.total, cor: coresIndicadores.total, Icone: Layers3, rota: '/conteudos' },
+          { nome: 'Em utilização', numero: contagem.uso, cor: coresIndicadores.em_utilizacao, Icone: CheckCircle2, rota: '/conteudos?filtro=uso' },
+          { nome: 'Precisam atualizar', numero: contagem.atualizar, cor: coresIndicadores.precisa_atualizar, Icone: RefreshCcw, rota: '/conteudos?filtro=atualizar' },
+          { nome: 'Precisam gravar', numero: contagem.gravar, cor: coresIndicadores.precisa_gravar, Icone: Clapperboard, rota: '/conteudos?filtro=gravar' },
         ].map(kpi => (
           <Link key={kpi.nome} to={kpi.rota} className="group relative overflow-hidden rounded-[22px] border border-white/[0.085] bg-[#1f1f1f] p-6 transition duration-200 hover:-translate-y-1 hover:border-white/25 hover:bg-[#292929]">
             <div className="flex items-center justify-between gap-3">
