@@ -122,10 +122,10 @@ export default function Modulo({ titulo, descricao, cor }: ModuloProps) {
                   <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-black/30" style={{ color: cor }}><FolderOpen size={19}/></span>
                   <div className="min-w-0 flex-1 basis-50">
                     <p className="truncate text-sm font-semibold">{m.titulo}</p>
-                    <p className="mt-1 text-[11px] text-white/45">{secao?.nome ?? 'Seção'} · {m.codigo} · {m.duracao_segundos}s</p>
+                    <p className="mt-1 text-[11px] text-white/45">{secao?.nome ?? 'Seção'} · {m.codigo ?? 'Sem código'} · {m.duracao_segundos === null ? 'Duração pendente' : `${m.duracao_segundos}s`}</p>
                   </div>
-                  <span className="rounded-lg border border-white/10 bg-[#050505] px-3 py-2 text-[11px] text-white/65">{nomesStatus[m.status_producao] ?? m.status_producao}</span>
-                  <Link to={`/conteudos?busca=${encodeURIComponent(m.codigo)}`} className="flex items-center gap-1.5 text-xs font-semibold hover:text-white" style={{ color: cor }}>Ver na central <ArrowRight size={15}/></Link>
+                  <span className="rounded-lg border border-white/10 bg-[#050505] px-3 py-2 text-[11px] text-white/65">{m.status_producao ? (nomesStatus[m.status_producao] ?? m.status_producao) : 'Sem classificação'}</span>
+                  <Link to={`/conteudos?busca=${encodeURIComponent(m.codigo || m.titulo)}`} className="flex items-center gap-1.5 text-xs font-semibold hover:text-white" style={{ color: cor }}>Ver na central <ArrowRight size={15}/></Link>
                 </div>
               )
             })}
