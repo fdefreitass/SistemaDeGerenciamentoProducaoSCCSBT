@@ -70,7 +70,7 @@ export default function ConviteUsuario({ aoConvidar }: { aoConvidar?: () => void
   }
 
   return (
-    <section className="mt-8 rounded-2xl border border-white/10 bg-[#050505] p-6">
+    <section className="mt-8 rounded-2xl border border-white/10 bg-[#1f1f1f] p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold">Convites de usuários</h2>
