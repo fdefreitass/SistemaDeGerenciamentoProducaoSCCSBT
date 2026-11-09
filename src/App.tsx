@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, NavLink, Route, Routes, useLocation } from 'react-router'
-import { ArrowLeft, ChevronDown, Clapperboard, LayoutDashboard, LibraryBig, LogOut, Menu, RefreshCcw, ArchiveX, Users, UserRound } from 'lucide-react'
+import { ArrowLeft, ChevronDown, Clapperboard, LayoutDashboard, LibraryBig, LogOut, RefreshCcw, ArchiveX, Users, UserRound } from 'lucide-react'
 import { useAuth } from './context/AuthContext'
 import { modoDemo, supabase } from './lib/supabase'
 import logoBranca from './assets/SCC SBT BRANCA.png'
@@ -37,6 +37,35 @@ export default function App() {
   const { carregando, email, perfil, erro, sair } = useAuth()
   const { pathname } = useLocation()
   const [menuAberto, setMenuAberto] = useState(false)
+  const menuContaRef = useRef<HTMLDivElement>(null)
+  const botaoPerfilRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    setMenuAberto(false)
+  }, [pathname])
+
+  useEffect(() => {
+    if (!menuAberto) return
+
+    const aoClicarFora = (evento: PointerEvent) => {
+      if (evento.target instanceof Node && !menuContaRef.current?.contains(evento.target)) {
+        setMenuAberto(false)
+      }
+    }
+    const aoTeclar = (evento: KeyboardEvent) => {
+      if (evento.key === 'Escape') {
+        setMenuAberto(false)
+        botaoPerfilRef.current?.focus()
+      }
+    }
+
+    document.addEventListener('pointerdown', aoClicarFora)
+    document.addEventListener('keydown', aoTeclar)
+    return () => {
+      document.removeEventListener('pointerdown', aoClicarFora)
+      document.removeEventListener('keydown', aoTeclar)
+    }
+  }, [menuAberto])
 
   // Ativação por e-mail conserva a validação interna do Supabase Auth.
   if (pathname === '/definir-senha') return <DefinirSenha />
@@ -90,52 +119,66 @@ export default function App() {
             {titulos[pathname.toLowerCase()] ?? 'PRODUÇÃO SCC SBT'}
           </div>
           <div className="flex items-center justify-end gap-2.5">
-            <div className="relative">
+            <div className="relative" ref={menuContaRef}>
               <button
                 type="button"
+                ref={botaoPerfilRef}
+                aria-label={menuAberto ? 'Fechar menu da conta' : 'Abrir menu da conta'}
+                aria-haspopup="true"
+                aria-controls="menu-conta"
                 aria-expanded={menuAberto}
-                aria-controls="menu-operacional"
                 onClick={() => setMenuAberto(aberto => !aberto)}
-                className="flex h-[43px] items-center gap-2 rounded-xl border border-white/15 bg-[#171717] px-3 text-xs font-semibold text-white/80 transition hover:border-white/30 sm:px-4"
+                className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] p-1 pr-2 text-white transition hover:border-white/35 hover:bg-white/[0.08] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e2fa00]"
               >
-                <Menu size={17} />
-                <span className="hidden sm:inline">Menu</span>
-                <ChevronDown size={13} className={`hidden transition-transform sm:inline ${menuAberto ? 'rotate-180' : ''}`} />
+                <Avatar id={perfil?.id} nome={nome} tamanho={42} />
+                <span className="hidden max-w-[160px] truncate pl-1 text-xs font-semibold text-white/80 sm:inline">{nome}</span>
+                <ChevronDown size={16} aria-hidden="true" className={`shrink-0 text-white/50 transition-transform ${menuAberto ? 'rotate-180' : ''}`} />
               </button>
               {menuAberto && (
-                <div id="menu-operacional" className="absolute right-0 top-[calc(100%+12px)] z-40 w-64 rounded-2xl border border-white/15 bg-[#171717] p-2 shadow-2xl shadow-black/80">
+                <nav
+                  id="menu-conta"
+                  aria-label="Menu da conta e navegação"
+                  className="absolute right-0 top-[calc(100%+12px)] z-40 w-[min(300px,calc(100vw-32px))] overflow-hidden rounded-2xl border border-white/15 bg-[#17191d] p-2 shadow-2xl shadow-black/80"
+                >
+                  <div className="mb-2 border-b border-white/10 px-3 pb-3 pt-2">
+                    <p className="truncate text-sm font-bold text-white">{nome}</p>
+                    {!modoDemo && email && <p className="mt-1 truncate text-xs text-white/45">{email}</p>}
+                  </div>
                   {navegacao.map(({ rota, texto, Icone }) => (
                     <NavLink
-                      key={rota} to={rota} onClick={() => setMenuAberto(false)}
+                      key={rota}
+                      to={rota}
+                      onClick={() => setMenuAberto(false)}
                       className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition ${isActive ? 'bg-white/10 text-white' : 'text-white/65 hover:bg-white/[0.07] hover:text-white'}`}
                     >
                       <Icone size={17} />{texto}
                     </NavLink>
                   ))}
-                  <NavLink to="/perfil" onClick={() => setMenuAberto(false)} className="mt-2 flex items-center gap-3 border-t border-white/10 px-3 py-3 text-sm text-white/65 hover:text-white">
-                    <UserRound size={17} /> Meu Perfil
-                  </NavLink>
-                  {administrador && (
-                    <NavLink to="/administracao" onClick={() => setMenuAberto(false)} className="mt-2 flex items-center gap-3 border-t border-white/10 px-3 py-3 text-sm text-white/65 hover:text-white">
-                      <Users size={17} /> Usuários e acessos
+                  <div className="mt-2 border-t border-white/10 pt-2">
+                    <NavLink to="/perfil" onClick={() => setMenuAberto(false)} className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition ${isActive ? 'bg-white/10 text-white' : 'text-white/65 hover:bg-white/[0.07] hover:text-white'}`}>
+                      <UserRound size={17} /> Meu Perfil
                     </NavLink>
+                    {administrador && (
+                      <NavLink to="/administracao" onClick={() => setMenuAberto(false)} className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition ${isActive ? 'bg-white/10 text-white' : 'text-white/65 hover:bg-white/[0.07] hover:text-white'}`}>
+                        <Users size={17} /> Usuários e acessos
+                      </NavLink>
+                    )}
+                  </div>
+                  {!modoDemo && (
+                    <div className="mt-2 border-t border-white/10 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => { setMenuAberto(false); void sair() }}
+                        aria-label={`Sair da conta de ${nome}`}
+                        className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-red-300 transition hover:bg-red-500/10 hover:text-red-200"
+                      >
+                        <LogOut size={17} /> Sair
+                      </button>
+                    </div>
                   )}
-                </div>
+                </nav>
               )}
             </div>
-            <Link to="/perfil" aria-label="Abrir meu perfil" title="Meu Perfil" className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.035] p-1 transition hover:border-[#e2fa00]/60 focus-visible:outline-2 focus-visible:outline-[#e2fa00]">
-              <Avatar id={perfil?.id} nome={nome} tamanho={42} />
-              <span className="hidden max-w-[135px] truncate pr-3 text-xs font-semibold text-white/75 2xl:inline">{perfil?.nome ?? 'Meu Perfil'}</span>
-            </Link>
-            {!modoDemo && (
-              <button
-                onClick={() => void sair()}
-                aria-label={`Sair da conta de ${nome}`}
-                className="flex h-[43px] items-center gap-2 rounded-xl bg-white px-4 text-xs font-extrabold text-black transition hover:bg-white/85 sm:px-6"
-              >
-                <LogOut size={16} /> <span className="hidden sm:inline">SAIR</span>
-              </button>
-            )}
           </div>
         </div>
       </header>
