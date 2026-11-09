@@ -1,10 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useLocation } from 'react-router'
+import { Palette, Pencil, Check, X, FolderOpen } from 'lucide-react'
+import { useCoresSecoes, corDaSecao, paletaSecoes } from '../lib/coresSecoes'
 import { useAuth } from '../context/AuthContext'
 import { demoMateriais, demoSecoes } from '../data/demo'
 import { modoDemo } from '../lib/supabase'
 import {
-  atualizarMaterial, criarMaterial, criarSecao, listarDados,
+  atualizarMaterial, criarMaterial, criarSecao, listarDados, renomearSecao,
 } from '../services/materiais'
 import {
   statusGrade, statusProducao,
@@ -19,6 +21,7 @@ const rotulo = 'mb-2 block text-xs text-white/60'
 export default function Conteudos() {
   const { search } = useLocation()
   const { perfil } = useAuth()
+  const { cores, definirCor } = useCoresSecoes()
   const podeEditar = modoDemo || perfil?.papel === 'admin' || perfil?.papel === 'editor'
   const podeCriarSecao = modoDemo || perfil?.papel === 'admin'
 
@@ -26,8 +29,13 @@ export default function Conteudos() {
   const [materiais, setMateriais] = useState<Material[]>(modoDemo ? demoMateriais : [])
   const [abertas, setAbertas] = useState<Record<string, boolean>>({})
   const [busca, setBusca] = useState(() => new URLSearchParams(search).get('busca') ?? '')
-  const [filtro, setFiltro] = useState<Filtro>('todos')
+  const [filtro, setFiltro] = useState<Filtro>(() => {
+    const valor = new URLSearchParams(search).get('filtro')
+    return valor === 'uso' || valor === 'atualizar' || valor === 'gravar' ? valor : 'todos'
+  })
   const [novaSecao, setNovaSecao] = useState('')
+  const [secaoEditando, setSecaoEditando] = useState<string | null>(null)
+  const [nomeSecaoEditando, setNomeSecaoEditando] = useState('')
   const [mostrarCadastro, setMostrarCadastro] = useState(false)
   const [carregando, setCarregando] = useState(!modoDemo)
   const [salvando, setSalvando] = useState(false)
@@ -35,7 +43,10 @@ export default function Conteudos() {
   const [cadastro, setCadastro] = useState({ secao_id: '', codigo: '', titulo: '', duracao_segundos: '15', link_externo: '' })
 
   useEffect(() => {
-    setBusca(new URLSearchParams(search).get('busca') ?? '')
+    const params = new URLSearchParams(search)
+    setBusca(params.get('busca') ?? '')
+    const valor = params.get('filtro')
+    setFiltro(valor === 'uso' || valor === 'atualizar' || valor === 'gravar' ? valor : 'todos')
   }, [search])
 
   useEffect(() => {
@@ -81,6 +92,35 @@ export default function Conteudos() {
       setNovaSecao('')
     } catch {
       setErro('Não foi possível criar a seção. Verifique se você tem perfil de administrador.')
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  async function salvarNomeSecao(e: FormEvent<HTMLFormElement>, secao: Secao) {
+    e.preventDefault()
+    if (!podeCriarSecao || salvando) return
+    const nome = nomeSecaoEditando.trim()
+    if (nome.length < 2 || nome.length > 100) {
+      setErro('O nome da seção deve ter entre 2 e 100 caracteres.')
+      return
+    }
+    if (secoes.some(s => s.id !== secao.id && s.nome.toLocaleLowerCase('pt-BR') === nome.toLocaleLowerCase('pt-BR'))) {
+      setErro('Já existe outra seção com esse nome.')
+      return
+    }
+    if (nome === secao.nome) {
+      setSecaoEditando(null)
+      return
+    }
+    setSalvando(true)
+    setErro('')
+    try {
+      const atualizada = modoDemo ? { ...secao, nome } : await renomearSecao(secao.id, nome)
+      setSecoes(atual => atual.map(s => s.id === secao.id ? atualizada : s))
+      setSecaoEditando(null)
+    } catch {
+      setErro('Não foi possível renomear a seção. Verifique as permissões administrativas.')
     } finally {
       setSalvando(false)
     }
@@ -168,18 +208,18 @@ export default function Conteudos() {
   )
 
   return (
-    <div className="mx-auto max-w-7xl px-5 py-10 md:px-8">
-      <Link to="/" className="text-sm text-white/50 hover:text-white">← Voltar ao início</Link>
+    <div className="mx-auto max-w-[1460px] px-5 pb-20 pt-9 md:px-8">
+      <Link to="/painel" className="text-sm text-white/50 hover:text-white">← Voltar ao painel</Link>
       <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-xs font-bold tracking-widest text-blue-400">GERENCIAMENTO SCC SBT</p>
-          <h1 className="mt-2 text-3xl font-black md:text-4xl">Central de Materiais</h1>
+          <h1 className="mt-2 text-3xl font-black tracking-tight md:text-5xl">Central de Materiais</h1>
           <p className="mt-2 text-sm text-white/50">Controle e gerenciamento de conteúdos audiovisuais.</p>
           <p className={`mt-3 text-xs font-semibold ${modoDemo ? 'text-amber-400' : 'text-emerald-400'}`}>
             {modoDemo ? 'DEMONSTRAÇÃO LOCAL — os dados somem ao atualizar a página' : 'SUPABASE DE DESENVOLVIMENTO — dados persistentes'}
           </p>
         </div>
-        {podeEditar && <button onClick={() => setMostrarCadastro(x => !x)} className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold hover:bg-blue-500">{mostrarCadastro ? 'Cancelar' : '+ Novo material'}</button>}
+        {podeEditar && <button onClick={() => setMostrarCadastro(x => !x)} className="rounded-xl bg-[#e2fa00] px-5 py-3 text-sm font-extrabold text-black transition hover:bg-[#eeff73]">{mostrarCadastro ? 'Cancelar' : '+ Novo material'}</button>}
       </div>
 
       <div className="mt-10 grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -227,32 +267,81 @@ export default function Conteudos() {
         {secoesVisiveis.map(secao => {
           const itens = filtrados.filter(m => m.secao_id === secao.id)
           const aberta = abertas[secao.id] !== false
-          return <section key={secao.id} className="overflow-hidden rounded-2xl border border-white/10 bg-[#151515]">
-            <button type="button" className="flex w-full items-center justify-between px-6 py-5 text-left hover:bg-white/5" onClick={() => setAbertas(a => ({ ...a, [secao.id]: !aberta }))}>
-              <span className="font-bold">▣ {secao.nome} <span className="ml-3 text-xs font-normal text-white/40">{itens.length} materiais</span></span>
-              <span className="text-white/50">{aberta ? '−' : '+'}</span>
-            </button>
-            {aberta && <div className="overflow-x-auto border-t border-white/10"><table className="w-full min-w-237.5 text-left text-sm">
-              <thead className="bg-[#202020] text-xs text-white/50"><tr>
-                {['CÓDIGO', 'TÍTULO', 'DURAÇÃO', 'SITUAÇÃO NA GRADE', 'PRODUÇÃO', 'ARQUIVO'].map(col => <th key={col} className="px-5 py-4">{col}</th>)}
-              </tr></thead>
-              <tbody>
-                {itens.map(m => <tr key={m.id} className="border-t border-white/10 hover:bg-white/5">
-                  <td className="px-5 py-4 font-mono text-blue-400">{m.codigo}</td>
-                  <td className="px-5 py-4 font-medium">{m.titulo}</td>
-                  <td className="px-5 py-4">{m.duracao_segundos}s</td>
-                  <td className="px-5 py-4"><select disabled={!podeEditar || salvando} className={`${campo} min-w-40 disabled:opacity-70`} aria-label={`Situação na grade de ${m.titulo}`} value={m.status_grade} onChange={e => void trocarStatus(m, 'status_grade', e.target.value as StatusGrade)}>
-                    {statusGrade.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                  </select></td>
-                  <td className="px-5 py-4"><select disabled={!podeEditar || salvando} className={`${campo} min-w-44 disabled:opacity-70`} aria-label={`Situação de produção de ${m.titulo}`} value={m.status_producao} onChange={e => void trocarStatus(m, 'status_producao', e.target.value as StatusProducao)}>
-                    {statusProducao.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                  </select></td>
-                  <td className="px-5 py-4">{m.link_externo ? <a href={m.link_externo} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Abrir arquivo ↗</a> : <span className="text-white/30">Sem link</span>}</td>
-                </tr>)}
-                {itens.length === 0 && <tr><td colSpan={6} className="px-5 py-8 text-center text-white/40">Nenhum material nesta seção.</td></tr>}
-              </tbody>
-            </table></div>}
-          </section>
+          const cor = corDaSecao(cores, secao.id, Math.max(0, secoes.findIndex(s => s.id === secao.id)))
+          const editando = secaoEditando === secao.id
+          return (
+            <section key={secao.id} className="overflow-hidden rounded-[22px] border border-white/10 bg-[#141517] shadow-lg shadow-black/10" style={{ borderTop: `5px solid ${cor}` }}>
+              <div className="flex flex-wrap items-center gap-3 px-5 py-4 sm:px-6">
+                <button type="button" className="flex min-w-0 flex-1 items-center gap-3 py-1 text-left" onClick={() => setAbertas(a => ({ ...a, [secao.id]: !aberta }))} aria-expanded={aberta}>
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/30" style={{ color: cor }}><FolderOpen size={20} /></span>
+                  <span className="min-w-0">
+                    <strong className="block truncate text-base font-extrabold tracking-tight sm:text-lg">{secao.nome}</strong>
+                    <span className="mt-1 block text-xs text-white/40">{itens.length} {itens.length === 1 ? 'material' : 'materiais'}</span>
+                  </span>
+                  <span className="ml-2 text-lg text-white/35">{aberta ? '−' : '+'}</span>
+                </button>
+                {podeCriarSecao && (
+                  <button type="button" onClick={() => { setSecaoEditando(editando ? null : secao.id); setNomeSecaoEditando(secao.nome) }} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] px-3.5 py-2.5 text-xs font-bold text-white/65 transition hover:border-white/30 hover:text-white" aria-expanded={editando}>
+                    <Palette size={15} /> Personalizar
+                  </button>
+                )}
+              </div>
+
+              {editando && podeCriarSecao && (
+                <div className="border-t border-white/10 bg-black/25 px-5 py-5 sm:px-6">
+                  <form onSubmit={e => void salvarNomeSecao(e, secao)} className="flex flex-wrap items-end gap-3">
+                    <div className="min-w-[220px] flex-1">
+                      <label htmlFor={`nome-secao-${secao.id}`} className="mb-2 block text-xs font-semibold text-white/55">Nome da seção</label>
+                      <input id={`nome-secao-${secao.id}`} value={nomeSecaoEditando} onChange={e => setNomeSecaoEditando(e.target.value)} minLength={2} maxLength={100} required className={campo} />
+                    </div>
+                    <button type="submit" disabled={salvando} className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-extrabold text-black transition hover:bg-[#e2fa00] disabled:opacity-50">
+                      <Check size={16} /> Salvar nome
+                    </button>
+                    <button type="button" onClick={() => setSecaoEditando(null)} className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2.5 text-xs text-white/65 hover:text-white">
+                      <X size={16} /> Fechar
+                    </button>
+                  </form>
+                  <div className="mt-5">
+                    <p className="mb-3 flex items-center gap-2 text-xs font-semibold text-white/55"><Pencil size={14} /> Cor de identificação</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {paletaSecoes.map(tom => (
+                        <button key={tom} type="button" onClick={() => definirCor(secao.id, tom)} title={`Selecionar cor ${tom}`} aria-label={`Selecionar cor ${tom}`} aria-pressed={cor.toLowerCase() === tom.toLowerCase()} className={`h-9 w-9 rounded-full border-[3px] transition hover:scale-110 ${cor.toLowerCase() === tom.toLowerCase() ? 'border-white' : 'border-transparent'}`} style={{ backgroundColor: tom }} />
+                      ))}
+                      <label className="ml-2 flex items-center gap-2 text-xs text-white/55">
+                        Personalizada <input aria-label="Escolher cor personalizada" type="color" value={cor} onChange={e => definirCor(secao.id, e.target.value)} className="h-9 w-10 cursor-pointer rounded-md bg-transparent" />
+                      </label>
+                    </div>
+                    <p className="mt-3 text-[11px] text-white/35">As cores são preferências visuais salvas neste navegador. O nome é salvo no sistema para todos os usuários.</p>
+                  </div>
+                </div>
+              )}
+
+              {aberta && (
+                <div className="overflow-x-auto border-t border-white/10">
+                  <table className="w-full min-w-237.5 text-left text-sm">
+                    <thead className="bg-black/20 text-[11px] font-bold uppercase tracking-wide text-white/40"><tr>
+                      {['CÓDIGO', 'TÍTULO', 'DURAÇÃO', 'SITUAÇÃO NA GRADE', 'PRODUÇÃO', 'ARQUIVO'].map(col => <th key={col} className="px-5 py-4">{col}</th>)}
+                    </tr></thead>
+                    <tbody>
+                      {itens.map(m => <tr key={m.id} className="border-t border-white/[0.065] transition hover:bg-white/[0.025]">
+                        <td className="px-5 py-4 font-mono font-bold" style={{ color: cor }}>{m.codigo}</td>
+                        <td className="px-5 py-4 font-semibold text-white/90">{m.titulo}</td>
+                        <td className="px-5 py-4 text-white/65">{m.duracao_segundos}s</td>
+                        <td className="px-5 py-4"><select disabled={!podeEditar || salvando} className={`${campo} min-w-40 disabled:opacity-60`} aria-label={`Situação na grade de ${m.titulo}`} value={m.status_grade} onChange={e => void trocarStatus(m, 'status_grade', e.target.value as StatusGrade)}>
+                          {statusGrade.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                        </select></td>
+                        <td className="px-5 py-4"><select disabled={!podeEditar || salvando} className={`${campo} min-w-44 disabled:opacity-60`} aria-label={`Situação de produção de ${m.titulo}`} value={m.status_producao} onChange={e => void trocarStatus(m, 'status_producao', e.target.value as StatusProducao)}>
+                          {statusProducao.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                        </select></td>
+                        <td className="px-5 py-4">{m.link_externo ? <a href={m.link_externo} target="_blank" rel="noopener noreferrer" className="font-bold text-[#e2fa00] hover:underline">Abrir arquivo ↗</a> : <span className="text-white/30">Sem link</span>}</td>
+                      </tr>)}
+                      {itens.length === 0 && <tr><td colSpan={6} className="px-5 py-9 text-center text-white/40">Nenhum material nesta seção.</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+          )
         })}
         {!carregando && secoesVisiveis.length === 0 && <div className="rounded-xl border border-white/10 p-10 text-center text-white/50">Nenhuma seção ou material encontrado.</div>}
       </div>
