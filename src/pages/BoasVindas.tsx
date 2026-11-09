@@ -45,17 +45,14 @@ export default function BoasVindas() {
         </div>
 
         <div className="scc-landing-programs absolute z-20" aria-label="Programas em destaque">
-          <Link to="/conteudos?busca=SCC%20NEWS" className="scc-showcase-card scc-news-card scc-landing-card-news" aria-label="Consultar SCC News">
-            <img src={logoNews} alt="SCC News" className="scc-program-logo" draggable={false} />
-            <span className="scc-card-hint">Ver conteúdos <ArrowRight size={14}/></span>
+          <Link to="/conteudos?busca=SCC%20NEWS" className="scc-program-image-link scc-landing-card-news" aria-label="Consultar SCC News">
+            <img src={logoNews} alt="SCC News" className="scc-program-image" draggable={false} />
           </Link>
-          <Link to="/conteudos?busca=SCC%20MEIO-DIA" className="scc-showcase-card scc-meiodia-card scc-landing-card-meiodia" aria-label="Consultar SCC Meio-Dia">
-            <img src={logoMeioDia} alt="SCC Meio-Dia" className="scc-program-logo" draggable={false} />
-            <span className="scc-card-hint">Ver conteúdos <ArrowRight size={14}/></span>
+          <Link to="/conteudos?busca=SCC%20MEIO-DIA" className="scc-program-image-link scc-landing-card-meiodia" aria-label="Consultar SCC Meio-Dia">
+            <img src={logoMeioDia} alt="SCC Meio-Dia" className="scc-program-image" draggable={false} />
           </Link>
-          <Link to="/conteudos?busca=A%20TARDE%20%C3%89%20NOSSA" className="scc-showcase-card scc-queso-card scc-landing-card-queso" aria-label="Consultar A Tarde é Nossa">
-            <img src={logoATarde} alt="A Tarde é Nossa" className="scc-program-logo" draggable={false} />
-            <span className="scc-card-hint">Ver conteúdos <ArrowRight size={14}/></span>
+          <Link to="/conteudos?busca=A%20TARDE%20%C3%89%20NOSSA" className="scc-program-image-link scc-landing-card-queso" aria-label="Consultar A Tarde é Nossa">
+            <img src={logoATarde} alt="A Tarde é Nossa" className="scc-program-image" draggable={false} />
           </Link>
         </div>
 
