@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { Check, Copy, KeyRound, LockKeyhole, RefreshCw, Search, ShieldAlert, X } from 'lucide-react'
+import { Check, Copy, KeyRound, LockKeyhole, RefreshCw, Search, ShieldAlert, ShieldCheck, Trash2, UserRoundCog, UserRoundX, UserRoundCheck, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { modoDemo } from '../lib/supabase'
-import { listarUsuarios, redefinirSenhaUsuario, type UsuarioResumo } from '../services/usuarios'
+import { listarUsuarios, redefinirSenhaUsuario, gerenciarUsuario, type AcaoGerenciamento, type UsuarioResumo } from '../services/usuarios'
 import ConviteUsuario from '../components/ConviteUsuario'
 import Avatar from '../components/Avatar'
+import type { Papel } from '../types/materiais'
 
 const nomesPapel = { admin: 'Administrador', editor: 'Editor', leitor: 'Leitor' }
 
@@ -22,6 +23,14 @@ export default function Administracao() {
   const [senhaProvisoria, setSenhaProvisoria] = useState('')
   const [copiado, setCopiado] = useState(false)
   const [processando, setProcessando] = useState(false)
+  const [alvoGestao, setAlvoGestao] = useState<UsuarioResumo | null>(null)
+  const [acaoGestao, setAcaoGestao] = useState<AcaoGerenciamento>('alterar_papel')
+  const [novoPapel, setNovoPapel] = useState<Papel>('leitor')
+  const [confirmaGestao, setConfirmaGestao] = useState(false)
+  const [nomeDigitado, setNomeDigitado] = useState('')
+  const [adminDigitado, setAdminDigitado] = useState('')
+  const [processandoGestao, setProcessandoGestao] = useState(false)
+  const [sucesso, setSucesso] = useState('')
 
   async function carregar() {
     if (!administrador) return
@@ -80,6 +89,53 @@ export default function Administracao() {
       setCopiado(true)
     } catch {
       setErro('Não foi possível copiar automaticamente. Selecione e copie a senha manualmente.')
+    }
+  }
+
+  function abrirGestao(usuario: UsuarioResumo, acao: AcaoGerenciamento) {
+    if (usuario.id === perfil?.id) return
+    setAlvoGestao(usuario)
+    setAcaoGestao(acao)
+    setNovoPapel(usuario.papel)
+    setConfirmaGestao(false)
+    setNomeDigitado('')
+    setAdminDigitado('')
+    setErro('')
+    setSucesso('')
+  }
+
+  function fecharGestao() {
+    if (processandoGestao) return
+    setAlvoGestao(null)
+    setConfirmaGestao(false)
+    setNomeDigitado('')
+    setAdminDigitado('')
+  }
+
+  async function executarGestao() {
+    if (!administrador || !alvoGestao || !confirmaGestao || processandoGestao || alvoGestao.id === perfil?.id) return
+    if (acaoGestao === 'alterar_papel' && (novoPapel === alvoGestao.papel ||
+      (novoPapel === 'admin' && adminDigitado !== 'ADMIN'))) return
+    if (acaoGestao === 'excluir' && nomeDigitado !== alvoGestao.nome) return
+
+    const confirmacao = acaoGestao === 'alterar_papel'
+      ? novoPapel === 'admin' ? 'CONCEDER ADMIN' : 'ALTERAR PERMISSAO'
+      : acaoGestao === 'excluir' ? nomeDigitado
+      : acaoGestao === 'desativar' ? 'DESATIVAR' : 'REATIVAR'
+
+    setProcessandoGestao(true)
+    setErro('')
+    setSucesso('')
+    try {
+      const resultado = await gerenciarUsuario(alvoGestao.id, acaoGestao, confirmacao,
+        acaoGestao === 'alterar_papel' ? novoPapel : undefined)
+      await carregar()
+      setAlvoGestao(null)
+      setSucesso(resultado.mensagem)
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Não foi possível executar a ação.')
+    } finally {
+      setProcessandoGestao(false)
     }
   }
 
