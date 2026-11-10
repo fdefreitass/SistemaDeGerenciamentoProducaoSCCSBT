@@ -1,5 +1,5 @@
 name: Homologação SCC Produção
-# Novo disparo para verificar a versão atual da branch de produção
+# Reimplantação solicitada: manter feat/admin-usuarios como branch de produção
 on:
   push:
     branches: [feat/admin-usuarios]
