@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom'
 import CalendarioEntregas from '../components/CalendarioEntregas'
 import CampoData from '../components/CampoData'
-import { useCallback, useEffect, useMemo, useState, type FormEvent, type DragEvent } from 'react'
+import { useCallback, useEffect, useMemo, useState, type FormEvent, type DragEvent, type ReactNode } from 'react'
 import { ArrowRight, CalendarDays, MessageCircle, Paperclip, Plus, Search, X, Trash2, Users, ListChecks, SlidersHorizontal, Bell, History, ArrowUp, ArrowDown, CheckCircle2, LayoutDashboard, AtSign, Send, Paintbrush } from 'lucide-react'
 import { modoDemo } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -118,11 +118,20 @@ export default function GestaoTarefas() {
   const textoChat=(conteudo:string,ids:string[]=[])=>{
     const citados=pessoas.filter(p=>ids.includes(p.id)).sort((a,b)=>b.nome.length-a.nome.length)
     if(!citados.length)return conteudo
-    const escapar=(v:string)=>v.replace(/[.*+?^${}()|[\]\\]/g,'\\  const nomePessoa=(id?:string|null)=>pessoas.find(p=>p.id===id)?.nome||''')
-    const re=new RegExp('(@(?:'+citados.map(p=>escapar(p.nome)).join('|')+'))(?=\\s|$|[.,!?;:])','g')
-    return conteudo.split(re).map((parte,i)=>{const pessoa=citados.find(p=>parte==='@'+p.nome);return pessoa?<span key={i} className="mx-0.5 inline-flex items-center gap-1 rounded-lg border border-blue-400/25 bg-blue-500/15 px-1.5 py-0.5 align-middle font-semibold text-blue-200">{avatarChat(pessoa.id,'h-5 w-5')}{pessoa.nome}</span>:parte})
+    const partes:ReactNode[]=[]
+    let cursor=0
+    while(cursor<conteudo.length){
+      const proxima=citados.map(p=>({p,i:conteudo.indexOf('@'+p.nome,cursor)})).filter(x=>x.i>=0).sort((x,y)=>x.i-y.i)[0]
+      if(!proxima){partes.push(conteudo.slice(cursor));break}
+      const fim=proxima.i+proxima.p.nome.length+1
+      const proximoCaractere=conteudo[fim]
+      if(proximoCaractere&& !' .,!?;:\\n\\t'.includes(proximoCaractere)){partes.push(conteudo.slice(cursor,fim));cursor=fim;continue}
+      if(proxima.i>cursor)partes.push(conteudo.slice(cursor,proxima.i))
+      partes.push(<span key={proxima.i} className="mx-0.5 inline-flex items-center gap-1 rounded-lg border border-blue-400/25 bg-blue-500/15 px-1.5 py-0.5 align-middle font-semibold text-blue-200">{avatarChat(proxima.p.id,'h-5 w-5')}{proxima.p.nome}</span>)
+      cursor=fim
+    }
+    return partes
   }
-
   const atualiza=async(id:string,campos:Partial<Tarefa>)=>{
     if(!podeEditar||ocupado)return
     setOcupado(true);setErro('')
