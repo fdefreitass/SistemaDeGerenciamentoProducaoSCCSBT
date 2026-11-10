@@ -89,7 +89,7 @@ export default function Padronizacao() {
     const name = normalizeName(program)
     const extra = normalizeName(complemento)
     const seconds = Number(duration)
-    const dataValida = /^\\d{4}-\\d{2}-\\d{2}$/.test(dataEnvio)
+    const dataValida = /^\d{4}-\d{2}-\d{2}$/.test(dataEnvio)
     if (!destinoSelecionado || !name || !Number.isInteger(seconds) || seconds < 1 || seconds > 36000 || !dataValida) return ''
     const [, mes, dia] = dataEnvio.split('-')
     return `${type} - ${name}${extra ? ` - ${extra}` : ''} - ${seconds}'s - ${dia}-${mes}.mp4`
