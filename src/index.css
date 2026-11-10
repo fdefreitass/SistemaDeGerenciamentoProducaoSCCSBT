@@ -1132,3 +1132,11 @@ body { overflow-x: hidden; }
 .scc-bitrix-add{transition:background .18s,color .18s}
 @media(max-width:640px){.scc-bitrix-board{margin-right:-12px;padding-right:12px}.scc-bitrix-card{padding:10px}}
 @media(prefers-reduced-motion:reduce){.scc-bitrix-card:hover{transform:none}}
+
+/* Kanban: largura fluida e ferramentas contextuais do administrador */
+.scc-bitrix-column{width:clamp(215px,calc((100% - (var(--scc-stage-count) - 1)*8px)/var(--scc-stage-count)),300px)}
+.scc-stage-admin{opacity:0;transition:opacity .18s ease}
+.scc-bitrix-column:hover .scc-stage-admin,.scc-bitrix-column:focus-within .scc-stage-admin{opacity:1}
+@media(hover:none){.scc-stage-admin{opacity:1}}
+@media(max-width:640px){.scc-bitrix-column{width:min(82vw,270px)}}
+@media(prefers-reduced-motion:reduce){.scc-stage-admin{transition:none}}
