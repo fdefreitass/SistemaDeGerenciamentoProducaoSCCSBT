@@ -1113,3 +1113,10 @@ body { overflow-x: hidden; }
 .scc-header-action:hover{background-color:#343434;border-color:#60a5fa;box-shadow:0 6px 22px #2563eb2e;transform:translateY(-1px)}
 .scc-header-action:focus-visible{outline:2px solid #93c5fd;outline-offset:3px}
 @media(hover:none),(prefers-reduced-motion:reduce){.scc-header-action:hover{transform:none}.scc-header-action{transition:none}}
+
+/* Kanban: barra discreta no rodapé da área, sem cortar a largura dos cards */
+.scc-kanban-scroll{scrollbar-width:thin;scrollbar-color:#64748b #202124}
+.scc-kanban-scroll::-webkit-scrollbar{height:9px}
+.scc-kanban-scroll::-webkit-scrollbar-track{background:#202124;border-radius:999px}
+.scc-kanban-scroll::-webkit-scrollbar-thumb{background:#64748b;border-radius:999px;border:2px solid #202124}
+.scc-kanban-scroll::-webkit-scrollbar-thumb:hover{background:#93c5fd}
