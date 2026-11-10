@@ -14,6 +14,7 @@ import Modulo from './pages/Modulo'
 import Administracao from './pages/Administracao'
 import DefinirSenha from './pages/DefinirSenha'
 import PrimeiroAcesso from './pages/PrimeiroAcesso'
+import { SccAppShell, type SccModule, type ModulePermissions } from './components/SccAppShell'
 
 const navegacao = [
   { rota: '/painel', texto: 'Visão geral', Icone: LayoutDashboard },
@@ -106,9 +107,14 @@ export default function App() {
   if (pathname === '/login') return modoDemo ? <Navigate to="/painel" replace /> : <Navigate to="/painel" replace />
 
   const administrador = !modoDemo && perfil?.papel === 'admin'
+  const permissions: ModulePermissions = { home: true, tasks: administrador, standardization: administrador, schedule: true }
+  const moduleForPath = (path: string): SccModule => path === '/tarefas' ? 'tasks' : path === '/padronizacao' ? 'standardization' : ['/conteudos', '/gravacao', '/atualizacao', '/remocao', '/grade'].includes(path) ? 'schedule' : 'home'
+  const currentModule = moduleForPath(pathname)
+  const navigateModule = (module: SccModule) => { window.history.pushState({}, '', ({ home: '/painel', tasks: '/tarefas', standardization: '/padronizacao', schedule: '/grade' })[module]); window.dispatchEvent(new PopStateEvent('popstate')) }
   const nome = modoDemo ? 'Demonstração local' : perfil?.nome || email || 'Colaborador'
 
   return (
+    <SccAppShell permissions={permissions} activeModule={currentModule} onNavigate={navigateModule}>
     <div className="scc-app-body relative isolate min-h-screen bg-[#050505] text-white">
       <header className="sticky top-0 z-30 border-b border-white/[0.07] bg-[#050505]/95 backdrop-blur-xl">
         <div className="scc-app-header-inner grid min-h-[82px] grid-cols-[1fr_auto] items-center gap-4 lg:grid-cols-[1fr_minmax(300px,1.65fr)_1fr]">
@@ -186,6 +192,9 @@ export default function App() {
       <div className="scc-app-content relative z-10">
       <Routes>
         <Route path="/painel" element={<Home />} />
+        <Route path="/tarefas" element={permissions.tasks ? <Modulo titulo="Gestão de Tarefas" descricao="Módulo V2 em preparação: fluxo de produção e aprovações." cor="#0089FF" /> : <Navigate to="/painel" replace />} />
+        <Route path="/padronizacao" element={permissions.standardization ? <Modulo titulo="Sistema de Padronização" descricao="Módulo V2 em preparação: conferência e nomenclatura." cor="#B900E5" /> : <Navigate to="/painel" replace />} />
+        <Route path="/grade" element={<Home />} />
         <Route path="/conteudos" element={<Conteudos />} />
         <Route path="/gravacao" element={<Modulo titulo="Gravação" descricao="Controle de novas gravações e demandas." cor="#FF6900" />} />
         <Route path="/atualizacao" element={<Modulo titulo="Atualização" descricao="Materiais que precisam ser atualizados." cor="#B900E5" />} />
@@ -196,5 +205,6 @@ export default function App() {
       </Routes>
       </div>
     </div>
+    </SccAppShell>
   )
 }
