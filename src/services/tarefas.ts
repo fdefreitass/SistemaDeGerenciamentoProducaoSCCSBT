@@ -123,3 +123,22 @@ export async function removerItemChecklist(id:string) {
   const {error}=await obterSupabase().from('tarefa_checklist').delete().eq('id',id)
   if(error)throw error
 }
+
+export type AtividadeTarefa={id:string;tarefa_id:string;autor_id:string|null;tipo:string;detalhe:string;criado_em:string}
+export type NotificacaoTarefa={id:string;tarefa_id:string;atividade_id:string;lida_em:string|null;criado_em:string}
+export async function listarAtividades(tarefaId:string):Promise<AtividadeTarefa[]> {
+ if(modoDemo)return []
+ const {data,error}=await obterSupabase().from('tarefa_atividades').select('id,tarefa_id,autor_id,tipo,detalhe,criado_em').eq('tarefa_id',tarefaId).order('criado_em',{ascending:false}).limit(100)
+ if(error)throw error
+ return data??[]
+}
+export async function listarNotificacoes():Promise<NotificacaoTarefa[]> {
+ if(modoDemo)return []
+ const {data,error}=await obterSupabase().from('tarefa_notificacoes').select('id,tarefa_id,atividade_id,lida_em,criado_em').order('criado_em',{ascending:false}).limit(50)
+ if(error)throw error
+ return data??[]
+}
+export async function marcarNotificacaoLida(id:string):Promise<void> {
+ const {error}=await obterSupabase().from('tarefa_notificacoes').update({lida_em:new Date().toISOString()}).eq('id',id)
+ if(error)throw error
+}
