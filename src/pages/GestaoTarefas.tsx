@@ -56,6 +56,8 @@ export default function GestaoTarefas() {
   const [ocupado,setOcupado]=useState(false)
   const [erro,setErro]=useState('')
   const [confirmacao,setConfirmacao]=useState<{tipo:'tarefa'|'etapa';id:string;nome:string}|null>(null)
+  const [textoTag,setTextoTag]=useState('')
+  const [tagsDisponiveis,setTagsDisponiveis]=useState<string[]>([])
   const [form,setForm]=useState({titulo:'',programa:'',responsavel_id:'',inicio:'',prazo:'',prioridade:'normal' as Prioridade,descricao:''})
   const [comentarios,setComentarios]=useState<Comentario[]>([])
   const [mensagem,setMensagem]=useState('')
@@ -217,6 +219,16 @@ export default function GestaoTarefas() {
     }catch{setTarefas(anterior);setErro('Não foi possível salvar a posição da tarefa.')}
     finally{setOcupado(false);setDrag(null);setAlvoDrag(null);setColunaDrag(null)}
   }
+  const tagsForm=form.programa.split(',').map(v=>v.trim()).filter(Boolean)
+  const tagsCatalogo=Array.from(new Set([...tagsDisponiveis,...tarefas.flatMap(t=>(t.programa||'').split(',').map(v=>v.trim()).filter(Boolean))])).sort((a,b)=>a.localeCompare(b,'pt-BR'))
+  const adicionarTag=(nome:string)=>{
+    const tag=nome.trim().replace(/^#/,'').replace(/,/g,' ').trim()
+    if(!tag)return
+    const existente=tagsCatalogo.find(v=>v.toLocaleLowerCase('pt-BR')===tag.toLocaleLowerCase('pt-BR'))
+    const final=existente||tag
+    if(!tagsForm.some(v=>v.toLocaleLowerCase('pt-BR')===final.toLocaleLowerCase('pt-BR'))){setForm(f=>({...f,programa:[...f.programa.split(',').map(v=>v.trim()).filter(Boolean),final].join(', ')}))}
+    setTagsDisponiveis(v=>v.includes(final)?v:[...v,final]);setTextoTag('')
+  }
   const criar=async(e:FormEvent)=>{
     e.preventDefault();if(!podeEditar||ocupado||!form.titulo.trim())return
     setOcupado(true);setErro('')
@@ -258,7 +270,7 @@ export default function GestaoTarefas() {
     {erro&&<div role="alert" className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">{erro}<button className="ml-3 underline" onClick={()=>setErro('')}>Fechar</button></div>}
     {nova&&createPortal(<div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 p-3 backdrop-blur-md sm:p-6" onMouseDown={e=>{if(e.target===e.currentTarget&&!ocupado)setNova(false)}}><section role="dialog" aria-modal="true" aria-labelledby="scc-criar-tarefa-titulo" className="flex max-h-[min(92dvh,850px)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-white/15 bg-[#202020] shadow-2xl"><header className="flex shrink-0 items-center justify-between border-b border-white/10 px-5 py-4"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-blue-400">SCC Produção</p><h2 id="scc-criar-tarefa-titulo" className="mt-1 text-lg font-extrabold text-white">Nova tarefa</h2></div><button type="button" aria-label="Fechar criação" disabled={ocupado} onClick={()=>setNova(false)} className="rounded-lg p-2 text-white/70 hover:bg-white/10 hover:text-white"><X size={20}/></button></header><div className="overflow-y-auto p-4 sm:p-5"><form onSubmit={e=>void criar(e)} className="grid gap-4 sm:grid-cols-2">
       {campo('Título',form.titulo,v=>setForm(f=>({...f,titulo:v})))}
-      {campo('Programa',form.programa,v=>setForm(f=>({...f,programa:v})))}
+      <div className="min-w-0 text-xs text-white/55"><label htmlFor="scc-tags-nova" className="mb-2 block">Tags</label><div className="rounded-xl border border-white/15 bg-[#111] p-2 focus-within:border-blue-500/70"><div className="flex flex-wrap gap-1.5">{tagsForm.map(tag=><span key={tag} className="inline-flex items-center gap-1 rounded-lg border border-blue-400/25 bg-blue-500/15 px-2 py-1 text-xs font-semibold text-blue-200">#{tag}<button type="button" aria-label={'Remover tag '+tag} onClick={()=>setForm(f=>({...f,programa:f.programa.split(',').map(v=>v.trim()).filter(v=>v&&v!==tag).join(', ')}))}><X size={13}/></button></span>)}</div><input id="scc-tags-nova" className="mt-1 w-full bg-transparent px-1 py-2 text-sm text-white outline-none placeholder:text-white/35" placeholder="Pesquisar ou criar tag..." value={textoTag} onChange={e=>setTextoTag(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&e.shiftKey){e.preventDefault();adicionarTag(textoTag)}}}/>{textoTag.trim()&&<div className="mt-1 max-h-32 space-y-1 overflow-y-auto border-t border-white/10 pt-2">{tagsCatalogo.filter(tag=>tag.toLocaleLowerCase('pt-BR').includes(textoTag.toLocaleLowerCase('pt-BR'))&&!tagsForm.includes(tag)).slice(0,5).map(tag=><button key={tag} type="button" onClick={()=>adicionarTag(tag)} className="block w-full rounded-md px-2 py-1.5 text-left text-xs text-white/80 hover:bg-white/10">#{tag}</button>)}<button type="button" onClick={()=>adicionarTag(textoTag)} className="block w-full rounded-md px-2 py-1.5 text-left text-xs font-semibold text-blue-300 hover:bg-blue-500/10">+ Criar e adicionar #{textoTag.trim().replace(/^#/,'')}</button></div>}</div><p className="mt-1.5 text-[11px] text-white/40">Shift + Enter cria e adiciona uma tag.</p></div>
       <label className="text-xs text-white/55">Responsável<select className={input} value={form.responsavel_id} onChange={e=>setForm(f=>({...f,responsavel_id:e.target.value}))}><option value="">Sem responsável</option>{pessoas.map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}</select></label>
       <label className="text-xs text-white/55">Prioridade<select className={input} value={form.prioridade} onChange={e=>setForm(f=>({...f,prioridade:e.target.value as Prioridade}))}>{prioridades.map(p=><option key={p} value={p}>{p.toUpperCase()}</option>)}</select></label>
       {campo('Início',form.inicio,v=>setForm(f=>({...f,inicio:v})),'date')}
