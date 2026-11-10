@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { CheckCircle2, ClipboardCopy, FileCheck2, Film, Info, Plus, Pencil, Trash2, UploadCloud, Download, RotateCcw } from 'lucide-react'
+import { CheckCircle2, ClipboardCopy, FileCheck2, Film, Plus, Pencil, Trash2, UploadCloud, Download, RotateCcw } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
 import { modoDemo, supabase } from '../lib/supabase'
