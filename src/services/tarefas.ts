@@ -7,7 +7,7 @@ export async function listarColaboradoresTarefas(): Promise<ColaboradorTarefa[]>
   return (data ?? []) as ColaboradorTarefa[]
 }
 export type Prioridade = 'baixa' | 'normal' | 'alta' | 'urgente'
-export type EtapaTarefa = 'backlog' | 'andamento' | 'revisao' | 'aprovado'
+export type EtapaTarefa = string
 export type Tarefa = { id: string; titulo: string; programa: string; responsavel: string; responsavel_id?: string | null; prazo: string | null; inicio?: string | null; descricao?: string; prioridade?: Prioridade; etapa: EtapaTarefa }
 const demo: Tarefa[] = [{ id: 'demo-1', titulo: 'Chamada institucional — 30s', programa: 'SCC Meio-Dia', responsavel: 'Equipe de produção', prazo: null, etapa: 'backlog' }]
 export async function listarTarefas(): Promise<Tarefa[]> {
@@ -140,5 +140,26 @@ export async function listarNotificacoes():Promise<NotificacaoTarefa[]> {
 }
 export async function marcarNotificacaoLida(id:string):Promise<void> {
  const {error}=await obterSupabase().from('tarefa_notificacoes').update({lida_em:new Date().toISOString()}).eq('id',id)
+ if(error)throw error
+}
+
+export type ConfigEtapa={id:string;nome:string;cor:string;ordem:number}
+const etapasPadrao:ConfigEtapa[]=[{id:'backlog',nome:'A fazer',cor:'#9ca3af',ordem:0},{id:'andamento',nome:'Em produção',cor:'#0089ff',ordem:1},{id:'revisao',nome:'Em revisão',cor:'#ffb020',ordem:2},{id:'aprovado',nome:'Aprovado',cor:'#65d69b',ordem:3}]
+export async function listarEtapas():Promise<ConfigEtapa[]>{
+ if(modoDemo)return etapasPadrao
+ const {data,error}=await obterSupabase().from('tarefa_etapas').select('id,nome,cor,ordem').order('ordem').order('criado_em')
+ if(error)throw error
+ return data??[]
+}
+export async function criarEtapa(entrada:ConfigEtapa):Promise<void>{
+ const {error}=await obterSupabase().from('tarefa_etapas').insert(entrada)
+ if(error)throw error
+}
+export async function atualizarEtapaConfig(id:string,dados:Pick<ConfigEtapa,'nome'|'cor'>):Promise<void>{
+ const {error}=await obterSupabase().from('tarefa_etapas').update(dados).eq('id',id)
+ if(error)throw error
+}
+export async function excluirEtapaConfig(id:string):Promise<void>{
+ const {error}=await obterSupabase().from('tarefa_etapas').delete().eq('id',id)
  if(error)throw error
 }
