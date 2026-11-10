@@ -14,6 +14,7 @@ import Modulo from './pages/Modulo'
 import Administracao from './pages/Administracao'
 import DefinirSenha from './pages/DefinirSenha'
 import PrimeiroAcesso from './pages/PrimeiroAcesso'
+import GestaoTarefas from './pages/GestaoTarefas'
 import { SccAppShell, type SccModule, type ModulePermissions } from './components/SccAppShell'
 
 const navegacao = [
@@ -193,7 +194,7 @@ export default function App() {
       <div className="scc-app-content relative z-10">
       <Routes>
         <Route path="/painel" element={<Home />} />
-        <Route path="/tarefas" element={permissions.tasks ? <Modulo titulo="Gestão de Tarefas" descricao="Módulo V2 em preparação: fluxo de produção e aprovações." cor="#0089FF" /> : <Navigate to="/painel" replace />} />
+        <Route path="/tarefas" element={permissions.tasks ? <GestaoTarefas /> : <Navigate to="/painel" replace />} />
         <Route path="/padronizacao" element={permissions.standardization ? <Modulo titulo="Sistema de Padronização" descricao="Módulo V2 em preparação: conferência e nomenclatura." cor="#B900E5" /> : <Navigate to="/painel" replace />} />
         <Route path="/grade" element={<Home />} />
         <Route path="/conteudos" element={<Conteudos />} />
