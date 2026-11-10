@@ -1,20 +1,21 @@
 import { useState, type FormEvent } from 'react'
 import { Check, Copy, Link2, MailPlus, ShieldCheck, X } from 'lucide-react'
 import { obterSupabase } from '../lib/supabase'
+import type { Papel } from '../types/materiais'
 
 type RespostaConvite = {
   ok?: boolean
   erro?: string
   link_ativacao?: string
   mensagem?: string
-  papel?: 'leitor' | 'editor'
+  papel?: Papel
 }
 
 export default function ConviteUsuario({ aoConvidar }: { aoConvidar?: () => void }) {
   const [aberto, setAberto] = useState(false)
   const [nome, setNome] = useState('')
   const [email, setEmail] = useState('')
-  const [papel, setPapel] = useState<'leitor' | 'editor'>('leitor')
+  const [papel, setPapel] = useState<Exclude<Papel, 'admin'>>('leitor')
   const [enviando, setEnviando] = useState(false)
   const [link, setLink] = useState('')
   const [copiado, setCopiado] = useState(false)
@@ -104,10 +105,12 @@ export default function ConviteUsuario({ aoConvidar }: { aoConvidar?: () => void
           </div>
           <div>
             <label htmlFor="convite-papel" className="mb-2 block text-xs font-semibold text-white/75">Perfil de acesso</label>
-            <select id="convite-papel" value={papel} onChange={e => setPapel(e.target.value as 'leitor' | 'editor')}
+            <select id="convite-papel" value={papel} onChange={e => setPapel(e.target.value as Exclude<Papel, 'admin'>)}
               className="w-full rounded-xl border border-white/15 bg-[#050505] px-4 py-3 text-sm outline-none focus:border-blue-400">
               <option value="leitor">Leitor — somente consulta</option>
               <option value="editor">Editor — gerencia materiais</option>
+              <option value="opec">OPEC — gerencia a grade</option>
+              <option value="producao">PRODUÇÃO — tarefas e padronização</option>
             </select>
           </div>
           <div className="flex items-end">
