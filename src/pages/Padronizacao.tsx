@@ -218,11 +218,6 @@ export default function Padronizacao() {
         <p className="mt-3 text-sm leading-6 text-white/55">Confira os dados de materiais aprovados e prepare nomes consistentes antes do envio à grade.</p>
       </div>
 
-      <div className="mt-7 flex items-start gap-3 rounded-xl border border-amber-400/25 bg-amber-400/10 p-4 text-sm text-amber-100">
-        <Info size={19} className="mt-0.5 shrink-0"/>
-        <p>Envie o MP4 para a pasta do Google Drive vinculada ao programa. O sistema verifica nomes duplicados antes de iniciar a transferência e confirma o envio após o retorno do Google.</p>
-      </div>
-
       {admin && <div className="mt-5 flex flex-wrap items-center gap-3">{driveConectado === true ? <span className="rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm font-bold text-emerald-200">✓ Google Drive corporativo conectado</span> : <button type="button" disabled={conectandoDrive} onClick={() => void conectarDrive()} className="rounded-xl border border-blue-400/30 bg-blue-500/15 px-4 py-3 text-sm font-bold text-blue-200 disabled:opacity-50">{conectandoDrive ? 'Abrindo autorização...' : 'Conectar Google Drive corporativo'}</button>}{erroDrive && <p role="alert" className="text-xs text-red-300">{erroDrive}</p>}</div>}
       <div className="mt-7 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
         <form onSubmit={confirm} className="rounded-2xl border border-white/10 bg-[#1f1f1f] p-6">
