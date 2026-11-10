@@ -15,7 +15,7 @@ const input='mt-2 w-full min-w-0 rounded-xl border border-white/15 bg-[#111] px-
 const dataBR=(d?:string|null)=>d?d.split('-').reverse().join('/'):'—'
 const situacaoPrazo=(prazo?:string|null,concluida=false)=>{
   if(!prazo||concluida)return null
-  const partes=/^(\\d{4})-(\\d{2})-(\\d{2})/.exec(prazo)
+  const partes=/^(\d{4})-(\d{2})-(\d{2})/.exec(prazo)
   if(!partes)return null
   const hoje=new Date()
   const diaAtual=Date.UTC(hoje.getFullYear(),hoje.getMonth(),hoje.getDate())
