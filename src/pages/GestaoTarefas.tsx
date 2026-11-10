@@ -5,7 +5,7 @@ import { ArrowRight, CalendarDays, Clock3, MessageCircle, Paperclip, Plus, Searc
 import { modoDemo } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { can } from '../lib/permissoes'
-import { listarTarefas, criarTarefa, atualizarEtapa, excluirTarefa, listarColaboradoresTarefas, salvarDetalhes, listarComentarios, comentar, listarTempos, iniciarTempo, pararTempo, listarAnexos, anexarArquivo, urlAnexo, type Tarefa, type ColaboradorTarefa, type EtapaTarefa, type Prioridade, type Comentario, type RegistroTempo, type AnexoTarefa, listarParticipantes, adicionarParticipante, removerParticipante, listarChecklist, criarItemChecklist, marcarItemChecklist, removerItemChecklist, type ParticipanteTarefa, type ItemChecklist, listarAtividades, listarNotificacoes, marcarNotificacaoLida, type AtividadeTarefa, type NotificacaoTarefa, listarEtapas, criarEtapa, atualizarEtapaConfig, excluirEtapaConfig, type ConfigEtapa, definirEtapaConclusao, reordenarEtapas, listarProgressoChecklists, type ProgressoChecklist, listarParticipantesKanban, listarAvataresColaboradores } from '../services/tarefas'
+import { listarTarefas, criarTarefa, atualizarEtapa, excluirTarefa, listarColaboradoresTarefas, salvarDetalhes, listarComentarios, comentar, listarTempos, iniciarTempo, pararTempo, listarAnexos, anexarArquivo, urlAnexo, type Tarefa, type ColaboradorTarefa, type EtapaTarefa, type Prioridade, type Comentario, type RegistroTempo, type AnexoTarefa, listarParticipantes, adicionarParticipante, removerParticipante, listarChecklist, criarItemChecklist, marcarItemChecklist, removerItemChecklist, type ParticipanteTarefa, type ItemChecklist, listarAtividades, listarNotificacoes, marcarNotificacaoLida, type AtividadeTarefa, type NotificacaoTarefa, listarEtapas, criarEtapa, atualizarEtapaConfig, excluirEtapaConfig, type ConfigEtapa, definirEtapaConclusao, reordenarEtapas, listarProgressoChecklists, type ProgressoChecklist, listarParticipantesKanban, listarAvataresColaboradores, salvarOrdemKanban } from '../services/tarefas'
 
 const etapasPadrao:ConfigEtapa[]=[{id:'backlog',nome:'A fazer',cor:'#9ca3af',ordem:0,concluida:false},{id:'andamento',nome:'Em produção',cor:'#0089ff',ordem:1,concluida:false},{id:'revisao',nome:'Em revisão',cor:'#ffb020',ordem:2,concluida:false},{id:'aprovado',nome:'Aprovado',cor:'#65d69b',ordem:3,concluida:true}]
 const prioridades: Prioridade[]=['baixa','normal','alta','urgente']
@@ -63,6 +63,8 @@ export default function GestaoTarefas() {
   const [anexos,setAnexos]=useState<AnexoTarefa[]>([])
   const [agora,setAgora]=useState(Date.now())
   const [drag,setDrag]=useState<string|null>(null)
+  const [alvoDrag,setAlvoDrag]=useState<{id:string;posicao:'antes'|'depois'}|null>(null)
+  const [colunaDrag,setColunaDrag]=useState<string|null>(null)
   const carregar=useCallback(async()=>{
     try { const [t,p,e]=await Promise.all([listarTarefas(),listarColaboradoresTarefas(),listarEtapas()]);setTarefas(t);setPessoas(p);setStages(e);const ids=t.map(item=>item.id);const [progresso,equipe]=await Promise.all([listarProgressoChecklists(ids),listarParticipantesKanban(ids)]);setProgressoChecklists(progresso);setParticipantesKanban(equipe) }
     catch(e){setErro(e instanceof Error?e.message:'Falha ao carregar tarefas')}
@@ -144,6 +146,25 @@ export default function GestaoTarefas() {
     try{await atualizarEtapa(id,etapa);setTarefas(v=>v.map(t=>t.id===id?{...t,etapa}:t));if(id===selecionada)setAtividades(await listarAtividades(id));void recarregarNotificacoes()}
     catch{setErro('Não foi possível mover a tarefa.')}finally{setOcupado(false)}
   }
+  const soltarTarefa=async(etapa:EtapaTarefa,alvoId?:string,posicao:'antes'|'depois'='depois')=>{
+    if(!drag||!podeEditar||ocupado)return
+    const movida=tarefas.find(t=>t.id===drag)
+    if(!movida||movida.id===alvoId)return
+    const destino=tarefas.filter(t=>t.etapa===etapa&&t.id!==drag)
+    const indice=alvoId?destino.findIndex(t=>t.id===alvoId):-1
+    const inserir=indice<0?destino.length:indice+(posicao==='depois'?1:0)
+    destino.splice(inserir,0,{...movida,etapa})
+    const origem=movida.etapa===etapa?[]:tarefas.filter(t=>t.etapa===movida.etapa&&t.id!==drag)
+    const alteradas=[...destino.map((t,i)=>({...t,ordem_kanban:i})),...origem.map((t,i)=>({...t,ordem_kanban:i}))]
+    const anterior=tarefas
+    setTarefas(v=>v.map(t=>alteradas.find(a=>a.id===t.id)??t))
+    setOcupado(true);setErro('')
+    try{
+      await salvarOrdemKanban(alteradas)
+      if(movida.etapa!==etapa){if(drag===selecionada)setAtividades(await listarAtividades(drag));void recarregarNotificacoes()}
+    }catch{setTarefas(anterior);setErro('Não foi possível salvar a posição da tarefa.')}
+    finally{setOcupado(false);setDrag(null);setAlvoDrag(null);setColunaDrag(null)}
+  }
   const criar=async(e:FormEvent)=>{
     e.preventDefault();if(!podeEditar||ocupado||!form.titulo.trim())return
     setOcupado(true);setErro('')
@@ -222,7 +243,7 @@ export default function GestaoTarefas() {
     </div>}
     {visualizacao==='calendario'&&<CalendarioEntregas tarefas={filtradas} etapas={stages} abrir={id=>{setSelecionada(id);setAbaDetalhe('geral')}}/>}
     {visualizacao==='kanban'&&<div style={{["--scc-stage-count" as string]:stages.length}} className="scc-bitrix-board mt-6 flex items-start gap-2 overflow-x-auto pb-4">
-      {stages.map((stage,i)=>{const itensEtapa=filtradas.filter(t=>t.etapa===stage.id);return <section key={stage.id} onDragOver={e=>{if(podeEditar)e.preventDefault()}} onDrop={e=>{e.preventDefault();if(drag)void mover(drag,stage.id);setDrag(null)}} onMouseEnter={()=>setEtapaEmHover(stage.id)} onMouseLeave={()=>setEtapaEmHover(v=>v===stage.id?null:v)} onFocusCapture={()=>setEtapaEmHover(stage.id)} className="scc-bitrix-column group min-w-0 shrink-0 snap-start">
+      {stages.map((stage,i)=>{const itensEtapa=filtradas.filter(t=>t.etapa===stage.id);return <section key={stage.id} onDragOver={e=>{if(podeEditar&&drag){e.preventDefault();e.dataTransfer.dropEffect='move';setColunaDrag(stage.id)}}} onDragLeave={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node))setColunaDrag(null)}} onDrop={e=>{e.preventDefault();e.stopPropagation();void soltarTarefa(stage.id)}} onMouseEnter={()=>setEtapaEmHover(stage.id)} onMouseLeave={()=>setEtapaEmHover(v=>v===stage.id?null:v)} onFocusCapture={()=>setEtapaEmHover(stage.id)} className={"scc-bitrix-column group min-w-0 shrink-0 snap-start rounded-lg transition-colors "+(drag&&colunaDrag===stage.id?"bg-blue-500/10 ring-1 ring-blue-400/30":"")}>
         <div className="scc-bitrix-heading flex items-center justify-between gap-2 rounded-md px-2.5 py-2" style={{background:stage.cor,color:'#111'}}><h2 className="min-w-0 truncate text-[11px] font-extrabold uppercase tracking-wide">{stage.nome} <span className="font-semibold opacity-70">{itensEtapa.length}</span></h2>{perfil?.papel==='admin'&&<div data-visible={etapaEmHover===stage.id} className="scc-stage-admin flex shrink-0 items-center gap-1"><button type="button" title="Adicionar status" aria-label={'Adicionar status após '+stage.nome} onClick={()=>{setEtapaEmEdicao(null);setInserirAposEtapa(stage.id);setNomeNovaEtapa('');setCorNovaEtapa(stage.cor);setMostrarNovaEtapa(true);setGerenciarEtapas(true)}} className="rounded p-1 hover:bg-black/20 focus-visible:outline focus-visible:outline-2"><Plus size={14}/></button><button type="button" title="Alterar cor e nome" aria-label={'Personalizar '+stage.nome} onClick={()=>{setEtapaEmEdicao(stage.id);setInserirAposEtapa(null);setMostrarNovaEtapa(false);setGerenciarEtapas(true)}} className="rounded p-1 hover:bg-black/20 focus-visible:outline focus-visible:outline-2"><Paintbrush size={14}/></button></div>}</div>
         {podeEditar&&<div className="mt-2">
           <button type="button" aria-expanded={etapaRapida===stage.id} onClick={()=>{setEtapaRapida(v=>v===stage.id?null:stage.id);setTituloRapido('')}} className="scc-bitrix-add flex w-full items-center justify-center gap-1 rounded-xl bg-[#292929] py-2 text-xs font-bold text-white/90 hover:bg-[#383838]"><Plus size={15}/> Tarefa rápida</button>
@@ -231,7 +252,7 @@ export default function GestaoTarefas() {
             <div className="flex items-center justify-between gap-2 border-t border-white/10 px-3 py-2"><span className="text-[10px] text-white/45">Enter cria · Shift+Enter pula linha</span><div className="flex gap-1"><button type="button" onClick={()=>{setEtapaRapida(null);setTituloRapido('')}} className="rounded-md px-2 py-1 text-xs text-white/60 hover:bg-white/10">Cancelar</button><button type="submit" disabled={ocupado||!tituloRapido.trim()} className="rounded-md bg-blue-600 px-3 py-1 text-xs font-bold text-white disabled:opacity-40">Criar</button></div></div>
           </form>}
         </div>}
-        <div className="mt-3 space-y-3">{itensEtapa.map(t=><article key={t.id} draggable={podeEditar} onDragStart={(e:DragEvent)=>{e.dataTransfer.effectAllowed='move';setDrag(t.id)}} onDragEnd={()=>setDrag(null)} className={["scc-task-card", "scc-priority-" + (t.prioridade || "normal"), "scc-bitrix-card cursor-pointer rounded-lg border border-white/10 bg-[#272727] p-3.5 transition hover:bg-[#303030]"].join(" ")} onClick={()=>{setSelecionada(t.id);setAbaDetalhe('geral')}}>
+        <div className="mt-3 space-y-3">{itensEtapa.map(t=><article key={t.id} draggable={podeEditar} onDragStart={(e:DragEvent)=>{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',t.id);setDrag(t.id)}} onDragOver={e=>{if(!drag||drag===t.id)return;e.preventDefault();e.stopPropagation();const r=e.currentTarget.getBoundingClientRect();setAlvoDrag({id:t.id,posicao:e.clientY<r.top+r.height/2?'antes':'depois'});setColunaDrag(stage.id)}} onDrop={e=>{e.preventDefault();e.stopPropagation();if(drag&&drag!==t.id){const r=e.currentTarget.getBoundingClientRect();void soltarTarefa(stage.id,t.id,e.clientY<r.top+r.height/2?'antes':'depois')}}} onDragEnd={()=>{setDrag(null);setAlvoDrag(null);setColunaDrag(null)}} className={["scc-task-card", "scc-priority-" + (t.prioridade || "normal"), "scc-bitrix-card cursor-pointer rounded-lg border border-white/10 bg-[#272727] p-3.5 transition hover:bg-[#303030]", drag===t.id?"opacity-40",alvoDrag?.id===t.id&&drag!==t.id?(alvoDrag.posicao==="antes"?"ring-2 ring-blue-400 border-t-4 border-t-blue-400":"ring-2 ring-blue-400 border-b-4 border-b-blue-400"):""].join(" ")} onClick={()=>{setSelecionada(t.id);setAbaDetalhe('geral')}}>
           <div className="mb-1.5 flex items-center justify-between"><span className="rounded-md px-2 py-1 text-[10px] font-bold uppercase" style={{color:cores[t.prioridade||'normal'],background:cores[t.prioridade||'normal']+'20'}}>{(t.prioridade==='urgente'||t.prioridade==='alta') ? '🔥 ' : '● '}{t.prioridade||'normal'}</span><ArrowRight size={15} className="text-white/30"/></div>
           <h3 className="text-[12px] font-bold leading-snug text-white">{t.titulo}</h3><p className="mt-1 text-[10px] text-white/45">{t.programa||'Sem programa'}</p>
           {(progressoChecklists[t.id]?.total??0)>0&&<div className="mt-2" aria-label={`Checklist: ${progressoChecklists[t.id].concluidos} de ${progressoChecklists[t.id].total} itens concluídos`}><div className="mb-2 flex items-center justify-between gap-2 text-[11px]"><span className="flex items-center gap-1.5 text-white/60"><ListChecks size={13}/> Checklist · {progressoChecklists[t.id].concluidos}/{progressoChecklists[t.id].total}</span><span className="font-semibold text-white/85">{Math.round(progressoChecklists[t.id].concluidos/progressoChecklists[t.id].total*100)}%</span></div><div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progressoChecklists[t.id].concluidos/progressoChecklists[t.id].total*100)} className="h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-blue-500 transition-[width] duration-300" style={{width:`${progressoChecklists[t.id].concluidos/progressoChecklists[t.id].total*100}%`,background:progressoChecklists[t.id].concluidos===progressoChecklists[t.id].total?'#65d69b':'#3b82f6'}}/></div></div>}
