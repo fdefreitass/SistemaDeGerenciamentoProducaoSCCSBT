@@ -159,19 +159,44 @@ export default function Padronizacao() {
     else {setTipos(atual=>atual.map(t=>t.codigo===item.codigo?{...t,ativo:false}:t));if(type===item.codigo){setType('CH');setProgram('')}}
   }
 
+  async function vincularPastaDrive(item: Destino) {
+    if (!supabase || !admin) return null
+    const {data:{session}}=await supabase.auth.getSession()
+    if (!session) throw new Error('Sessão expirada. Entre novamente.')
+    const response=await fetch('https://uppdvhtmvprtwtppcfdm.supabase.co/functions/v1/google-drive-criar-pasta',{
+      method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${session.access_token}`},
+      body:JSON.stringify({destino_id:item.id})
+    })
+    const result=await response.json()
+    if (!response.ok || !result.folder_id) throw new Error(result.error || 'Falha ao criar pasta no Drive.')
+    setDestinos(atual=>atual.map(d=>d.id===item.id?{...d,drive_folder_id:result.folder_id}:d))
+    return result.folder_id as string
+  }
   async function adicionarDestino() {
     if (!supabase || !admin || !novoDestino.trim()) return
-    setSalvandoDestino(true); setErroDestino('')
-    const nome = normalizeName(novoDestino)
-    const existente = destinos.find(item => item.tipo === type && item.nome === nome)
-    if (existente?.ativo) { setErroDestino('Este destino já existe. Utilize a opção de editar.'); setSalvandoDestino(false); return }
-    const consulta = existente
-      ? await supabase.from('destinos_padronizacao').update({ativo:true}).eq('id',existente.id).select('id,tipo,nome,drive_folder_id,ativo').single()
-      : await supabase.from('destinos_padronizacao').insert({ tipo: type, nome }).select('id,tipo,nome,drive_folder_id,ativo').single()
-    const {data,error} = consulta
-    if (error) setErroDestino('Não foi possível salvar o destino.')
-    else { setDestinos(atual => [...atual.filter(item=>item.id!==data.id),data as Destino].sort((a,b) => a.nome.localeCompare(b.nome))); setProgram(nome); setNovoDestino('') }
-    setSalvandoDestino(false)
+    setSalvandoDestino(true);setErroDestino('')
+    try {
+      const nome=normalizeName(novoDestino)
+      const existente=destinos.find(item=>item.tipo===type && item.nome===nome)
+      if (existente?.ativo) throw new Error('Este destino já existe. Utilize a opção de editar.')
+      const {data,error}=existente
+        ? await supabase.from('destinos_padronizacao').update({ativo:true}).eq('id',existente.id).select('id,tipo,nome,drive_folder_id,ativo').single()
+        : await supabase.from('destinos_padronizacao').insert({tipo:type,nome}).select('id,tipo,nome,drive_folder_id,ativo').single()
+      if (error || !data) throw new Error('Não foi possível cadastrar o destino.')
+      const item=data as Destino
+      setDestinos(atual=>[...atual.filter(d=>d.id!==item.id),item].sort((x,y)=>x.nome.localeCompare(y.nome)))
+      if (!item.drive_folder_id) await vincularPastaDrive(item)
+      setProgram(nome);setNovoDestino('')
+    } catch(error) {
+      setErroDestino(error instanceof Error?error.message:'Falha ao criar destino e pasta no Drive.')
+    } finally {setSalvandoDestino(false)}
+  }
+  async function criarPastaPendente(item: Destino) {
+    if (!admin || salvandoDestino) return
+    setSalvandoDestino(true);setErroDestino('')
+    try { await vincularPastaDrive(item) }
+    catch(error){setErroDestino(error instanceof Error?error.message:'Falha ao vincular pasta.')}
+    finally{setSalvandoDestino(false)}
   }
   async function reativarDestino(item: Destino) {
     if (!supabase || !admin) return
@@ -364,10 +389,11 @@ export default function Padronizacao() {
                   <span className="min-w-0 truncate text-xs">{item.nome}{!item.ativo && <span className="ml-2 text-amber-300">(desativado)</span>}</span>
                   <div className="flex shrink-0 gap-2">
                     <button type="button" title="Renomear" aria-label={`Renomear ${item.nome}`} onClick={() => abrirEdicaoDestino(item)} className="text-blue-300"><Pencil size={15}/></button>
+                    {item.ativo && !item.drive_folder_id && <button type="button" disabled={salvandoDestino} onClick={()=>void criarPastaPendente(item)} className="text-xs font-bold text-amber-300 disabled:opacity-40">Criar pasta no Drive</button>}
                     {item.ativo ? <button type="button" title="Desativar" aria-label={`Desativar ${item.nome}`} onClick={() => void desativarDestino(item)} className="text-red-300"><Trash2 size={15}/></button> : <button type="button" onClick={()=>void reativarDestino(item)} className="text-xs font-bold text-emerald-300">Restaurar</button>}
                   </div>
                 </div>)}</div>
-                <p className="mt-3 text-xs text-amber-200/80">Novos destinos são cadastrados no sistema. A pasta no Drive deverá ser vinculada antes da publicação de arquivos.</p>
+                <p className="mt-3 text-xs text-amber-200/80">Ao adicionar um destino, o sistema cria ou localiza a pasta correspondente no Google Drive. Destinos antigos sem vínculo podem ser corrigidos pelo botão Criar pasta no Drive.</p>
               </div>}
               {erroDestino && <p role="alert" className="mt-2 text-xs text-red-300">{erroDestino}</p>}
             </div>
