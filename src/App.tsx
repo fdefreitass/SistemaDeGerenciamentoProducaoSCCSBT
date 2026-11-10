@@ -14,6 +14,7 @@ import Modulo from './pages/Modulo'
 import Administracao from './pages/Administracao'
 import DefinirSenha from './pages/DefinirSenha'
 import PrimeiroAcesso from './pages/PrimeiroAcesso'
+import { can } from './lib/permissoes'
 import GestaoTarefas from './pages/GestaoTarefas'
 import Padronizacao from './pages/Padronizacao'
 import { SccAppShell, type SccModule, type ModulePermissions } from './components/SccAppShell'
@@ -110,7 +111,7 @@ export default function App() {
   if (pathname === '/login') return modoDemo ? <Navigate to="/painel" replace /> : <Navigate to="/painel" replace />
 
   const administrador = !modoDemo && perfil?.papel === 'admin'
-  const permissions: ModulePermissions = { home: true, tasks: administrador, standardization: administrador, schedule: true }
+  const permissions: ModulePermissions = { home: true, tasks: modoDemo || can(perfil?.papel, 'tasks.read'), standardization: modoDemo || can(perfil?.papel, 'standardization.read'), schedule: modoDemo || can(perfil?.papel, 'grade.read') }
   const moduleForPath = (path: string): SccModule => path === '/tarefas' ? 'tasks' : path === '/padronizacao' ? 'standardization' : ['/conteudos', '/gravacao', '/atualizacao', '/remocao', '/grade'].includes(path) ? 'schedule' : 'home'
   const currentModule = moduleForPath(pathname)
   const navigateModule = (module: SccModule) => navigate(({ home: '/painel', tasks: '/tarefas', standardization: '/padronizacao', schedule: '/grade' })[module])
