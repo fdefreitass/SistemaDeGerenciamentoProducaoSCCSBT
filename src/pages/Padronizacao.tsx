@@ -1,5 +1,10 @@
-import { useMemo, useState, type FormEvent } from 'react'
-import { CheckCircle2, ClipboardCopy, FileCheck2, Film, Info } from 'lucide-react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { CheckCircle2, ClipboardCopy, FileCheck2, Film, Info, Plus, Pencil, Trash2 } from 'lucide-react'
+
+import { useAuth } from '../context/AuthContext'
+import { modoDemo, supabase } from '../lib/supabase'
+
+type Destino = { id: string; tipo: string; nome: string; drive_folder_id: string | null; ativo: boolean }
 
 const types = [
   { value: 'CH', label: 'CH — Chamada' },
@@ -14,6 +19,50 @@ function normalizeName(value: string) {
 }
 
 export default function Padronizacao() {
+  const { perfil } = useAuth()
+  const admin = perfil?.papel === 'admin'
+  const [destinos, setDestinos] = useState<Destino[]>([])
+  const [novoDestino, setNovoDestino] = useState('')
+  const [gerenciar, setGerenciar] = useState(false)
+  const [erroDestino, setErroDestino] = useState('')
+  const [salvandoDestino, setSalvandoDestino] = useState(false)
+
+  useEffect(() => {
+    if (!supabase || modoDemo) return
+    let ativo = true
+    void supabase.from('destinos_padronizacao').select('id,tipo,nome,drive_folder_id,ativo').order('nome').then(({ data, error }) => {
+      if (!ativo) return
+      if (error) setErroDestino('Não foi possível carregar os destinos.')
+      else setDestinos((data ?? []) as Destino[])
+    })
+    return () => { ativo = false }
+  }, [])
+
+  async function adicionarDestino() {
+    if (!supabase || !admin || !novoDestino.trim()) return
+    setSalvandoDestino(true); setErroDestino('')
+    const nome = normalizeName(novoDestino)
+    const { data, error } = await supabase.from('destinos_padronizacao').insert({ tipo: type, nome }).select('id,tipo,nome,drive_folder_id,ativo').single()
+    if (error) setErroDestino('Não foi possível cadastrar. Confira se o nome já existe.')
+    else { setDestinos(atual => [...atual, data as Destino].sort((a,b) => a.nome.localeCompare(b.nome))); setProgram(nome); setNovoDestino('') }
+    setSalvandoDestino(false)
+  }
+  async function renomearDestino(item: Destino) {
+    if (!supabase || !admin) return
+    const nome = window.prompt('Novo nome para o destino:', item.nome)
+    if (!nome?.trim()) return
+    const normalizado = normalizeName(nome)
+    const { error } = await supabase.from('destinos_padronizacao').update({ nome: normalizado }).eq('id', item.id)
+    if (error) setErroDestino('Não foi possível renomear o destino.')
+    else { setDestinos(atual => atual.map(d => d.id === item.id ? { ...d, nome: normalizado } : d)); if (program === item.nome) setProgram(normalizado) }
+  }
+  async function desativarDestino(item: Destino) {
+    if (!supabase || !admin || !window.confirm('Remover esta opção da seleção? A pasta no Google Drive será preservada.')) return
+    const { error } = await supabase.from('destinos_padronizacao').update({ ativo: false }).eq('id', item.id)
+    if (error) setErroDestino('Não foi possível desativar o destino.')
+    else { setDestinos(atual => atual.map(d => d.id === item.id ? { ...d, ativo: false } : d)); if (program === item.nome) setProgram('') }
+  }
+
   const [type, setType] = useState<(typeof types)[number]['value']>('CH')
   const [program, setProgram] = useState('')
   const [number, setNumber] = useState('')
@@ -22,13 +71,16 @@ export default function Padronizacao() {
   const [confirmation, setConfirmation] = useState('')
   const [copied, setCopied] = useState(false)
 
+  const opcoes = destinos.filter(item => item.tipo === type && item.ativo)
+  const destinoSelecionado = opcoes.find(item => item.nome === program)
+
   const filename = useMemo(() => {
     const name = normalizeName(program)
     const id = number.trim().padStart(2, '0')
     const seconds = Number(duration)
-    if (!name || !/^\d{1,4}$/.test(number.trim()) || !Number.isInteger(seconds) || seconds < 1 || seconds > 36000) return ''
+    if (!destinoSelecionado || !name || !/^\d{1,4}$/.test(number.trim()) || !Number.isInteger(seconds) || seconds < 1 || seconds > 36000) return ''
     return `${type} - ${name} ${id} - ${seconds}"s.mp4`
-  }, [type, program, number, duration])
+  }, [type, program, number, duration, destinoSelecionado])
 
   function confirm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -60,16 +112,40 @@ export default function Padronizacao() {
           <h2 className="mb-6 flex items-center gap-2 text-lg font-bold"><Film size={20}/> Identificação do material</h2>
           <div className="grid gap-5 sm:grid-cols-2">
             <label className="text-xs font-semibold text-white/70">Tipo de material
-              <select value={type} onChange={e => { setType(e.target.value as typeof type); setConfirmation('') }} className="mt-2 w-full rounded-xl border border-white/15 bg-[#111] p-3 text-sm text-white">
+              <select value={type} onChange={e => { setType(e.target.value as typeof type); setProgram(''); setGerenciar(false); setConfirmation('') }} className="mt-2 w-full rounded-xl border border-white/15 bg-[#111] p-3 text-sm text-white">
                 {types.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
               </select>
             </label>
             <label className="text-xs font-semibold text-white/70">Código numérico
               <input required inputMode="numeric" pattern="[0-9]{1,4}" maxLength={4} placeholder="01" value={number} onChange={e => { setNumber(e.target.value); setConfirmation('') }} className="mt-2 w-full rounded-xl border border-white/15 bg-[#111] p-3 text-sm text-white" />
             </label>
-            <label className="text-xs font-semibold text-white/70 sm:col-span-2">Programa ou produto
-              <input required maxLength={100} placeholder="Ex.: SCC News" value={program} onChange={e => { setProgram(e.target.value); setConfirmation('') }} className="mt-2 w-full rounded-xl border border-white/15 bg-[#111] p-3 text-sm text-white" />
-            </label>
+            <div className="sm:col-span-2">
+              <div className="flex items-center justify-between gap-2">
+                <label htmlFor="destino-padronizacao" className="text-xs font-semibold text-white/70">{type === 'CALHAU' ? 'Série do calhau' : 'Programa ou produto'}</label>
+                {admin && <button type="button" onClick={() => setGerenciar(v => !v)} className="text-xs font-bold text-blue-400 hover:text-blue-300">{gerenciar ? 'Fechar gerenciamento' : 'Gerenciar destinos'}</button>}
+              </div>
+              <select id="destino-padronizacao" required value={program} onChange={e => { setProgram(e.target.value); setConfirmation('') }} className="mt-2 w-full rounded-xl border border-white/15 bg-[#111] p-3 text-sm text-white">
+                <option value="">Selecione {type === 'CALHAU' ? 'uma série' : 'um destino'}</option>
+                {opcoes.map(item => <option key={item.id} value={item.nome}>{item.nome}</option>)}
+              </select>
+              {destinoSelecionado && <p className="mt-2 text-xs text-white/45">{destinoSelecionado.drive_folder_id ? 'Pasta do Google Drive vinculada' : 'Destino cadastrado; pasta do Google Drive ainda não vinculada'}</p>}
+              {admin && gerenciar && <div className="mt-3 rounded-xl border border-blue-400/20 bg-[#111] p-3">
+                <p className="mb-3 text-xs font-semibold text-white/70">Gerenciar {type === 'CALHAU' ? 'séries de calhaus' : 'programas e produtos'}</p>
+                <div className="flex flex-wrap gap-2">
+                  <input aria-label="Nome do novo destino" value={novoDestino} onChange={e => setNovoDestino(e.target.value)} maxLength={100} placeholder={type === 'CALHAU' ? 'Nome da nova série' : 'Nome do programa'} className="min-w-0 flex-1 rounded-lg border border-white/15 bg-[#080808] px-3 py-2 text-sm" />
+                  <button type="button" disabled={salvandoDestino || !novoDestino.trim()} onClick={() => void adicionarDestino()} className="flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold disabled:opacity-40"><Plus size={14}/> Adicionar</button>
+                </div>
+                <div className="mt-3 space-y-2">{opcoes.map(item => <div key={item.id} className="flex items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2">
+                  <span className="min-w-0 truncate text-xs">{item.nome}</span>
+                  <div className="flex shrink-0 gap-2">
+                    <button type="button" title="Renomear" aria-label={`Renomear ${item.nome}`} onClick={() => void renomearDestino(item)} className="text-blue-300"><Pencil size={15}/></button>
+                    <button type="button" title="Desativar" aria-label={`Desativar ${item.nome}`} onClick={() => void desativarDestino(item)} className="text-red-300"><Trash2 size={15}/></button>
+                  </div>
+                </div>)}</div>
+                <p className="mt-3 text-xs text-amber-200/80">Novos destinos são cadastrados no sistema. A pasta no Drive deverá ser vinculada antes da publicação de arquivos.</p>
+              </div>}
+              {erroDestino && <p role="alert" className="mt-2 text-xs text-red-300">{erroDestino}</p>}
+            </div>
             <label className="text-xs font-semibold text-white/70">Duração em segundos
               <input required type="number" min="1" max="36000" step="1" placeholder="30" value={duration} onChange={e => { setDuration(e.target.value); setConfirmation('') }} className="mt-2 w-full rounded-xl border border-white/15 bg-[#111] p-3 text-sm text-white" />
             </label>
