@@ -54,6 +54,7 @@ export default function GestaoTarefas() {
   const [tituloRapido,setTituloRapido]=useState('')
   const [ocupado,setOcupado]=useState(false)
   const [erro,setErro]=useState('')
+  const [confirmacao,setConfirmacao]=useState<{tipo:'tarefa'|'etapa';id:string;nome:string}|null>(null)
   const [form,setForm]=useState({titulo:'',programa:'',responsavel_id:'',inicio:'',prazo:'',prioridade:'normal' as Prioridade,descricao:''})
   const [comentarios,setComentarios]=useState<Comentario[]>([])
   const [mensagem,setMensagem]=useState('')
@@ -141,7 +142,24 @@ export default function GestaoTarefas() {
   }
   const alterarConclusao=async(id:string)=>{setOcupado(true);setErro('');try{await definirEtapaConclusao(id);setStages(await listarEtapas())}catch(e){setErro(e instanceof Error?e.message:'Falha ao definir conclusão')}finally{setOcupado(false)}}
   const moverPosicao=async(id:string,direcao:number)=>{const atual=stages.findIndex(e=>e.id===id),destino=atual+direcao;if(destino<0||destino>=stages.length)return;const lista=[...stages];[lista[atual],lista[destino]]=[lista[destino],lista[atual]];setOcupado(true);setErro('');try{await reordenarEtapas(lista);setStages(await listarEtapas())}catch(e){setErro(e instanceof Error?e.message:'Falha ao reordenar');setStages(await listarEtapas())}finally{setOcupado(false)}}
-  const removerEtapa=async(id:string)=>{if(stages.find(e=>e.id===id)?.concluida){setErro('Defina outra etapa de conclusão antes de excluir esta.');return}if(tarefas.some(t=>t.etapa===id)){setErro('Mova todas as tarefas desta etapa antes de excluí-la.');return}if(!window.confirm('Excluir esta etapa?'))return;setOcupado(true);setErro('');try{await excluirEtapaConfig(id);setStages(await listarEtapas());if(filtroProgresso===id)setFiltroProgresso('')}catch(e){setErro(e instanceof Error?e.message:'Não foi possível excluir a etapa')}finally{setOcupado(false)}}
+  const removerEtapa=async(id:string)=>{if(stages.find(e=>e.id===id)?.concluida){setErro('Defina outra etapa de conclusão antes de excluir esta.');return}if(tarefas.some(t=>t.etapa===id)){setErro('Mova todas as tarefas desta etapa antes de excluí-la.');return}setConfirmacao({tipo:'etapa',id,nome:stages.find(e=>e.id===id)?.nome||'Esta etapa'})}
+  const confirmarExclusao=async()=>{
+    if(!confirmacao||ocupado)return
+    const alvo=confirmacao
+    setOcupado(true);setErro('')
+    try{
+      if(alvo.tipo==='tarefa'){
+        await excluirTarefa(alvo.id)
+        setTarefas(v=>v.filter(t=>t.id!==alvo.id))
+        setSelecionada(null)
+      }else{
+        await excluirEtapaConfig(alvo.id)
+        setStages(await listarEtapas())
+        if(filtroProgresso===alvo.id)setFiltroProgresso('')
+      }
+      setConfirmacao(null)
+    }catch(e){setErro(e instanceof Error?e.message:'Não foi possível concluir a exclusão.');setConfirmacao(null)}finally{setOcupado(false)}
+  }
   const mover=async(id:string,etapa:EtapaTarefa)=>{
     if(!podeEditar||ocupado)return
     setOcupado(true);setErro('')
@@ -301,8 +319,9 @@ export default function GestaoTarefas() {
 </div>}
       {abaDetalhe==='historico'&&<div role="tabpanel">      <div className="mt-6 rounded-2xl border border-white/10 bg-[#222] p-5"><h3 className="flex items-center gap-2 font-bold"><History size={17}/> Histórico de atividades</h3><button type="button" className="mt-2 text-xs text-blue-300 underline" onClick={async()=>{try{setAtividades(await listarAtividades(tarefa.id));void recarregarNotificacoes()}catch{setErro('Falha ao atualizar histórico')}}}>Atualizar histórico</button><div className="mt-4 max-h-72 space-y-3 overflow-y-auto">{atividades.length===0&&<p className="text-sm text-white/40">Nenhuma alteração registrada ainda.</p>}{atividades.map(a=><div key={a.id} className="border-l-2 border-blue-500/40 pl-3"><p className="text-xs text-white/50">{nomePessoa(a.autor_id)||'Sistema'} · {new Date(a.criado_em).toLocaleString('pt-BR')}</p><p className="mt-1 text-sm"><span className="font-semibold capitalize">{a.tipo}</span> · {a.detalhe}</p></div>)}</div></div>
 </div>}
-      {podeExcluir&&<button className="mt-7 flex items-center gap-2 text-sm text-red-300" onClick={async()=>{if(!window.confirm('Excluir tarefa definitivamente?'))return;try{await excluirTarefa(tarefa.id);setTarefas(v=>v.filter(t=>t.id!==tarefa.id));setSelecionada(null)}catch{setErro('Não foi possível excluir.')}}}><Trash2 size={16}/> Excluir tarefa</button>}
+      {podeExcluir&&<button className="mt-7 flex items-center gap-2 text-sm text-red-300" onClick={()=>setConfirmacao({tipo:'tarefa',id:tarefa.id,nome:tarefa.titulo})}><Trash2 size={16}/> Excluir tarefa</button>}
       <p className="mt-8 flex items-center gap-2 text-xs text-white/30"><CalendarDays size={14}/> Início {dataBR(tarefa.inicio)} · Entrega {dataBR(tarefa.prazo)}</p>
     </section></div>,document.body)}
+      {confirmacao&&createPortal(<div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget&&!ocupado)setConfirmacao(null)}}><section role="alertdialog" aria-modal="true" aria-labelledby="scc-confirm-title" aria-describedby="scc-confirm-description" className="w-full max-w-md rounded-3xl border border-white/15 bg-[#202020] p-6 text-white shadow-[0_24px_90px_rgba(0,0,0,.7)] sm:p-7"><div className="flex items-start justify-between gap-4"><div className="grid h-12 w-12 place-items-center rounded-2xl border border-red-400/20 bg-red-500/10 text-red-300"><Trash2 size={22}/></div><button type="button" aria-label="Fechar confirmação" disabled={ocupado} onClick={()=>setConfirmacao(null)} className="rounded-lg p-2 text-white/50 transition hover:bg-white/10 hover:text-white"><X size={20}/></button></div><h2 id="scc-confirm-title" className="mt-5 text-xl font-bold tracking-tight">Excluir {confirmacao.tipo==='tarefa'?'tarefa':'status'}?</h2><p id="scc-confirm-description" className="mt-3 break-words text-sm leading-relaxed text-white/65">Você está prestes a excluir <strong className="text-white">{confirmacao.nome}</strong>. Esta ação é permanente e não poderá ser desfeita.</p><div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><button type="button" disabled={ocupado} onClick={()=>setConfirmacao(null)} className="rounded-xl border border-white/15 bg-[#303030] px-5 py-3 text-sm font-semibold transition hover:bg-[#3a3a3a] disabled:opacity-50">Cancelar</button><button type="button" disabled={ocupado} onClick={()=>void confirmarExclusao()} className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-3 text-sm font-bold transition hover:bg-red-500 disabled:opacity-50"><Trash2 size={16}/>{ocupado?'Excluindo...':'Sim, excluir'}</button></div></section></div>,document.body)}
   </main>
 }
