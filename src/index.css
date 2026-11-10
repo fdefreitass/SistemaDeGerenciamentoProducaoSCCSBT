@@ -1146,4 +1146,21 @@ body { overflow-x: hidden; }
 .scc-stage-admin{visibility:hidden;pointer-events:none}
 .scc-bitrix-column:hover .scc-stage-admin,.scc-bitrix-column:focus-within .scc-stage-admin{visibility:visible;pointer-events:auto}
 @media(hover:none){.scc-stage-admin{opacity:1;visibility:visible;pointer-events:auto}}
-\n/* Modal de tarefa: aproveita a largura disponível e mantém a rolagem sem trilho visual */\n.scc-task-detail-modal{scrollbar-width:none;-ms-overflow-style:none}\n.scc-task-detail-modal::-webkit-scrollbar{display:none}\n
+
+/* Modal de tarefa — scrollbar SCC discreta, sem alterar dimensões da box */
+.scc-task-detail-modal{
+  scrollbar-width:thin;
+  scrollbar-color:#536579 #1d1d1d;
+  scrollbar-gutter:stable;
+}
+.scc-task-detail-modal::-webkit-scrollbar{width:9px}
+.scc-task-detail-modal::-webkit-scrollbar-track{
+  background:#1d1d1d;
+  border-radius:999px;
+}
+.scc-task-detail-modal::-webkit-scrollbar-thumb{
+  background:#536579;
+  border:2px solid #1d1d1d;
+  border-radius:999px;
+}
+.scc-task-detail-modal::-webkit-scrollbar-thumb:hover{background:#3b82f6}
