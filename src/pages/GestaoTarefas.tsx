@@ -77,7 +77,7 @@ export default function GestaoTarefas() {
   const recarregarProgresso=useCallback(async()=>{try{setProgressoChecklists(await listarProgressoChecklists(tarefas.map(t=>t.id)))}catch{setErro('Não foi possível atualizar o progresso dos checklists.')}},[tarefas])
   const recarregarNotificacoes=useCallback(async()=>{try{setNotificacoes(await listarNotificacoes())}catch{ /* Erro não bloqueia o Kanban */ }},[])
   useEffect(()=>{void recarregarNotificacoes()},[recarregarNotificacoes])
-  useEffect(()=>{if(!selecionada||modoDemo)return;let ativo=true;Promise.all([listarComentarios(selecionada),listarTempos(selecionada),listarAnexos(selecionada),listarParticipantes(selecionada),listarChecklist(selecionada),listarAtividades(selecionada)]).then(([c,t,a,p,l,h])=>{if(ativo){setComentarios(c);setTempos(t);setAnexos(a);setParticipantes(p);setChecklist(l);setAtividades(h)}}).catch(()=>setErro('Não foi possível carregar os detalhes.'));return()=>{ativo=false}},[selecionada])
+  useEffect(()=>{if(!selecionada||modoDemo)return;let ativo=true;Promise.all([listarComentarios(selecionada),listarAnexos(selecionada),listarParticipantes(selecionada),listarChecklist(selecionada),listarAtividades(selecionada)]).then(([c,a,p,l,h])=>{if(ativo){setComentarios(c);setAnexos(a);setParticipantes(p);setChecklist(l);setAtividades(h)}}).catch(()=>setErro('Não foi possível carregar os detalhes.'));return()=>{ativo=false}},[selecionada])
   const tarefa=tarefas.find(t=>t.id===selecionada)
   const hoje=(()=>{const d=new Date();const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);return local.toISOString().slice(0,10)})()
   const filtradas=useMemo(()=>tarefas.filter(t=>{
