@@ -198,11 +198,11 @@ export default function App() {
         <Route path="/painel" element={<Home />} />
         <Route path="/tarefas" element={permissions.tasks ? <GestaoTarefas /> : <Navigate to="/painel" replace />} />
         <Route path="/padronizacao" element={permissions.standardization ? <Padronizacao /> : <Navigate to="/painel" replace />} />
-        <Route path="/grade" element={<Home />} />
-        <Route path="/conteudos" element={<Conteudos />} />
-        <Route path="/gravacao" element={<Modulo titulo="Gravação" descricao="Controle de novas gravações e demandas." cor="#FF6900" />} />
-        <Route path="/atualizacao" element={<Modulo titulo="Atualização" descricao="Materiais que precisam ser atualizados." cor="#B900E5" />} />
-        <Route path="/remocao" element={<Modulo titulo="Remoção" descricao="Controle de materiais que devem sair da grade." cor="#E90058" />} />
+        <Route path="/grade" element={permissions.schedule ? <Conteudos /> : <Navigate to="/painel" replace />} />
+        <Route path="/conteudos" element={permissions.schedule ? <Conteudos /> : <Navigate to="/painel" replace />} />
+        <Route path="/gravacao" element={permissions.schedule ? <Modulo titulo="Gravação" descricao="Controle de novas gravações e demandas." cor="#FF6900" /> : <Navigate to="/painel" replace />} />
+        <Route path="/atualizacao" element={permissions.schedule ? <Modulo titulo="Atualização" descricao="Materiais que precisam ser atualizados." cor="#B900E5" /> : <Navigate to="/painel" replace />} />
+        <Route path="/remocao" element={permissions.schedule ? <Modulo titulo="Remoção" descricao="Controle de materiais que devem sair da grade." cor="#E90058" /> : <Navigate to="/painel" replace />} />
         <Route path="/administracao" element={<Administracao />} />
         <Route path="/perfil" element={<MeuPerfil />} />
         <Route path="*" element={<Navigate to="/painel" replace />} />
