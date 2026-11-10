@@ -174,3 +174,22 @@ export async function reordenarEtapas(etapas:ConfigEtapa[]):Promise<void>{
   if(error)throw error
  }
 }
+
+export type ProgressoChecklist={total:number;concluidos:number}
+export async function listarProgressoChecklists(tarefaIds:string[]):Promise<Record<string,ProgressoChecklist>>{
+ if(modoDemo||tarefaIds.length===0)return {}
+ const resultado:Record<string,ProgressoChecklist>={}
+ // Consultas em lotes para evitar limites de tamanho da URL.
+ for(let inicio=0;inicio<tarefaIds.length;inicio+=100){
+  const ids=tarefaIds.slice(inicio,inicio+100)
+  const {data,error}=await obterSupabase().from('tarefa_checklist').select('tarefa_id,concluido').in('tarefa_id',ids)
+  if(error)throw error
+  for(const item of data??[]){
+   const atual=resultado[item.tarefa_id]??{total:0,concluidos:0}
+   atual.total+=1
+   if(item.concluido)atual.concluidos+=1
+   resultado[item.tarefa_id]=atual
+  }
+ }
+ return resultado
+}
