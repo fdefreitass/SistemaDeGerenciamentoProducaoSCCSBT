@@ -155,7 +155,7 @@ export default function GestaoTarefas() {
         </article>)}</div>
       </section>)}
     </div>
-    {tarefa&&<div className="fixed inset-0 z-50 flex justify-end bg-black/75" onClick={()=>setSelecionada(null)}><section role="dialog" aria-modal="true" aria-label="Detalhes da tarefa" onClick={e=>e.stopPropagation()} className="h-full w-full max-w-2xl overflow-y-auto border-l border-white/10 bg-[#181818] p-5 shadow-2xl sm:p-8">
+    {tarefa&&<div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/80 p-3 backdrop-blur-sm sm:p-6" onClick={()=>setSelecionada(null)}><section role="dialog" aria-modal="true" aria-label="Detalhes da tarefa" onClick={e=>e.stopPropagation()} className="relative my-auto max-h-[calc(100dvh-24px)] w-full max-w-2xl min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain rounded-2xl border border-white/15 bg-[#181818] p-4 shadow-2xl sm:max-h-[calc(100dvh-48px)] sm:rounded-3xl sm:p-8">
       <div className="flex items-center justify-between"><span className="text-xs font-bold tracking-widest text-blue-400">SCC / TAREFA</span><button aria-label="Fechar" onClick={()=>setSelecionada(null)}><X/></button></div>
       <h2 className="mt-5 text-2xl font-extrabold">{tarefa.titulo}</h2><p className="mt-2 text-sm text-white/45">{tarefa.programa||'Sem programa'}</p>
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
