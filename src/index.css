@@ -1074,3 +1074,30 @@ body { overflow-x: hidden; }
 .scc-priority-urgente { border-color:rgba(248,90,42,.95); }
 .scc-priority-alta:hover { border-color:#f59e0b; }
 .scc-priority-urgente:hover { border-color:#fb5b36; }
+
+/* SCC Produção 4.1 — identidade carvão, vidro e azul elétrico */
+.scc-view-switch,.scc-calendar-modes{background:linear-gradient(145deg,#24262b,#131416);box-shadow:inset 0 1px 0 #ffffff12,0 8px 20px #0005}
+.scc-view-switch button,.scc-calendar-modes button{transition:background .2s,color .2s,box-shadow .2s,transform .2s}
+.scc-view-switch button:hover:not(.scc-view-active),.scc-calendar-modes button:hover:not(.scc-view-active){background:#ffffff14;color:#fff;transform:translateY(-1px)}
+.scc-view-active{background:linear-gradient(135deg,#1d4ed8,#3478ff)!important;color:white!important;box-shadow:0 3px 14px #2563eb65,inset 0 1px 0 #ffffff36}
+.scc-view-switch button:focus-visible,.scc-calendar button:focus-visible,.scc-chat-tool:focus-visible,.scc-chat-send:focus-visible,.scc-action-soft:focus-visible{outline:2px solid #93c5fd;outline-offset:3px}
+.scc-action-soft{transition:background .2s,border-color .2s,box-shadow .2s,transform .2s}
+.scc-action-soft:hover{background:#2563eb36;border-color:#60a5fa;box-shadow:0 0 22px #2563eb32;transform:translateY(-1px)}
+.scc-task-card:hover{border-color:#60a5fa!important;box-shadow:0 12px 32px #0008,0 0 0 1px #3b82f64d;transform:translateY(-2px)}
+.scc-task-card{transition:transform .22s,border-color .22s,box-shadow .22s}
+.scc-calendar{background:linear-gradient(155deg,#22242a,#151618 60%);box-shadow:0 20px 55px #0006,inset 0 1px 0 #ffffff12}
+.scc-calendar-event{transition:filter .2s,transform .2s,box-shadow .2s}
+.scc-calendar-event:hover{filter:brightness(1.35);transform:translateY(-1px);box-shadow:0 3px 12px #0008}
+.scc-calendar button:hover{border-color:#60a5fa88}
+.scc-conversation{background:linear-gradient(160deg,#25272c,#1b1d20);box-shadow:inset 0 1px 0 #ffffff12}
+.scc-chat-feed{scrollbar-width:thin;scrollbar-color:#52617a transparent}
+.scc-chat-bubble{background:linear-gradient(135deg,#30343a,#26292e);border:1px solid #ffffff13;box-shadow:0 4px 14px #0003;transition:border-color .2s,background .2s}
+.scc-chat-bubble:hover{border-color:#60a5fa66;background:#303640}
+.scc-chat-composer{background:linear-gradient(155deg,#171b22,#121419);border-color:#4b5d7866;transition:border-color .2s,box-shadow .2s}
+.scc-chat-composer:focus-within{border-color:#3b82f6;box-shadow:0 0 0 3px #2563eb20,0 8px 28px #0005}
+.scc-chat-tool{transition:color .2s,border-color .2s,background .2s,transform .2s}
+.scc-chat-tool:hover{color:white;background:#2563eb26;border-color:#60a5fa;transform:translateY(-1px)}
+.scc-chat-send{background:linear-gradient(135deg,#1d4ed8,#3478ff);box-shadow:0 4px 16px #2563eb44;transition:transform .2s,filter .2s,box-shadow .2s}
+.scc-chat-send:hover:not(:disabled){filter:brightness(1.16);transform:translateY(-1px);box-shadow:0 6px 22px #2563eb70}
+@media(hover:none){.scc-task-card:hover,.scc-chat-tool:hover,.scc-action-soft:hover,.scc-chat-send:hover:not(:disabled){transform:none}}
+@media(prefers-reduced-motion:reduce){.scc-task-card,.scc-calendar-event,.scc-view-switch button,.scc-calendar-modes button,.scc-chat-tool,.scc-chat-send,.scc-action-soft{transition:none!important;transform:none!important}}
