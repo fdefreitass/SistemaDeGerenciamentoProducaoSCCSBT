@@ -143,15 +143,15 @@ export async function marcarNotificacaoLida(id:string):Promise<void> {
  if(error)throw error
 }
 
-export type ConfigEtapa={id:string;nome:string;cor:string;ordem:number}
-const etapasPadrao:ConfigEtapa[]=[{id:'backlog',nome:'A fazer',cor:'#9ca3af',ordem:0},{id:'andamento',nome:'Em produção',cor:'#0089ff',ordem:1},{id:'revisao',nome:'Em revisão',cor:'#ffb020',ordem:2},{id:'aprovado',nome:'Aprovado',cor:'#65d69b',ordem:3}]
+export type ConfigEtapa={id:string;nome:string;cor:string;ordem:number;concluida:boolean}
+const etapasPadrao:ConfigEtapa[]=[{id:'backlog',nome:'A fazer',cor:'#9ca3af',ordem:0,concluida:false},{id:'andamento',nome:'Em produção',cor:'#0089ff',ordem:1,concluida:false},{id:'revisao',nome:'Em revisão',cor:'#ffb020',ordem:2,concluida:false},{id:'aprovado',nome:'Aprovado',cor:'#65d69b',ordem:3,concluida:true}]
 export async function listarEtapas():Promise<ConfigEtapa[]>{
  if(modoDemo)return etapasPadrao
- const {data,error}=await obterSupabase().from('tarefa_etapas').select('id,nome,cor,ordem').order('ordem').order('criado_em')
+ const {data,error}=await obterSupabase().from('tarefa_etapas').select('id,nome,cor,ordem,concluida').order('ordem').order('criado_em')
  if(error)throw error
  return data??[]
 }
-export async function criarEtapa(entrada:ConfigEtapa):Promise<void>{
+export async function criarEtapa(entrada:Omit<ConfigEtapa,'concluida'>):Promise<void>{
  const {error}=await obterSupabase().from('tarefa_etapas').insert(entrada)
  if(error)throw error
 }
@@ -162,4 +162,15 @@ export async function atualizarEtapaConfig(id:string,dados:Pick<ConfigEtapa,'nom
 export async function excluirEtapaConfig(id:string):Promise<void>{
  const {error}=await obterSupabase().from('tarefa_etapas').delete().eq('id',id)
  if(error)throw error
+}
+
+export async function definirEtapaConclusao(id:string):Promise<void>{
+ const {error}=await obterSupabase().rpc('definir_etapa_conclusao',{p_id:id})
+ if(error)throw error
+}
+export async function reordenarEtapas(etapas:ConfigEtapa[]):Promise<void>{
+ for(let i=0;i<etapas.length;i++){
+  const {error}=await obterSupabase().from('tarefa_etapas').update({ordem:i}).eq('id',etapas[i].id)
+  if(error)throw error
+ }
 }
