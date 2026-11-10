@@ -5,7 +5,7 @@ import { ArrowRight, CalendarDays, MessageCircle, Paperclip, Plus, Search, X, Tr
 import { modoDemo } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { can } from '../lib/permissoes'
-import { listarTarefas, criarTarefa, atualizarEtapa, excluirTarefa, listarColaboradoresTarefas, salvarDetalhes, listarComentarios, comentar, listarTempos, listarAnexos, anexarArquivo, urlAnexo, type Tarefa, type ColaboradorTarefa, type EtapaTarefa, type Prioridade, type Comentario, type RegistroTempo, type AnexoTarefa, listarParticipantes, adicionarParticipante, removerParticipante, listarChecklist, criarItemChecklist, marcarItemChecklist, removerItemChecklist, type ParticipanteTarefa, type ItemChecklist, listarAtividades, listarNotificacoes, marcarNotificacaoLida, type AtividadeTarefa, type NotificacaoTarefa, listarEtapas, criarEtapa, atualizarEtapaConfig, excluirEtapaConfig, type ConfigEtapa, definirEtapaConclusao, reordenarEtapas, listarProgressoChecklists, type ProgressoChecklist, listarParticipantesKanban, listarAvataresColaboradores, salvarOrdemKanban } from '../services/tarefas'
+import { listarTarefas, criarTarefa, atualizarEtapa, excluirTarefa, listarColaboradoresTarefas, salvarDetalhes, listarComentarios, comentar, listarAnexos, anexarArquivo, urlAnexo, type Tarefa, type ColaboradorTarefa, type EtapaTarefa, type Prioridade, type Comentario, type AnexoTarefa, listarParticipantes, adicionarParticipante, removerParticipante, listarChecklist, criarItemChecklist, marcarItemChecklist, removerItemChecklist, type ParticipanteTarefa, type ItemChecklist, listarAtividades, listarNotificacoes, marcarNotificacaoLida, type AtividadeTarefa, type NotificacaoTarefa, listarEtapas, criarEtapa, atualizarEtapaConfig, excluirEtapaConfig, type ConfigEtapa, definirEtapaConclusao, reordenarEtapas, listarProgressoChecklists, type ProgressoChecklist, listarParticipantesKanban, listarAvataresColaboradores, salvarOrdemKanban } from '../services/tarefas'
 
 const etapasPadrao:ConfigEtapa[]=[{id:'backlog',nome:'A fazer',cor:'#9ca3af',ordem:0,concluida:false},{id:'andamento',nome:'Em produção',cor:'#0089ff',ordem:1,concluida:false},{id:'revisao',nome:'Em revisão',cor:'#ffb020',ordem:2,concluida:false},{id:'aprovado',nome:'Aprovado',cor:'#65d69b',ordem:3,concluida:true}]
 const prioridades: Prioridade[]=['baixa','normal','alta','urgente']
@@ -64,7 +64,6 @@ export default function GestaoTarefas() {
   const [atividades,setAtividades]=useState<AtividadeTarefa[]>([])
   const [notificacoes,setNotificacoes]=useState<NotificacaoTarefa[]>([])
   const [mostrarNotificacoes,setMostrarNotificacoes]=useState(false)
-  const [tempos,setTempos]=useState<RegistroTempo[]>([])
   const [anexos,setAnexos]=useState<AnexoTarefa[]>([])
   const [drag,setDrag]=useState<string|null>(null)
   const [alvoDrag,setAlvoDrag]=useState<{id:string;posicao:'antes'|'depois'}|null>(null)
