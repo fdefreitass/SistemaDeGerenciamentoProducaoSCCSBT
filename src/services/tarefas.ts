@@ -17,19 +17,27 @@ export async function listarAvataresColaboradores(ids:string[]):Promise<Record<s
 }
 export type Prioridade = 'baixa' | 'normal' | 'alta' | 'urgente'
 export type EtapaTarefa = string
-export type Tarefa = { id: string; titulo: string; programa: string; responsavel: string; responsavel_id?: string | null; prazo: string | null; inicio?: string | null; descricao?: string; prioridade?: Prioridade; etapa: EtapaTarefa }
+export type Tarefa = { id: string; titulo: string; programa: string; responsavel: string; responsavel_id?: string | null; prazo: string | null; inicio?: string | null; descricao?: string; prioridade?: Prioridade; etapa: EtapaTarefa; ordem_kanban?: number|null }
 const demo: Tarefa[] = [{ id: 'demo-1', titulo: 'Chamada institucional — 30s', programa: 'SCC Meio-Dia', responsavel: 'Equipe de produção', prazo: null, etapa: 'backlog' }]
 export async function listarTarefas(): Promise<Tarefa[]> {
   if (modoDemo) return [...demo]
-  const { data, error } = await obterSupabase().from('tarefas_producao').select('id,titulo,programa,responsavel,responsavel_id,prazo,inicio,descricao,prioridade,etapa').order('criado_em', { ascending: false })
+  const { data, error } = await obterSupabase().from('tarefas_producao').select('id,titulo,programa,responsavel,responsavel_id,prazo,inicio,descricao,prioridade,etapa,ordem_kanban').order('ordem_kanban', { ascending: true, nullsFirst: false }).order('criado_em', { ascending: false })
   if (error) throw error
   return (data ?? []) as Tarefa[]
 }
 export async function criarTarefa(entrada: { titulo: string; programa: string; responsavel: string; responsavel_id: string | null; prazo: string | null; inicio?: string | null; descricao?: string; prioridade?: Prioridade }): Promise<Tarefa> {
   if (modoDemo) return { id: crypto.randomUUID(), ...entrada, etapa: 'backlog' }
-  const { data, error } = await obterSupabase().from('tarefas_producao').insert(entrada).select('id,titulo,programa,responsavel,responsavel_id,prazo,inicio,descricao,prioridade,etapa').single()
+  const { data, error } = await obterSupabase().from('tarefas_producao').insert(entrada).select('id,titulo,programa,responsavel,responsavel_id,prazo,inicio,descricao,prioridade,etapa,ordem_kanban').single()
   if (error) throw error
   return data as Tarefa
+}
+export async function salvarOrdemKanban(tarefas:Pick<Tarefa,'id'|'etapa'|'ordem_kanban'>[]):Promise<void>{
+ if(modoDemo||tarefas.length===0)return
+ const supabase=obterSupabase()
+ for(const tarefa of tarefas){
+  const {error}=await supabase.from('tarefas_producao').update({etapa:tarefa.etapa,ordem_kanban:tarefa.ordem_kanban}).eq('id',tarefa.id)
+  if(error)throw error
+ }
 }
 export async function atualizarEtapa(id: string, etapa: EtapaTarefa): Promise<void> {
   if (modoDemo) return
