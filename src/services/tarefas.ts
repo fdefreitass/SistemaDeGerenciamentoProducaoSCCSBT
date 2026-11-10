@@ -88,3 +88,38 @@ export async function urlAnexo(caminho:string) {
   if(error) throw error
   return data.signedUrl
 }
+
+export type ParticipanteTarefa = { tarefa_id:string; usuario_id:string }
+export type ItemChecklist = { id:string; tarefa_id:string; titulo:string; concluido:boolean; ordem:number }
+export async function listarParticipantes(tarefaId:string):Promise<ParticipanteTarefa[]> {
+  if(modoDemo)return []
+  const {data,error}=await obterSupabase().from('tarefa_participantes').select('tarefa_id,usuario_id').eq('tarefa_id',tarefaId)
+  if(error)throw error
+  return data??[]
+}
+export async function adicionarParticipante(tarefaId:string,usuarioId:string) {
+  const {error}=await obterSupabase().from('tarefa_participantes').insert({tarefa_id:tarefaId,usuario_id:usuarioId})
+  if(error)throw error
+}
+export async function removerParticipante(tarefaId:string,usuarioId:string) {
+  const {error}=await obterSupabase().from('tarefa_participantes').delete().eq('tarefa_id',tarefaId).eq('usuario_id',usuarioId)
+  if(error)throw error
+}
+export async function listarChecklist(tarefaId:string):Promise<ItemChecklist[]> {
+  if(modoDemo)return []
+  const {data,error}=await obterSupabase().from('tarefa_checklist').select('id,tarefa_id,titulo,concluido,ordem').eq('tarefa_id',tarefaId).order('ordem').order('criado_em')
+  if(error)throw error
+  return data??[]
+}
+export async function criarItemChecklist(tarefaId:string,titulo:string) {
+  const {error}=await obterSupabase().from('tarefa_checklist').insert({tarefa_id:tarefaId,titulo:titulo.trim()})
+  if(error)throw error
+}
+export async function marcarItemChecklist(id:string,concluido:boolean) {
+  const {error}=await obterSupabase().from('tarefa_checklist').update({concluido}).eq('id',id)
+  if(error)throw error
+}
+export async function removerItemChecklist(id:string) {
+  const {error}=await obterSupabase().from('tarefa_checklist').delete().eq('id',id)
+  if(error)throw error
+}
