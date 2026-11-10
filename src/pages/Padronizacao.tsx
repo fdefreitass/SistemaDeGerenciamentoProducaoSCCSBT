@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { CheckCircle2, ClipboardCopy, FileCheck2, Film, Info, Plus, Pencil, Trash2 } from 'lucide-react'
+import { CheckCircle2, ClipboardCopy, FileCheck2, Film, Info, Plus, Pencil, Trash2, UploadCloud, Download } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
 import { modoDemo, supabase } from '../lib/supabase'
@@ -79,6 +79,8 @@ export default function Padronizacao() {
   const [approved, setApproved] = useState(false)
   const [confirmation, setConfirmation] = useState('')
   const [copied, setCopied] = useState(false)
+  const [arquivo, setArquivo] = useState<File | null>(null)
+  const [erroArquivo, setErroArquivo] = useState('')
 
   const opcoes = destinos.filter(item => item.tipo === type && item.ativo)
   const destinoSelecionado = opcoes.find(item => item.nome === program)
@@ -99,6 +101,18 @@ export default function Padronizacao() {
     setConfirmation(filename)
   }
 
+  function baixarRenomeado() {
+    if (!arquivo || !filename) return
+    const url = URL.createObjectURL(arquivo)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.setTimeout(() => URL.revokeObjectURL(url), 60000)
+  }
+
   async function copy() {
     if (!filename) return
     try { await navigator.clipboard.writeText(filename); setCopied(true) }
@@ -115,12 +129,23 @@ export default function Padronizacao() {
 
       <div className="mt-7 flex items-start gap-3 rounded-xl border border-amber-400/25 bg-amber-400/10 p-4 text-sm text-amber-100">
         <Info size={19} className="mt-0.5 shrink-0"/>
-        <p>Simulação sem integração externa: confirmar não renomeia, move ou publica arquivos, nem cria materiais no banco. O Google Drive será integrado somente na última etapa.</p>
+        <p>O arquivo MP4 pode ser selecionado e baixado com o nome padronizado. O envio automático e a verificação de duplicidade no Google Drive ainda dependem da integração segura; nenhum arquivo é publicado nesta etapa.</p>
       </div>
 
       <div className="mt-7 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
         <form onSubmit={confirm} className="rounded-2xl border border-white/10 bg-[#1f1f1f] p-6">
           <h2 className="mb-6 flex items-center gap-2 text-lg font-bold"><Film size={20}/> Identificação do material</h2>
+          <label className="mb-6 block rounded-2xl border border-dashed border-blue-400/40 bg-blue-400/5 p-5 text-center">
+            <UploadCloud size={30} className="mx-auto mb-2 text-blue-300" />
+            <span className="block text-sm font-bold">Selecionar vídeo MP4 original</span>
+            <span className="mt-1 block break-all text-xs text-white/55">{arquivo ? arquivo.name : 'O arquivo pode estar com qualquer nome'}</span>
+            <input type="file" accept=".mp4,video/mp4" className="mt-3 block w-full text-xs text-white/60 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:font-bold file:text-white" onChange={e => {
+              const file = e.target.files?.[0] ?? null
+              if (file && !file.name.toLowerCase().endsWith('.mp4')) { setArquivo(null); setErroArquivo('Selecione um arquivo MP4.'); return }
+              setArquivo(file); setErroArquivo(''); setConfirmation('')
+            }} />
+            {erroArquivo && <span role="alert" className="mt-2 block text-xs text-red-300">{erroArquivo}</span>}
+          </label>
           <div className="grid gap-5 sm:grid-cols-2">
             <label className="text-xs font-semibold text-white/70">Tipo de material
               <select value={type} onChange={e => { setType(e.target.value as typeof type); setProgram(''); setGerenciar(false); setConfirmation('') }} className="mt-2 w-full rounded-xl border border-white/15 bg-[#111] p-3 text-sm text-white">
@@ -176,7 +201,8 @@ export default function Padronizacao() {
           <div className="mt-6 break-all rounded-xl border border-white/10 bg-[#080808] p-4 font-mono text-sm text-[#e2fa00]" aria-live="polite">
             {filename || 'Preencha os campos para gerar o nome'}
           </div>
-          <button type="button" disabled={!filename} onClick={() => void copy()} className="mt-4 flex items-center gap-2 rounded-lg border border-white/20 px-4 py-2 text-xs font-semibold disabled:opacity-40"><ClipboardCopy size={15}/>{copied ? 'Copiado' : 'Copiar nome'}</button>
+          <button type="button" disabled={!arquivo || !filename} onClick={baixarRenomeado} className="mt-4 flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold disabled:opacity-40"><Download size={15}/> Baixar MP4 com nome correto</button>
+          <button type="button" disabled={!filename} onClick={() => void copy() className="mt-4 flex items-center gap-2 rounded-lg border border-white/20 px-4 py-2 text-xs font-semibold disabled:opacity-40"><ClipboardCopy size={15}/>{copied ? 'Copiado' : 'Copiar nome'}</button>
           {confirmation && <p role="status" className="mt-5 flex items-start gap-2 rounded-xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-xs text-emerald-200"><CheckCircle2 size={17} className="shrink-0"/> Simulação confirmada para {confirmation}. Nenhum arquivo foi alterado.</p>}
         </section>
       </div>
