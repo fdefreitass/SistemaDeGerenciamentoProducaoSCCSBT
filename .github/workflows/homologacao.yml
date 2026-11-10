@@ -2,7 +2,7 @@ name: Homologação SCC Produção
 # Novo disparo para verificar a versão atual da branch de produção
 on:
   push:
-    branches: [feat/admin-usuarios]
+    branches: [main, feat/admin-usuarios]
   pull_request:
     branches: [feat/admin-usuarios]
   workflow_dispatch:
