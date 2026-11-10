@@ -32,6 +32,9 @@ export default function Padronizacao() {
   const [novoTipoNome, setNovoTipoNome] = useState('')
   const [erroTipo, setErroTipo] = useState('')
   const [salvandoTipo, setSalvandoTipo] = useState(false)
+  const [edicao, setEdicao] = useState<{categoria:'tipo'|'destino'; id:string; codigo:string; anterior:string; nome:string}|null>(null)
+  const [salvandoEdicao, setSalvandoEdicao] = useState(false)
+  const [erroEdicao, setErroEdicao] = useState('')
   const [novoDestino, setNovoDestino] = useState('')
   const [gerenciar, setGerenciar] = useState(false)
   const [erroDestino, setErroDestino] = useState('')
@@ -122,13 +125,32 @@ export default function Padronizacao() {
     if (error) setErroTipo('Não foi possível restaurar o tipo.')
     else setTipos(atual=>atual.map(t=>t.codigo===item.codigo?{...t,ativo:true}:t))
   }
-  async function renomearTipo(item: TipoMaterial) {
-    if (!supabase || !admin) return
-    const nome = window.prompt('Nova descrição do tipo (o código do arquivo permanece fixo):',item.nome)?.trim()
-    if (!nome || nome===item.nome) return
-    const {error}=await supabase.from('tipos_padronizacao').update({nome}).eq('codigo',item.codigo)
-    if (error) setErroTipo('Não foi possível alterar o tipo.')
-    else setTipos(atual=>atual.map(t=>t.codigo===item.codigo?{...t,nome}:t))
+  function abrirEdicaoTipo(item: TipoMaterial) {
+    setErroEdicao('')
+    setEdicao({categoria:'tipo',id:item.codigo,codigo:item.codigo,anterior:item.nome,nome:item.nome})
+  }
+  async function salvarEdicao() {
+    if (!supabase || !admin || !edicao || salvandoEdicao) return
+    const nome = edicao.categoria === 'destino' ? normalizeName(edicao.nome) : edicao.nome.trim()
+    if (!nome) { setErroEdicao('Informe um nome válido.'); return }
+    if (nome === edicao.anterior) { setEdicao(null); return }
+    if (edicao.categoria === 'destino' && destinos.some(d=>d.id!==edicao.id && d.tipo===edicao.codigo && d.nome===nome)) {
+      setErroEdicao('Já existe um destino com este nome.'); return
+    }
+    setSalvandoEdicao(true);setErroEdicao('')
+    const {error}=edicao.categoria==='tipo'
+      ? await supabase.from('tipos_padronizacao').update({nome}).eq('codigo',edicao.id)
+      : await supabase.from('destinos_padronizacao').update({nome}).eq('id',edicao.id)
+    if (error) setErroEdicao('Não foi possível salvar a alteração. Verifique se o nome já existe.')
+    else {
+      if(edicao.categoria==='tipo') setTipos(atual=>atual.map(t=>t.codigo===edicao.id?{...t,nome}:t))
+      else {
+        setDestinos(atual=>atual.map(d=>d.id===edicao.id?{...d,nome}:d))
+        if(program===edicao.anterior) setProgram(nome)
+      }
+      setEdicao(null)
+    }
+    setSalvandoEdicao(false)
   }
   async function desativarTipo(item: TipoMaterial) {
     if (!supabase || !admin || !window.confirm('Ocultar este tipo da seleção? Destinos e arquivos já enviados serão preservados.')) return
@@ -158,14 +180,9 @@ export default function Padronizacao() {
     if (error) setErroDestino('Não foi possível restaurar o destino.')
     else setDestinos(atual=>atual.map(d=>d.id===item.id?{...d,ativo:true}:d))
   }
-  async function renomearDestino(item: Destino) {
-    if (!supabase || !admin) return
-    const nome = window.prompt('Novo nome para o destino:', item.nome)
-    if (!nome?.trim()) return
-    const normalizado = normalizeName(nome)
-    const { error } = await supabase.from('destinos_padronizacao').update({ nome: normalizado }).eq('id', item.id)
-    if (error) setErroDestino('Não foi possível renomear o destino.')
-    else { setDestinos(atual => atual.map(d => d.id === item.id ? { ...d, nome: normalizado } : d)); if (program === item.nome) setProgram(normalizado) }
+  function abrirEdicaoDestino(item: Destino) {
+    setErroEdicao('')
+    setEdicao({categoria:'destino',id:item.id,codigo:type,anterior:item.nome,nome:item.nome})
   }
   async function desativarDestino(item: Destino) {
     if (!supabase || !admin || !window.confirm('Remover esta opção da seleção? A pasta no Google Drive será preservada.')) return
@@ -316,7 +333,7 @@ export default function Padronizacao() {
                 <div className="mt-3 space-y-2">{tipos.map(item=><div key={item.codigo} className="flex items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2">
                   <span className="min-w-0 truncate text-xs">{item.codigo} — {item.nome}{!item.ativo && <span className="ml-2 text-amber-300">(desativado)</span>}</span>
                   <div className="flex shrink-0 gap-2">
-                    <button type="button" aria-label={`Renomear ${item.nome}`} onClick={()=>void renomearTipo(item)} className="text-blue-300"><Pencil size={15}/></button>
+                    <button type="button" aria-label={`Renomear ${item.nome}`} onClick={()=>abrirEdicaoTipo(item)} className="text-blue-300"><Pencil size={15}/></button>
                     {item.ativo ? <button type="button" aria-label={`Desativar ${item.nome}`} onClick={()=>void desativarTipo(item)} className="text-red-300"><Trash2 size={15}/></button> : <button type="button" onClick={()=>void reativarTipo(item)} className="text-xs font-bold text-emerald-300">Restaurar</button>}
                   </div>
                 </div>)}</div>
@@ -346,7 +363,7 @@ export default function Padronizacao() {
                 <div className="mt-3 space-y-2">{destinos.filter(item=>item.tipo===type).map(item => <div key={item.id} className="flex items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2">
                   <span className="min-w-0 truncate text-xs">{item.nome}{!item.ativo && <span className="ml-2 text-amber-300">(desativado)</span>}</span>
                   <div className="flex shrink-0 gap-2">
-                    <button type="button" title="Renomear" aria-label={`Renomear ${item.nome}`} onClick={() => void renomearDestino(item)} className="text-blue-300"><Pencil size={15}/></button>
+                    <button type="button" title="Renomear" aria-label={`Renomear ${item.nome}`} onClick={() => abrirEdicaoDestino(item)} className="text-blue-300"><Pencil size={15}/></button>
                     {item.ativo ? <button type="button" title="Desativar" aria-label={`Desativar ${item.nome}`} onClick={() => void desativarDestino(item)} className="text-red-300"><Trash2 size={15}/></button> : <button type="button" onClick={()=>void reativarDestino(item)} className="text-xs font-bold text-emerald-300">Restaurar</button>}
                   </div>
                 </div>)}</div>
@@ -384,6 +401,25 @@ export default function Padronizacao() {
           {confirmation && <p role="status" className="mt-5 flex items-start gap-2 rounded-xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-xs text-emerald-200"><CheckCircle2 size={17} className="shrink-0"/> Arquivo enviado com sucesso: {confirmation}.</p>}
         </section>
       </div>
+      {edicao && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget && !salvandoEdicao)setEdicao(null)}}>
+        <div role="dialog" aria-modal="true" aria-labelledby="titulo-edicao" className="w-full max-w-md rounded-2xl border border-white/15 bg-[#202124] p-6 shadow-2xl">
+          <div className="mb-5 flex items-start justify-between gap-4">
+            <div><p className="text-xs font-bold uppercase tracking-widest text-blue-400">SCC PRODUÇÃO · ADMINISTRAÇÃO</p><h2 id="titulo-edicao" className="mt-2 text-xl font-bold text-white">Editar {edicao.categoria==='tipo'?'tipo de material':'programa ou produto'}</h2></div>
+            <button type="button" aria-label="Fechar edição" onClick={()=>setEdicao(null)} disabled={salvandoEdicao} className="rounded-lg border border-white/10 px-3 py-2 text-white/70 hover:bg-white/10">✕</button>
+          </div>
+          {edicao.categoria==='tipo' && <div className="mb-4 rounded-xl border border-white/10 bg-black/30 px-4 py-3"><p className="text-xs text-white/50">Código permanente</p><p className="mt-1 font-mono text-sm font-bold text-white">{edicao.codigo}</p></div>}
+          <form onSubmit={e=>{e.preventDefault();void salvarEdicao()}}>
+            <label htmlFor="nome-edicao" className="text-xs font-semibold text-white/70">Nome / descrição</label>
+            <input id="nome-edicao" autoFocus required maxLength={100} value={edicao.nome} onChange={e=>setEdicao(atual=>atual?{...atual,nome:e.target.value}:atual)} className="mt-2 w-full rounded-xl border border-white/20 bg-[#101113] px-4 py-3 text-sm text-white outline-none focus:border-blue-400"/>
+            <p className="mt-3 text-xs leading-relaxed text-white/50">{edicao.categoria==='tipo'?'O código usado nos arquivos permanece inalterado.':'A alteração atualiza o cadastro no sistema; não renomeia pastas ou arquivos já existentes no Google Drive.'}</p>
+            {erroEdicao && <p role="alert" className="mt-3 text-sm text-red-300">{erroEdicao}</p>}
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" onClick={()=>setEdicao(null)} disabled={salvandoEdicao} className="rounded-xl border border-white/15 px-4 py-2.5 text-sm font-semibold text-white/80 hover:bg-white/10">Cancelar</button>
+              <button type="submit" disabled={salvandoEdicao || !edicao.nome.trim()} className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-500 disabled:opacity-50">{salvandoEdicao?'Salvando...':'Salvar alterações'}</button>
+            </div>
+          </form>
+        </div>
+      </div>}
     </main>
   )
 }
