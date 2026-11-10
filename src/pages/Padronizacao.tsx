@@ -161,9 +161,6 @@ export default function Padronizacao() {
               <label className="text-xs font-semibold text-white/70">Duração em segundos
                 <input required type="number" min="1" max="36000" step="1" placeholder="30" value={duration} onChange={e => { setDuration(e.target.value); setConfirmation('') }} className="mt-2 w-full rounded-xl border border-white/15 bg-[#111] p-3 text-sm text-white" />
               </label>
-              <label className="text-xs font-semibold text-white/70">Data de envio (automática)
-                <input required type="date" value={dataEnvio} disabled readOnly className="mt-2 w-full rounded-xl border border-white/15 bg-[#111] p-3 text-sm text-white" />
-              </label>
             </div>
           </div>
           <label className="mt-7 flex cursor-pointer items-start gap-3 text-sm text-white/70">
