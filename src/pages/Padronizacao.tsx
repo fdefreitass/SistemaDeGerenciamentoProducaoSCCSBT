@@ -122,6 +122,10 @@ export default function Padronizacao() {
   const [arquivo, setArquivo] = useState<File | null>(null)
   const [arquivoInputKey, setArquivoInputKey] = useState(0)
   const [erroArquivo, setErroArquivo] = useState('')
+  const [enviando, setEnviando] = useState(false)
+  const [progresso, setProgresso] = useState(0)
+  const [linkDrive, setLinkDrive] = useState('')
+  const [duplicado, setDuplicado] = useState('')
 
   const opcoes = destinos.filter(item => item.tipo === type && item.ativo)
   const destinoSelecionado = opcoes.find(item => item.nome === program)
@@ -136,10 +140,37 @@ export default function Padronizacao() {
     return `${type} - ${name}${extra ? ` - ${extra}` : ''} - ${seconds}'s - ${dia}-${mes}.mp4`
   }, [type, program, complemento, duration, dataEnvio, destinoSelecionado])
 
-  function confirm(event: FormEvent<HTMLFormElement>) {
+  async function confirm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!approved || !filename) return
-    setConfirmation(filename)
+    if (!approved || !filename || !arquivo || !destinoSelecionado || !supabase || enviando) return
+    setEnviando(true); setProgresso(0); setErroArquivo(''); setDuplicado(''); setLinkDrive(''); setConfirmation('')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Sua sessão expirou. Entre novamente.')
+      const endpoint = 'https://uppdvhtmvprtwtppcfdm.supabase.co/functions/v1/google-drive-upload'
+      const enviar = async (payload: object) => {
+        const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify(payload) })
+        const data = await response.json()
+        if (!response.ok) {
+          if (data.duplicate) { setDuplicado(data.name || filename); throw new Error('Já existe um arquivo com este nome. Altere o complemento e tente novamente.') }
+          throw new Error(data.error || 'Falha ao comunicar com o Drive.')
+        }
+        return data
+      }
+      const inicio = await enviar({action:'start',destino_id:destinoSelecionado.id,complemento,duracao:Number(duration),original_name:arquivo.name,total_bytes:arquivo.size})
+      const chunkSize = 4 * 1024 * 1024
+      for (let start = 0; start < arquivo.size; start += chunkSize) {
+        const end = Math.min(start + chunkSize, arquivo.size) - 1
+        const bytes = new Uint8Array(await arquivo.slice(start,end+1).arrayBuffer())
+        let binary = ''
+        for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i,i+0x8000))
+        const resultado = await enviar({action:'chunk',upload_id:inicio.upload_id,start,end,total:arquivo.size,chunk_base64:btoa(binary)})
+        setProgresso(Math.round((end+1)/arquivo.size*100))
+        if (resultado.done) { setConfirmation(resultado.name); setLinkDrive(resultado.url) }
+      }
+    } catch (error) {
+      setErroArquivo(error instanceof Error ? error.message : 'Falha ao enviar o vídeo.')
+    } finally { setEnviando(false) }
   }
 
   function limparCampos() {
@@ -153,6 +184,9 @@ export default function Padronizacao() {
     setArquivo(null)
     setArquivoInputKey(chave => chave + 1)
     setErroArquivo('')
+    setProgresso(0)
+    setLinkDrive('')
+    setDuplicado('')
     setGerenciar(false)
     setNovoDestino('')
     setErroDestino('')
@@ -186,7 +220,7 @@ export default function Padronizacao() {
 
       <div className="mt-7 flex items-start gap-3 rounded-xl border border-amber-400/25 bg-amber-400/10 p-4 text-sm text-amber-100">
         <Info size={19} className="mt-0.5 shrink-0"/>
-        <p>O arquivo MP4 pode ser selecionado e baixado com o nome padronizado. O envio automático e a verificação de duplicidade no Google Drive ainda dependem da integração segura; nenhum arquivo é publicado nesta etapa.</p>
+        <p>Envie o MP4 para a pasta do Google Drive vinculada ao programa. O sistema verifica nomes duplicados antes de iniciar a transferência e confirma o envio após o retorno do Google.</p>
       </div>
 
       {admin && <div className="mt-5 flex flex-wrap items-center gap-3">{driveConectado === true ? <span className="rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm font-bold text-emerald-200">✓ Google Drive corporativo conectado</span> : <button type="button" disabled={conectandoDrive} onClick={() => void conectarDrive()} className="rounded-xl border border-blue-400/30 bg-blue-500/15 px-4 py-3 text-sm font-bold text-blue-200 disabled:opacity-50">{conectandoDrive ? 'Abrindo autorização...' : 'Conectar Google Drive corporativo'}</button>}{erroDrive && <p role="alert" className="text-xs text-red-300">{erroDrive}</p>}</div>}
@@ -251,7 +285,7 @@ export default function Padronizacao() {
             Confirmo que este material recebeu aprovação final da equipe responsável.
           </label>
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            <button type="submit" disabled={!filename || !approved} className="rounded-xl bg-[#e2fa00] px-5 py-3 text-sm font-bold text-black disabled:cursor-not-allowed disabled:opacity-40">Confirmar padronização (simulação)</button>
+            <button type="submit" disabled={!filename || !approved} className="rounded-xl bg-[#e2fa00] px-5 py-3 text-sm font-bold text-black disabled:cursor-not-allowed disabled:opacity-40">{enviando ? `Enviando... ${progresso}%` : 'Padronizar e enviar ao Drive'}</button>
             <button type="button" onClick={limparCampos} className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10"><RotateCcw size={16}/> Limpar campos</button>
           </div>
         </form>
@@ -264,7 +298,10 @@ export default function Padronizacao() {
           </div>
           <button type="button" disabled={!arquivo || !filename} onClick={baixarRenomeado} className="mt-4 flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold disabled:opacity-40"><Download size={15}/> Baixar MP4 com nome correto</button>
           <button type="button" disabled={!filename} onClick={() => void copy()} className="mt-4 flex items-center gap-2 rounded-lg border border-white/20 px-4 py-2 text-xs font-semibold disabled:opacity-40"><ClipboardCopy size={15}/>{copied ? 'Copiado' : 'Copiar nome'}</button>
-          {confirmation && <p role="status" className="mt-5 flex items-start gap-2 rounded-xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-xs text-emerald-200"><CheckCircle2 size={17} className="shrink-0"/> Simulação confirmada para {confirmation}. Nenhum arquivo foi alterado.</p>}
+          {duplicado && <div role="alert" className="mt-4 rounded-xl border border-red-400/40 bg-red-500/15 p-4 text-sm text-red-100"><strong>Arquivo duplicado encontrado!</strong><p className="mt-1 break-all">{duplicado}</p><p className="mt-2">Altere o complemento ou outro campo permitido e tente novamente.</p><button type="button" onClick={() => setDuplicado('')} className="mt-3 rounded-lg border border-red-300/30 px-3 py-2">Entendi, alterar nome</button></div>}
+          {enviando && <div className="mt-4"><div className="h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full bg-blue-500" style={{width:`${progresso}%`}}/></div><p className="mt-2 text-xs text-white/60">Transferência para Google Drive: {progresso}%</p></div>}
+          {linkDrive && <a href={linkDrive} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block rounded-lg bg-emerald-500/15 px-4 py-3 text-sm font-bold text-emerald-200">Abrir arquivo no Google Drive</a>}
+          {confirmation && <p role="status" className="mt-5 flex items-start gap-2 rounded-xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-xs text-emerald-200"><CheckCircle2 size={17} className="shrink-0"/> Arquivo enviado com sucesso: {confirmation}.</p>}
         </section>
       </div>
     </main>
