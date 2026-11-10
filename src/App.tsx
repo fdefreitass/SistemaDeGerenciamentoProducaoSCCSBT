@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router'
-import { ChevronDown, Clapperboard, LayoutDashboard, LibraryBig, LogOut, RefreshCcw, ArchiveX, Users, UserRound } from 'lucide-react'
+import { Link, Navigate, NavLink, Route, Routes, useLocation } from 'react-router'
+import { ChevronDown, Clapperboard, LayoutDashboard, LibraryBig, LogOut, RefreshCcw, ArchiveX, Users, UserRound, ClipboardList, FileCheck2 } from 'lucide-react'
 import { useAuth } from './context/AuthContext'
 import { modoDemo, supabase } from './lib/supabase'
 import logoBranca from './assets/SCC SBT BRANCA.png'
@@ -17,7 +17,6 @@ import PrimeiroAcesso from './pages/PrimeiroAcesso'
 import { can } from './lib/permissoes'
 import GestaoTarefas from './pages/GestaoTarefas'
 import Padronizacao from './pages/Padronizacao'
-import { SccAppShell, type SccModule, type ModulePermissions } from './components/SccAppShell'
 
 const navegacao = [
   { rota: '/painel', texto: 'Visão geral', Icone: LayoutDashboard },
@@ -35,12 +34,14 @@ const titulos: Record<string, string> = {
   '/remocao': 'REMOÇÕES',
   '/administracao': 'ADMINISTRAÇÃO',
   '/perfil': 'MEU PERFIL',
+  '/tarefas': 'GESTÃO DE TAREFAS',
+  '/padronizacao': 'SISTEMA DE PADRONIZAÇÃO',
+  '/grade': 'GRADE DA PROGRAMAÇÃO',
 }
 
 export default function App() {
   const { carregando, email, perfil, erro, sair } = useAuth()
   const { pathname } = useLocation()
-  const navigate = useNavigate()
   const [menuAberto, setMenuAberto] = useState(false)
   const menuContaRef = useRef<HTMLDivElement>(null)
   const botaoPerfilRef = useRef<HTMLButtonElement>(null)
@@ -111,14 +112,21 @@ export default function App() {
   if (pathname === '/login') return modoDemo ? <Navigate to="/painel" replace /> : <Navigate to="/painel" replace />
 
   const administrador = !modoDemo && perfil?.papel === 'admin'
-  const permissions: ModulePermissions = { home: true, tasks: modoDemo || can(perfil?.papel, 'tasks.read'), standardization: modoDemo || can(perfil?.papel, 'standardization.read'), schedule: modoDemo || can(perfil?.papel, 'grade.read') }
-  const moduleForPath = (path: string): SccModule => path === '/tarefas' ? 'tasks' : path === '/padronizacao' ? 'standardization' : ['/conteudos', '/gravacao', '/atualizacao', '/remocao', '/grade'].includes(path) ? 'schedule' : 'home'
-  const currentModule = moduleForPath(pathname)
-  const navigateModule = (module: SccModule) => navigate(({ home: '/painel', tasks: '/tarefas', standardization: '/padronizacao', schedule: '/grade' })[module])
+  const acessoTarefas = modoDemo || can(perfil?.papel, 'tasks.read')
+  const acessoPadronizacao = modoDemo || can(perfil?.papel, 'standardization.read')
+  const acessoGrade = modoDemo || can(perfil?.papel, 'grade.read')
+  const itensMenu = [
+    { rota: '/painel', texto: 'Visão geral', Icone: LayoutDashboard },
+    ...(acessoTarefas ? [{ rota: '/tarefas', texto: 'Gestão de Tarefas', Icone: ClipboardList }] : []),
+    ...(acessoPadronizacao ? [{ rota: '/padronizacao', texto: 'Sistema de Padronização', Icone: FileCheck2 }] : []),
+    ...(acessoGrade ? [
+      { rota: '/grade', texto: 'Grade da Programação', Icone: LibraryBig },
+      ...navegacao.filter(item => !['/painel', '/conteudos'].includes(item.rota)),
+    ] : []),
+  ]
   const nome = modoDemo ? 'Demonstração local' : perfil?.nome || email || 'Colaborador'
 
   return (
-    <SccAppShell permissions={permissions} activeModule={currentModule} onNavigate={navigateModule}>
     <div className="scc-app-body relative isolate min-h-screen bg-[#050505] text-white">
       <header className="sticky top-0 z-30 border-b border-white/[0.07] bg-[#050505]/95 backdrop-blur-xl">
         <div className="scc-app-header-inner grid min-h-[82px] grid-cols-[1fr_auto] items-center gap-4 lg:grid-cols-[1fr_minmax(300px,1.65fr)_1fr]">
@@ -154,7 +162,7 @@ export default function App() {
                     <p className="truncate text-sm font-bold text-white">{nome}</p>
                     {!modoDemo && email && <p className="mt-1 truncate text-xs text-white/45">{email}</p>}
                   </div>
-                  {navegacao.map(({ rota, texto, Icone }) => (
+                  {itensMenu.map(({ rota, texto, Icone }) => (
                     <NavLink
                       key={rota}
                       to={rota}
@@ -196,19 +204,18 @@ export default function App() {
       <div className="scc-app-content relative z-10">
       <Routes>
         <Route path="/painel" element={<Home />} />
-        <Route path="/tarefas" element={permissions.tasks ? <GestaoTarefas /> : <Navigate to="/painel" replace />} />
-        <Route path="/padronizacao" element={permissions.standardization ? <Padronizacao /> : <Navigate to="/painel" replace />} />
-        <Route path="/grade" element={permissions.schedule ? <Conteudos /> : <Navigate to="/painel" replace />} />
-        <Route path="/conteudos" element={permissions.schedule ? <Conteudos /> : <Navigate to="/painel" replace />} />
-        <Route path="/gravacao" element={permissions.schedule ? <Modulo titulo="Gravação" descricao="Controle de novas gravações e demandas." cor="#FF6900" /> : <Navigate to="/painel" replace />} />
-        <Route path="/atualizacao" element={permissions.schedule ? <Modulo titulo="Atualização" descricao="Materiais que precisam ser atualizados." cor="#B900E5" /> : <Navigate to="/painel" replace />} />
-        <Route path="/remocao" element={permissions.schedule ? <Modulo titulo="Remoção" descricao="Controle de materiais que devem sair da grade." cor="#E90058" /> : <Navigate to="/painel" replace />} />
+        <Route path="/tarefas" element={acessoTarefas ? <GestaoTarefas /> : <Navigate to="/painel" replace />} />
+        <Route path="/padronizacao" element={acessoPadronizacao ? <Padronizacao /> : <Navigate to="/painel" replace />} />
+        <Route path="/grade" element={acessoGrade ? <Conteudos /> : <Navigate to="/painel" replace />} />
+        <Route path="/conteudos" element={acessoGrade ? <Conteudos /> : <Navigate to="/painel" replace />} />
+        <Route path="/gravacao" element={acessoGrade ? <Modulo titulo="Gravação" descricao="Controle de novas gravações e demandas." cor="#FF6900" /> : <Navigate to="/painel" replace />} />
+        <Route path="/atualizacao" element={acessoGrade ? <Modulo titulo="Atualização" descricao="Materiais que precisam ser atualizados." cor="#B900E5" /> : <Navigate to="/painel" replace />} />
+        <Route path="/remocao" element={acessoGrade ? <Modulo titulo="Remoção" descricao="Controle de materiais que devem sair da grade." cor="#E90058" /> : <Navigate to="/painel" replace />} />
         <Route path="/administracao" element={<Administracao />} />
         <Route path="/perfil" element={<MeuPerfil />} />
         <Route path="*" element={<Navigate to="/painel" replace />} />
       </Routes>
       </div>
     </div>
-    </SccAppShell>
   )
 }
