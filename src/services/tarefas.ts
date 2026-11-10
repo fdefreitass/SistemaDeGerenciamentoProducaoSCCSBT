@@ -193,3 +193,24 @@ export async function listarProgressoChecklists(tarefaIds:string[]):Promise<Reco
  }
  return resultado
 }
+
+export async function listarParticipantesKanban(tarefaIds:string[]):Promise<Record<string,string[]>>{
+ if(modoDemo||tarefaIds.length===0)return {}
+ const resultado:Record<string,string[]>={}
+ // Paginação evita o limite padrão de linhas do PostgREST.
+ for(let i=0;i<tarefaIds.length;i+=80){
+  const ids=tarefaIds.slice(i,i+80)
+  let inicio=0
+  while(true){
+   const {data,error}=await obterSupabase().from('tarefa_participantes').select('tarefa_id,usuario_id').in('tarefa_id',ids).order('tarefa_id').order('usuario_id').range(inicio,inicio+999)
+   if(error)throw error
+   for(const item of data??[]){
+    if(!resultado[item.tarefa_id])resultado[item.tarefa_id]=[]
+    resultado[item.tarefa_id].push(item.usuario_id)
+   }
+   if((data??[]).length<1000)break
+   inicio+=1000
+  }
+ }
+ return resultado
+}
