@@ -49,7 +49,7 @@ export default function GestaoTarefas() {
   useEffect(()=>{if(!selecionada)return;const timer=window.setInterval(()=>setAgora(Date.now()),1000);return()=>window.clearInterval(timer)},[selecionada])
   const tarefa=tarefas.find(t=>t.id===selecionada)
   const programas=useMemo(()=>Array.from(new Set(tarefas.map(t=>t.programa).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'pt-BR')),[tarefas])
-  const hoje=new Date().toLocaleDateString('en-CA')
+  const hoje=(()=>{const d=new Date();const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);return local.toISOString().slice(0,10)})()
   const filtradas=useMemo(()=>tarefas.filter(t=>{
     if(![t.titulo,t.programa,t.responsavel].join(' ').toLowerCase().includes(busca.trim().toLowerCase()))return false
     if(filtroPrograma&&t.programa!==filtroPrograma)return false
