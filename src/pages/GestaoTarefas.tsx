@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type DragEvent } from 'react'
 import { ArrowRight, CalendarDays, Clock3, MessageCircle, Paperclip, Plus, Search, X, Trash2, Users, ListChecks, SlidersHorizontal, Bell, History, Settings2, ArrowUp, ArrowDown, CheckCircle2 } from 'lucide-react'
 import { modoDemo } from '../lib/supabase'
@@ -155,7 +156,7 @@ export default function GestaoTarefas() {
         </article>)}</div>
       </section>)}
     </div>
-    {tarefa&&<div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/80 p-3 backdrop-blur-sm sm:p-6" onClick={()=>setSelecionada(null)}><section role="dialog" aria-modal="true" aria-label="Detalhes da tarefa" onClick={e=>e.stopPropagation()} className="relative my-auto max-h-[calc(100dvh-24px)] w-full max-w-2xl min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain rounded-2xl border border-white/15 bg-[#181818] p-4 shadow-2xl sm:max-h-[calc(100dvh-48px)] sm:rounded-3xl sm:p-8">
+    {tarefa&&createPortal(<div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/80 p-3 backdrop-blur-sm sm:p-6" onClick={()=>setSelecionada(null)}><section role="dialog" aria-modal="true" aria-label="Detalhes da tarefa" onClick={e=>e.stopPropagation()} className="relative my-auto max-h-[calc(100dvh-24px)] w-full max-w-2xl min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain rounded-2xl border border-white/15 bg-[#181818] p-4 shadow-2xl sm:max-h-[calc(100dvh-48px)] sm:rounded-3xl sm:p-8">
       <div className="flex items-center justify-between"><span className="text-xs font-bold tracking-widest text-blue-400">SCC / TAREFA</span><button aria-label="Fechar" onClick={()=>setSelecionada(null)}><X/></button></div>
       <h2 className="mt-5 text-2xl font-extrabold">{tarefa.titulo}</h2><p className="mt-2 text-sm text-white/45">{tarefa.programa||'Sem programa'}</p>
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -182,6 +183,6 @@ export default function GestaoTarefas() {
       <div className="mt-6 rounded-2xl border border-white/10 bg-[#222] p-5"><h3 className="flex items-center gap-2 font-bold"><History size={17}/> Histórico de atividades</h3><button type="button" className="mt-2 text-xs text-blue-300 underline" onClick={async()=>{try{setAtividades(await listarAtividades(tarefa.id));void recarregarNotificacoes()}catch{setErro('Falha ao atualizar histórico')}}}>Atualizar histórico</button><div className="mt-4 max-h-72 space-y-3 overflow-y-auto">{atividades.length===0&&<p className="text-sm text-white/40">Nenhuma alteração registrada ainda.</p>}{atividades.map(a=><div key={a.id} className="border-l-2 border-blue-500/40 pl-3"><p className="text-xs text-white/50">{nomePessoa(a.autor_id)||'Sistema'} · {new Date(a.criado_em).toLocaleString('pt-BR')}</p><p className="mt-1 text-sm"><span className="font-semibold capitalize">{a.tipo}</span> · {a.detalhe}</p></div>)}</div></div>
       {podeExcluir&&<button className="mt-7 flex items-center gap-2 text-sm text-red-300" onClick={async()=>{if(!window.confirm('Excluir tarefa definitivamente?'))return;try{await excluirTarefa(tarefa.id);setTarefas(v=>v.filter(t=>t.id!==tarefa.id));setSelecionada(null)}catch{setErro('Não foi possível excluir.')}}}><Trash2 size={16}/> Excluir tarefa</button>}
       <p className="mt-8 flex items-center gap-2 text-xs text-white/30"><CalendarDays size={14}/> Início {dataBR(tarefa.inicio)} · Entrega {dataBR(tarefa.prazo)}</p>
-    </section></div>}
+    </section></div>,document.body)}
   </main>
 }
