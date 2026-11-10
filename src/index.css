@@ -1101,3 +1101,9 @@ body { overflow-x: hidden; }
 .scc-chat-send:hover:not(:disabled){filter:brightness(1.16);transform:translateY(-1px);box-shadow:0 6px 22px #2563eb70}
 @media(hover:none){.scc-task-card:hover,.scc-chat-tool:hover,.scc-action-soft:hover,.scc-chat-send:hover:not(:disabled){transform:none}}
 @media(prefers-reduced-motion:reduce){.scc-task-card,.scc-calendar-event,.scc-view-switch button,.scc-calendar-modes button,.scc-chat-tool,.scc-chat-send,.scc-action-soft{transition:none!important;transform:none!important}}
+
+/* SCC Produção — cinza padrão nos cards, sem alterar cores de status/prioridade */
+.scc-task-card{background:#272727!important}
+.scc-task-card:hover{background:#2b2b2b!important}
+.scc-chat-bubble{background:#272727!important}
+.scc-chat-bubble:hover{background:#303030!important}
