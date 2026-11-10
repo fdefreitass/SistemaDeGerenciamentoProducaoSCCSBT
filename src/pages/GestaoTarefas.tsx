@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { ArrowRight, ClipboardList, Plus, Search, Trash2 } from 'lucide-react'
 
 type Stage = 'backlog' | 'andamento' | 'revisao' | 'aprovado'
@@ -22,7 +22,7 @@ export default function GestaoTarefas() {
   const [owner, setOwner] = useState('')
   const [due, setDue] = useState('')
   const filtered = useMemo(() => tasks.filter(task => [task.title, task.program, task.owner].join(' ').toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR'))), [tasks, search])
-  function createTask(event: React.FormEvent<HTMLFormElement>) {
+  function createTask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!title.trim()) return
     setTasks(current => [{ id: crypto.randomUUID(), title: title.trim(), program: program.trim(), owner: owner.trim(), due, stage: 'backlog' }, ...current])
