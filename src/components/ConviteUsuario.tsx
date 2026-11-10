@@ -39,8 +39,8 @@ export default function ConviteUsuario({ aoConvidar }: { aoConvidar?: () => void
         const status = error?.context instanceof Response ? error.context.status : 0
         throw new Error(
           status === 409 ? 'Já existe uma conta com este e-mail.' :
-          status === 403 ? 'Sua sessão não possui autorização para convidar.' :
-          'Não foi possível criar o convite. Verifique a função administrativa.'
+          status === 403 ? 'Sua sessão não possui autorização para esta operação.' :
+          modoCriacao === 'direto' ? 'Não foi possível criar o usuário. Confira os dados e tente novamente.' : 'Não foi possível criar o convite. Verifique a função administrativa.'
         )
       }
       if (modoCriacao === 'direto') setSenhaProvisoria(data.senha_provisoria ?? '')
@@ -62,7 +62,7 @@ export default function ConviteUsuario({ aoConvidar }: { aoConvidar?: () => void
       await navigator.clipboard.writeText(senhaProvisoria || link)
       setCopiado(true)
     } catch {
-      setErro('Não foi possível copiar automaticamente. Selecione o link e copie manualmente.')
+      setErro('Não foi possível copiar automaticamente. Selecione e copie o conteúdo manualmente.')
     }
   }
 
@@ -79,16 +79,16 @@ export default function ConviteUsuario({ aoConvidar }: { aoConvidar?: () => void
     <section className="mt-8 rounded-2xl border border-white/10 bg-[#1f1f1f] p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold">Convites de usuários</h2>
+          <h2 className="text-xl font-bold">Cadastro de usuários</h2>
           <p className="mt-2 text-sm text-white/50">
-            Cadastre colaboradores com um link individual para criar a senha.
+            Convide colaboradores ou crie contas diretamente para testes e operação.
           </p>
         </div>
         <button type="button"
           onClick={() => { if (aberto) fechar(); else setAberto(true) }}
           className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold transition hover:bg-blue-500">
           {aberto ? <X size={17} /> : <MailPlus size={17} />}
-          {aberto ? 'Fechar' : 'Convidar usuário'}
+          {aberto ? 'Fechar' : 'Adicionar usuário'}
         </button>
       </div>
 
