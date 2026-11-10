@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { listarTarefas, criarTarefa, atualizarEtapa, excluirTarefa } from '../services/tarefas'
+import { listarTarefas, criarTarefa, atualizarEtapa, excluirTarefa, listarColaboradoresTarefas, type ColaboradorTarefa } from '../services/tarefas'
 import { modoDemo } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { can } from '../lib/permissoes'
@@ -23,8 +23,11 @@ export default function GestaoTarefas() {
   const podeExcluir = modoDemo || perfil?.papel === 'admin'
   const [erro, setErro] = useState('')
   const [ocupado, setOcupado] = useState(false)
+  const [colaboradores, setColaboradores] = useState<ColaboradorTarefa[]>([])
+  const [carregandoColaboradores, setCarregandoColaboradores] = useState(!modoDemo)
   const [tasks, setTasks] = useState<Task[]>(modoDemo ? initial : [])
   useEffect(() => { if (modoDemo) return; let active = true; listarTarefas().then(rows => { if (active) setTasks(rows.map(t => ({ id: t.id, title: t.titulo, program: t.programa, owner: t.responsavel, due: t.prazo ?? '', stage: t.etapa }))) }).catch(() => { if (active) setErro('Não foi possível carregar as tarefas.') }); return () => { active = false } }, [])
+  useEffect(() => { if (modoDemo) return; let ativo = true; listarColaboradoresTarefas().then(dados => { if (ativo) setColaboradores(dados) }).catch(() => { if (ativo) setErro('Não foi possível carregar os colaboradores.') }).finally(() => { if (ativo) setCarregandoColaboradores(false) }); return () => { ativo = false } }, [])
   const [search, setSearch] = useState('')
   const [creating, setCreating] = useState(false)
   const [title, setTitle] = useState('')
@@ -37,7 +40,7 @@ export default function GestaoTarefas() {
     if (!title.trim() || !podeEditar || ocupado) return
     setOcupado(true); setErro('')
     try {
-    const saved = await criarTarefa({ titulo: title.trim(), programa: program.trim(), responsavel: owner.trim(), prazo: due || null })
+    const saved = await criarTarefa({ titulo: title.trim(), programa: program.trim(), responsavel: modoDemo ? owner.trim() : colaboradores.find(c => c.id === owner)?.nome ?? '', responsavel_id: modoDemo ? null : owner || null, prazo: due || null })
     setTasks(current => [{ id: saved.id, title: saved.titulo, program: saved.programa, owner: saved.responsavel, due: saved.prazo ?? '', stage: saved.etapa }, ...current])
     setTitle(''); setProgram(''); setOwner(''); setDue(''); setCreating(false)
     } catch { setErro('Não foi possível salvar a tarefa.') } finally { setOcupado(false) }
@@ -70,7 +73,13 @@ export default function GestaoTarefas() {
       {creating && <form onSubmit={createTask} className="mt-5 grid gap-3 rounded-2xl border border-white/10 bg-[#1f1f1f] p-5 md:grid-cols-2">
         <label className="text-xs text-white/65">Título da tarefa<input required maxLength={160} value={title} onChange={e => setTitle(e.target.value)} className="mt-2 w-full rounded-lg border border-white/15 bg-black/40 p-3 text-white" /></label>
         <label className="text-xs text-white/65">Programa<input maxLength={100} value={program} onChange={e => setProgram(e.target.value)} className="mt-2 w-full rounded-lg border border-white/15 bg-black/40 p-3 text-white" /></label>
-        <label className="text-xs text-white/65">Responsável<input maxLength={100} value={owner} onChange={e => setOwner(e.target.value)} className="mt-2 w-full rounded-lg border border-white/15 bg-black/40 p-3 text-white" /></label>
+        <label className="text-xs text-white/65">Responsável
+          {modoDemo ? <input maxLength={100} value={owner} onChange={e => setOwner(e.target.value)} className="mt-2 w-full rounded-lg border border-white/15 bg-black/40 p-3 text-white" /> :
+          <select value={owner} onChange={e => setOwner(e.target.value)} disabled={carregandoColaboradores} className="mt-2 w-full rounded-lg border border-white/15 bg-black/40 p-3 text-white">
+            <option value="">Sem responsável definido</option>
+            {colaboradores.map(c => <option key={c.id} value={c.id}>{c.nome} — {({ admin: 'Administrador', producao: 'Produção', opec: 'OPEC', editor: 'Editor', leitor: 'Leitor' } as const)[c.papel]}</option>)}
+          </select>}
+        </label>
         <label className="text-xs text-white/65">Prazo<input type="date" value={due} onChange={e => setDue(e.target.value)} className="mt-2 w-full rounded-lg border border-white/15 bg-black/40 p-3 text-white" /></label>
         <div className="md:col-span-2"><button className="rounded-lg bg-[#e2fa00] px-5 py-3 text-sm font-bold text-black" disabled={ocupado}>Salvar tarefa</button></div>
       </form>}
