@@ -13,6 +13,14 @@ const types = [
   { value: 'CALHAU', label: 'Calhau' },
 ] as const
 
+function dataLocal() {
+  const agora = new Date()
+  const ano = agora.getFullYear()
+  const mes = String(agora.getMonth() + 1).padStart(2, '0')
+  const dia = String(agora.getDate()).padStart(2, '0')
+  return `${ano}-${mes}-${dia}`
+}
+
 function normalizeName(value: string) {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()
     .replace(/[^A-Z0-9 -]/g, '').replace(/\s+/g, ' ').trim()
@@ -65,7 +73,8 @@ export default function Padronizacao() {
 
   const [type, setType] = useState<(typeof types)[number]['value']>('CH')
   const [program, setProgram] = useState('')
-  const [number, setNumber] = useState('')
+  const [complemento, setComplemento] = useState('')
+  const [dataEnvio, setDataEnvio] = useState(dataLocal)
   const [duration, setDuration] = useState('')
   const [approved, setApproved] = useState(false)
   const [confirmation, setConfirmation] = useState('')
@@ -76,11 +85,13 @@ export default function Padronizacao() {
 
   const filename = useMemo(() => {
     const name = normalizeName(program)
-    const id = number.trim().padStart(2, '0')
+    const extra = normalizeName(complemento)
     const seconds = Number(duration)
-    if (!destinoSelecionado || !name || !/^\d{1,4}$/.test(number.trim()) || !Number.isInteger(seconds) || seconds < 1 || seconds > 36000) return ''
-    return `${type} - ${name} ${id} - ${seconds}"s.mp4`
-  }, [type, program, number, duration, destinoSelecionado])
+    const dataValida = /^\\d{4}-\\d{2}-\\d{2}$/.test(dataEnvio)
+    if (!destinoSelecionado || !name || !Number.isInteger(seconds) || seconds < 1 || seconds > 36000 || !dataValida) return ''
+    const [, mes, dia] = dataEnvio.split('-')
+    return `${type} - ${name}${extra ? ` - ${extra}` : ''} - ${seconds}'s - ${dia}-${mes}.mp4`
+  }, [type, program, complemento, duration, dataEnvio, destinoSelecionado])
 
   function confirm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -116,10 +127,10 @@ export default function Padronizacao() {
                 {types.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
               </select>
             </label>
-            <label className="text-xs font-semibold text-white/70">Código numérico
-              <input required inputMode="numeric" pattern="[0-9]{1,4}" maxLength={4} placeholder="01" value={number} onChange={e => { setNumber(e.target.value); setConfirmation('') }} className="mt-2 w-full rounded-xl border border-white/15 bg-[#111] p-3 text-sm text-white" />
+            <label className="text-xs font-semibold text-white/70">Complemento (opcional)
+              <input maxLength={80} placeholder="EX.: INSTITUCIONAL" value={complemento} onChange={e => { setComplemento(normalizeName(e.target.value)); setConfirmation('') }} className="mt-2 w-full rounded-xl border border-white/15 bg-[#111] p-3 text-sm uppercase text-white" />
             </label>
-            <div className="sm:col-span-2">
+            <div className="min-w-0">
               <div className="flex items-center justify-between gap-2">
                 <label htmlFor="destino-padronizacao" className="text-xs font-semibold text-white/70">{type === 'CALHAU' ? 'Série do calhau' : 'Programa ou produto'}</label>
                 {admin && <button type="button" onClick={() => setGerenciar(v => !v)} className="text-xs font-bold text-blue-400 hover:text-blue-300">{gerenciar ? 'Fechar gerenciamento' : 'Gerenciar destinos'}</button>}
@@ -146,9 +157,14 @@ export default function Padronizacao() {
               </div>}
               {erroDestino && <p role="alert" className="mt-2 text-xs text-red-300">{erroDestino}</p>}
             </div>
-            <label className="text-xs font-semibold text-white/70">Duração em segundos
-              <input required type="number" min="1" max="36000" step="1" placeholder="30" value={duration} onChange={e => { setDuration(e.target.value); setConfirmation('') }} className="mt-2 w-full rounded-xl border border-white/15 bg-[#111] p-3 text-sm text-white" />
-            </label>
+            <div className="flex flex-col gap-5">
+              <label className="text-xs font-semibold text-white/70">Duração em segundos
+                <input required type="number" min="1" max="36000" step="1" placeholder="30" value={duration} onChange={e => { setDuration(e.target.value); setConfirmation('') }} className="mt-2 w-full rounded-xl border border-white/15 bg-[#111] p-3 text-sm text-white" />
+              </label>
+              <label className="text-xs font-semibold text-white/70">Data de envio
+                <input required type="date" value={dataEnvio} onChange={e => { setDataEnvio(e.target.value); setConfirmation('') }} className="mt-2 w-full rounded-xl border border-white/15 bg-[#111] p-3 text-sm text-white" />
+              </label>
+            </div>
           </div>
           <label className="mt-7 flex cursor-pointer items-start gap-3 text-sm text-white/70">
             <input type="checkbox" checked={approved} onChange={e => { setApproved(e.target.checked); setConfirmation('') }} className="mt-1 accent-[#e2fa00]"/>
