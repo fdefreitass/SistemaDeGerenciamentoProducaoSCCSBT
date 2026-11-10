@@ -7,6 +7,7 @@ import { useLocation } from 'react-router'
 import { useCoresSecoes, corDaSecao, paletaSecoes } from '../lib/coresSecoes'
 import { useCoresIndicadores, indicadores, coresPadrao, type CoresIndicadores, type IndicadorId } from '../lib/coresIndicadores'
 import { useAuth } from '../context/AuthContext'
+import { can } from '../lib/permissoes'
 import { demoMateriais, demoSecoes } from '../data/demo'
 import { modoDemo } from '../lib/supabase'
 import {
@@ -79,7 +80,7 @@ export default function Conteudos() {
   const { perfil } = useAuth()
   const { cores, definirCor } = useCoresSecoes()
   const { cores: coresIndicadores, definirCor: definirCorIndicador } = useCoresIndicadores()
-  const podeEditar = modoDemo || perfil?.papel === 'admin' || perfil?.papel === 'editor'
+  const podeEditar = modoDemo || can(perfil?.papel, 'grade.write')
   const administrador = modoDemo || perfil?.papel === 'admin'
   const [secoes, setSecoes] = useState<Secao[]>(modoDemo ? demoSecoes : [])
   const [materiais, setMateriais] = useState<Material[]>(modoDemo ? demoMateriais : [])
