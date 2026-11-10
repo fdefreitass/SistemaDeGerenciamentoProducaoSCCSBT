@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type DragEvent } from 'react'
-import { ArrowRight, CalendarDays, Clock3, MessageCircle, Paperclip, Plus, Search, X, Trash2 } from 'lucide-react'
+import { ArrowRight, CalendarDays, Clock3, MessageCircle, Paperclip, Plus, Search, X, Trash2, Users, ListChecks } from 'lucide-react'
 import { modoDemo } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { can } from '../lib/permissoes'
-import { listarTarefas, criarTarefa, atualizarEtapa, excluirTarefa, listarColaboradoresTarefas, salvarDetalhes, listarComentarios, comentar, listarTempos, iniciarTempo, pararTempo, listarAnexos, anexarArquivo, urlAnexo, type Tarefa, type ColaboradorTarefa, type EtapaTarefa, type Prioridade, type Comentario, type RegistroTempo, type AnexoTarefa } from '../services/tarefas'
+import { listarTarefas, criarTarefa, atualizarEtapa, excluirTarefa, listarColaboradoresTarefas, salvarDetalhes, listarComentarios, comentar, listarTempos, iniciarTempo, pararTempo, listarAnexos, anexarArquivo, urlAnexo, type Tarefa, type ColaboradorTarefa, type EtapaTarefa, type Prioridade, type Comentario, type RegistroTempo, type AnexoTarefa, listarParticipantes, adicionarParticipante, removerParticipante, listarChecklist, criarItemChecklist, marcarItemChecklist, removerItemChecklist, type ParticipanteTarefa, type ItemChecklist } from '../services/tarefas'
 
 const stages: { id: EtapaTarefa; label: string; color: string }[] = [
   { id:'backlog',label:'A fazer',color:'#9ca3af' },{id:'andamento',label:'Em produção',color:'#0089ff'},
@@ -28,6 +28,9 @@ export default function GestaoTarefas() {
   const [form,setForm]=useState({titulo:'',programa:'',responsavel_id:'',inicio:'',prazo:'',prioridade:'normal' as Prioridade,descricao:''})
   const [comentarios,setComentarios]=useState<Comentario[]>([])
   const [mensagem,setMensagem]=useState('')
+  const [participantes,setParticipantes]=useState<ParticipanteTarefa[]>([])
+  const [checklist,setChecklist]=useState<ItemChecklist[]>([])
+  const [novoItem,setNovoItem]=useState('')
   const [tempos,setTempos]=useState<RegistroTempo[]>([])
   const [anexos,setAnexos]=useState<AnexoTarefa[]>([])
   const [agora,setAgora]=useState(Date.now())
@@ -37,7 +40,7 @@ export default function GestaoTarefas() {
     catch(e){setErro(e instanceof Error?e.message:'Falha ao carregar tarefas')}
   },[])
   useEffect(()=>{void carregar()},[carregar])
-  useEffect(()=>{if(!selecionada||modoDemo)return;let ativo=true;Promise.all([listarComentarios(selecionada),listarTempos(selecionada),listarAnexos(selecionada)]).then(([c,t,a])=>{if(ativo){setComentarios(c);setTempos(t);setAnexos(a)}}).catch(()=>setErro('Não foi possível carregar os detalhes.'));return()=>{ativo=false}},[selecionada])
+  useEffect(()=>{if(!selecionada||modoDemo)return;let ativo=true;Promise.all([listarComentarios(selecionada),listarTempos(selecionada),listarAnexos(selecionada),listarParticipantes(selecionada),listarChecklist(selecionada)]).then(([c,t,a,p,l])=>{if(ativo){setComentarios(c);setTempos(t);setAnexos(a);setParticipantes(p);setChecklist(l)}}).catch(()=>setErro('Não foi possível carregar os detalhes.'));return()=>{ativo=false}},[selecionada])
   useEffect(()=>{if(!selecionada)return;const timer=window.setInterval(()=>setAgora(Date.now()),1000);return()=>window.clearInterval(timer)},[selecionada])
   const tarefa=tarefas.find(t=>t.id===selecionada)
   const filtradas=useMemo(()=>tarefas.filter(t=>[t.titulo,t.programa,t.responsavel].join(' ').toLowerCase().includes(busca.toLowerCase())),[tarefas,busca])
@@ -113,6 +116,17 @@ export default function GestaoTarefas() {
         <label className="text-xs text-white/55">Prioridade<select disabled={!podeEditar||ocupado} className={input} value={tarefa.prioridade||'normal'} onChange={e=>void atualiza(tarefa.id,{prioridade:e.target.value as Prioridade})}>{prioridades.map(p=><option key={p} value={p}>{p.toUpperCase()}</option>)}</select></label>
         {campo('Início',tarefa.inicio||'',v=>void atualiza(tarefa.id,{inicio:v||null}),'date')}
         {campo('Entrega',tarefa.prazo||'',v=>void atualiza(tarefa.id,{prazo:v||null}),'date')}
+      </div>
+      <div className="mt-6 rounded-2xl border border-white/10 bg-[#222] p-5">
+        <h3 className="flex items-center gap-2 font-bold"><Users size={17}/> Participantes</h3>
+        <div className="mt-3 flex flex-wrap gap-2">{participantes.map(p=><span key={p.usuario_id} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs"><span className="grid h-6 w-6 place-items-center rounded-full bg-blue-600 font-bold">{avatar(nomePessoa(p.usuario_id))}</span>{nomePessoa(p.usuario_id)||'Colaborador'}{podeEditar&&<button aria-label="Remover participante" disabled={ocupado} onClick={async()=>{setOcupado(true);try{await removerParticipante(tarefa.id,p.usuario_id);setParticipantes(await listarParticipantes(tarefa.id))}catch{setErro('Erro ao remover participante')}finally{setOcupado(false)}}}><X size={13}/></button>}</span>)}</div>
+        {podeEditar&&<select aria-label="Adicionar participante" className={input} value="" disabled={ocupado} onChange={async e=>{if(!e.target.value)return;setOcupado(true);try{await adicionarParticipante(tarefa.id,e.target.value);setParticipantes(await listarParticipantes(tarefa.id))}catch{setErro('Erro ao adicionar participante')}finally{setOcupado(false)}}}><option value="">+ Adicionar participante</option>{pessoas.filter(p=>!participantes.some(x=>x.usuario_id===p.id)).map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}</select>}
+      </div>
+      <div className="mt-6 rounded-2xl border border-white/10 bg-[#222] p-5">
+        <h3 className="flex items-center gap-2 font-bold"><ListChecks size={17}/> Checklist <span className="ml-auto text-xs text-white/50">{checklist.filter(i=>i.concluido).length}/{checklist.length}</span></h3>
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-blue-500 transition-all" style={{width:checklist.length?String(checklist.filter(i=>i.concluido).length/checklist.length*100)+'%':'0%'}}/></div>
+        <div className="mt-4 space-y-2">{checklist.map(item=><div key={item.id} className="flex items-center gap-3 rounded-lg bg-white/5 px-3 py-2"><input type="checkbox" checked={item.concluido} disabled={!podeEditar||ocupado} onChange={async e=>{setOcupado(true);try{await marcarItemChecklist(item.id,e.target.checked);setChecklist(await listarChecklist(tarefa.id))}catch{setErro('Erro ao atualizar checklist')}finally{setOcupado(false)}}}/><span className={'min-w-0 flex-1 text-sm '+(item.concluido?'text-white/40 line-through':'')}>{item.titulo}</span>{podeEditar&&<button aria-label="Excluir item" disabled={ocupado} onClick={async()=>{setOcupado(true);try{await removerItemChecklist(item.id);setChecklist(await listarChecklist(tarefa.id))}catch{setErro('Erro ao excluir item')}finally{setOcupado(false)}}}><X size={14}/></button>}</div>)}</div>
+        {podeEditar&&<form className="mt-4 flex gap-2" onSubmit={async e=>{e.preventDefault();if(!novoItem.trim())return;setOcupado(true);try{await criarItemChecklist(tarefa.id,novoItem);setNovoItem('');setChecklist(await listarChecklist(tarefa.id))}catch{setErro('Erro ao criar item')}finally{setOcupado(false)}}}><input className={input+' mt-0'} maxLength={240} placeholder="Nova etapa da tarefa..." value={novoItem} onChange={e=>setNovoItem(e.target.value)}/><button disabled={ocupado||!novoItem.trim()} className="rounded-xl bg-blue-600 px-4 text-sm font-bold">Adicionar</button></form>}
       </div>
       <label className="mt-5 block text-xs text-white/55">Descrição<textarea key={tarefa.id} defaultValue={tarefa.descricao||''} disabled={!podeEditar} onBlur={e=>{if(e.target.value!==tarefa.descricao)void atualiza(tarefa.id,{descricao:e.target.value})}} rows={4} className={input}/></label>
       <div className="mt-6 rounded-2xl border border-white/10 bg-[#222] p-5"><h3 className="flex items-center gap-2 font-bold"><Clock3 size={17}/> Rastreamento de tempo</h3><p className="mt-3 text-2xl font-black">{formatTempo(totalSegundos)}</p><button disabled={ocupado||!podeEditar} onClick={()=>void atualizarTempo()} className="mt-3 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold">{tempos.some(t=>!t.fim&&t.usuario_id===perfil?.id)?'Pausar contagem':'Iniciar contagem'}</button></div>
