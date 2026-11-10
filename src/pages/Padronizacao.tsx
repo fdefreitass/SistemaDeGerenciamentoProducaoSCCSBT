@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { CheckCircle2, ClipboardCopy, FileCheck2, Film, Info, Plus, Pencil, Trash2, UploadCloud, Download } from 'lucide-react'
+import { CheckCircle2, ClipboardCopy, FileCheck2, Film, Info, Plus, Pencil, Trash2, UploadCloud, Download, RotateCcw } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
 import { modoDemo, supabase } from '../lib/supabase'
@@ -80,6 +80,7 @@ export default function Padronizacao() {
   const [confirmation, setConfirmation] = useState('')
   const [copied, setCopied] = useState(false)
   const [arquivo, setArquivo] = useState<File | null>(null)
+  const [arquivoInputKey, setArquivoInputKey] = useState(0)
   const [erroArquivo, setErroArquivo] = useState('')
 
   const opcoes = destinos.filter(item => item.tipo === type && item.ativo)
@@ -99,6 +100,22 @@ export default function Padronizacao() {
     event.preventDefault()
     if (!approved || !filename) return
     setConfirmation(filename)
+  }
+
+  function limparCampos() {
+    setType('CH')
+    setProgram('')
+    setComplemento('')
+    setDuration('')
+    setApproved(false)
+    setConfirmation('')
+    setCopied(false)
+    setArquivo(null)
+    setArquivoInputKey(chave => chave + 1)
+    setErroArquivo('')
+    setGerenciar(false)
+    setNovoDestino('')
+    setErroDestino('')
   }
 
   function baixarRenomeado() {
@@ -139,7 +156,7 @@ export default function Padronizacao() {
             <UploadCloud size={30} className="mx-auto mb-2 text-blue-300" />
             <span className="block text-sm font-bold">Selecionar vídeo MP4 original</span>
             <span className="mt-1 block break-all text-xs text-white/55">{arquivo ? arquivo.name : 'O arquivo pode estar com qualquer nome'}</span>
-            <input type="file" accept=".mp4,video/mp4" className="mt-3 block w-full text-xs text-white/60 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:font-bold file:text-white" onChange={e => {
+            <input key={arquivoInputKey} type="file" accept=".mp4,video/mp4" className="mt-3 block w-full text-xs text-white/60 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:font-bold file:text-white" onChange={e => {
               const file = e.target.files?.[0] ?? null
               if (file && !file.name.toLowerCase().endsWith('.mp4')) { setArquivo(null); setErroArquivo('Selecione um arquivo MP4.'); return }
               setArquivo(file); setErroArquivo(''); setConfirmation('')
@@ -192,7 +209,10 @@ export default function Padronizacao() {
             <input type="checkbox" checked={approved} onChange={e => { setApproved(e.target.checked); setConfirmation('') }} className="mt-1 accent-[#e2fa00]"/>
             Confirmo que este material recebeu aprovação final da equipe responsável.
           </label>
-          <button type="submit" disabled={!filename || !approved} className="mt-6 rounded-xl bg-[#e2fa00] px-5 py-3 text-sm font-bold text-black disabled:cursor-not-allowed disabled:opacity-40">Confirmar padronização (simulação)</button>
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <button type="submit" disabled={!filename || !approved} className="rounded-xl bg-[#e2fa00] px-5 py-3 text-sm font-bold text-black disabled:cursor-not-allowed disabled:opacity-40">Confirmar padronização (simulação)</button>
+            <button type="button" onClick={limparCampos} className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10"><RotateCcw size={16}/> Limpar campos</button>
+          </div>
         </form>
 
         <section className="h-fit rounded-2xl border border-white/10 bg-[#1f1f1f] p-6">
