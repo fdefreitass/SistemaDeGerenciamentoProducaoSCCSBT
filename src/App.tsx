@@ -112,9 +112,9 @@ export default function App() {
   if (pathname === '/login') return modoDemo ? <Navigate to="/painel" replace /> : <Navigate to="/painel" replace />
 
   const administrador = !modoDemo && perfil?.papel === 'admin'
-  const acessoTarefas = modoDemo || can(perfil?.papel, 'tasks.read')
-  const acessoPadronizacao = modoDemo || can(perfil?.papel, 'standardization.read')
-  const acessoGrade = modoDemo || can(perfil?.papel, 'grade.read')
+  const acessoTarefas = modoDemo || administrador || can(perfil?.papel, 'tasks.read')
+  const acessoPadronizacao = modoDemo || administrador || can(perfil?.papel, 'standardization.read')
+  const acessoGrade = modoDemo || administrador || can(perfil?.papel, 'grade.read')
   const itensMenu = [
     { rota: '/painel', texto: 'Visão geral', Icone: LayoutDashboard },
     ...(acessoTarefas ? [{ rota: '/tarefas', texto: 'Gestão de Tarefas', Icone: ClipboardList }] : []),
