@@ -1066,30 +1066,11 @@ body { overflow-x: hidden; }
 }
 
 
-/* SCC Produção — linguagem de prioridade dos cartões Kanban. */
-.scc-task-card { position:relative; isolation:isolate; }
-.scc-task-card:hover { border-color:rgba(255,255,255,.35); }
+/* SCC Produção — prioridade destacada somente pelo contorno. */
+.scc-task-card { position:relative; background:#272727; transition:border-color .2s ease,box-shadow .2s ease; }
 .scc-priority-baixa { border-color:rgba(148,163,184,.22); }
 .scc-priority-normal { border-color:rgba(56,189,248,.28); }
-.scc-priority-alta {
-  border-color:rgba(245,158,11,.85);
-  background:linear-gradient(135deg,rgba(104,48,10,.52),#272727 30%,#272727 72%,rgba(112,48,8,.55));
-  box-shadow:0 0 13px rgba(245,158,11,.18),inset 0 0 15px rgba(251,146,60,.08);
-}
-.scc-priority-urgente {
-  border-color:rgba(248,90,42,.95);
-  background:linear-gradient(135deg,rgba(123,34,19,.65),#272727 29%,#272727 72%,rgba(137,35,17,.62));
-  box-shadow:0 0 18px rgba(249,69,26,.36),0 0 38px rgba(239,68,68,.12),inset 0 0 22px rgba(249,69,26,.12);
-  animation:scc-urgencia-fogo 2.2s ease-in-out infinite;
-}
-.scc-priority-alta::before,.scc-priority-urgente::before {
-  content:"";position:absolute;inset:-2px;border-radius:inherit;pointer-events:none;z-index:-1;
-  background:linear-gradient(120deg,transparent 5%,rgba(255,185,65,.14) 25%,transparent 45%,rgba(255,98,22,.14) 72%,transparent);
-}
-@keyframes scc-urgencia-fogo {
-  0%,100% {box-shadow:0 0 12px rgba(249,69,26,.25),0 0 24px rgba(239,68,68,.09),inset 0 0 14px rgba(249,69,26,.08)}
-  50% {box-shadow:0 0 24px rgba(249,69,26,.52),0 0 46px rgba(239,68,68,.18),inset 0 0 25px rgba(249,69,26,.16)}
-}
-@media (prefers-reduced-motion:reduce) {
-  .scc-priority-urgente {animation:none}
-}
+.scc-priority-alta { border-color:rgba(245,158,11,.85); }
+.scc-priority-urgente { border-color:rgba(248,90,42,.95); }
+.scc-priority-alta:hover { border-color:#f59e0b; }
+.scc-priority-urgente:hover { border-color:#fb5b36; }
