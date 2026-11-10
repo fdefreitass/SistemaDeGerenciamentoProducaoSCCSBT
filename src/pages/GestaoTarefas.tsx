@@ -1,4 +1,6 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { listarTarefas, criarTarefa, atualizarEtapa, excluirTarefa } from '../services/tarefas'
+import { modoDemo } from '../lib/supabase'
 import { ArrowRight, ClipboardList, Plus, Search, Trash2 } from 'lucide-react'
 
 type Stage = 'backlog' | 'andamento' | 'revisao' | 'aprovado'
@@ -14,7 +16,8 @@ const initial: Task[] = [
   { id: 'demo-2', title: 'VT de programação', program: 'SCC News', owner: 'Equipe de edição', due: '', stage: 'andamento' },
 ]
 export default function GestaoTarefas() {
-  const [tasks, setTasks] = useState<Task[]>(initial)
+  const [tasks, setTasks] = useState<Task[]>(modoDemo ? initial : [])
+  useEffect(() => { if (modoDemo) return; let active = true; listarTarefas().then(rows => { if (active) setTasks(rows.map(t => ({ id: t.id, title: t.titulo, program: t.programa, owner: t.responsavel, due: t.prazo ?? '', stage: t.etapa }))) }); return () => { active = false } }, [])
   const [search, setSearch] = useState('')
   const [creating, setCreating] = useState(false)
   const [title, setTitle] = useState('')
@@ -22,13 +25,15 @@ export default function GestaoTarefas() {
   const [owner, setOwner] = useState('')
   const [due, setDue] = useState('')
   const filtered = useMemo(() => tasks.filter(task => [task.title, task.program, task.owner].join(' ').toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR'))), [tasks, search])
-  function createTask(event: FormEvent<HTMLFormElement>) {
+  async function createTask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!title.trim()) return
-    setTasks(current => [{ id: crypto.randomUUID(), title: title.trim(), program: program.trim(), owner: owner.trim(), due, stage: 'backlog' }, ...current])
+    const saved = await criarTarefa({ titulo: title.trim(), programa: program.trim(), responsavel: owner.trim(), prazo: due || null })
+    setTasks(current => [{ id: saved.id, title: saved.titulo, program: saved.programa, owner: saved.responsavel, due: saved.prazo ?? '', stage: saved.etapa }, ...current])
     setTitle(''); setProgram(''); setOwner(''); setDue(''); setCreating(false)
   }
-  function moveTask(id: string, stage: Stage) {
+  async function moveTask(id: string, stage: Stage) {
+    await atualizarEtapa(id, stage)
     setTasks(current => current.map(task => task.id === id ? { ...task, stage } : task))
   }
   return (
@@ -41,7 +46,7 @@ export default function GestaoTarefas() {
         </div>
         <button type="button" onClick={() => setCreating(value => !value)} className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-black hover:bg-[#e2fa00]"><Plus size={17}/> Nova tarefa</button>
       </div>
-      <p role="status" className="mt-6 rounded-xl border border-amber-400/25 bg-amber-400/10 p-4 text-xs text-amber-100">Ambiente de prototipação: tarefas são apenas exemplos locais. Alterações não são salvas no banco e serão perdidas ao atualizar a página.</p>
+      <p role="status" className="mt-6 rounded-xl border border-amber-400/25 bg-amber-400/10 p-4 text-xs text-amber-100">As tarefas são salvas no Supabase. No modo de demonstração, os dados são apenas locais.</p>
       {creating && <form onSubmit={createTask} className="mt-5 grid gap-3 rounded-2xl border border-white/10 bg-[#1f1f1f] p-5 md:grid-cols-2">
         <label className="text-xs text-white/65">Título da tarefa<input required maxLength={160} value={title} onChange={e => setTitle(e.target.value)} className="mt-2 w-full rounded-lg border border-white/15 bg-black/40 p-3 text-white" /></label>
         <label className="text-xs text-white/65">Programa<input maxLength={100} value={program} onChange={e => setProgram(e.target.value)} className="mt-2 w-full rounded-lg border border-white/15 bg-black/40 p-3 text-white" /></label>
@@ -60,7 +65,7 @@ export default function GestaoTarefas() {
               <p className="mt-2 text-xs text-white/55">{task.program || 'Sem programa'} · {task.owner || 'Sem responsável'}</p>
               {task.due && <p className="mt-2 text-xs text-white/45">Prazo: {task.due.split('-').reverse().join('/')}</p>}
               <div className="mt-4 flex items-center justify-between gap-2">
-                <button type="button" aria-label={`Excluir ${task.title}`} title="Excluir tarefa de teste" onClick={() => setTasks(current => current.filter(item => item.id !== task.id))} className="rounded-lg p-2 text-white/50 hover:bg-red-500/10 hover:text-red-300"><Trash2 size={15}/></button>
+                <button type="button" aria-label={`Excluir ${task.title}`} title="Excluir tarefa de teste" onClick={() => { void excluirTarefa(task.id).then(() => setTasks(current => current.filter(item => item.id !== task.id))) }} className="rounded-lg p-2 text-white/50 hover:bg-red-500/10 hover:text-red-300"><Trash2 size={15}/></button>
                 <div className="flex items-center gap-2">
                   {index > 0 && <button type="button" onClick={() => moveTask(task.id, stages[index - 1].id)} className="rounded-lg border border-white/15 px-2 py-1 text-xs hover:bg-white/10">Voltar</button>}
                   {index < stages.length - 1 && <button type="button" onClick={() => moveTask(task.id, stages[index + 1].id)} className="flex items-center gap-1 rounded-lg border border-white/15 px-2 py-1 text-xs hover:bg-white/10">Avançar <ArrowRight size={13}/></button>}
