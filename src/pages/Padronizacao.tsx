@@ -4,7 +4,7 @@ import { CheckCircle2, ClipboardCopy, FileCheck2, Film, Plus, Pencil, Trash2, Up
 import { useAuth } from '../context/AuthContext'
 import { modoDemo, supabase } from '../lib/supabase'
 
-type TipoMaterial = { codigo: string; nome: string; ativo: boolean }
+type TipoMaterial = { codigo: string; nome: string; ativo: boolean; drive_folder_id?: string | null }
 type Destino = { id: string; tipo: string; nome: string; drive_folder_id: string | null; ativo: boolean }
 
 const tiposIniciais: TipoMaterial[] = [{codigo:'CH',nome:'Chamada',ativo:true},{codigo:'VT',nome:'Videotape',ativo:true},{codigo:'VH',nome:'Vinheta',ativo:true},{codigo:'CALHAU',nome:'Calhau',ativo:true}]
@@ -46,7 +46,7 @@ export default function Padronizacao() {
   useEffect(() => {
     if (!supabase || modoDemo) return
     let ativo = true
-    void supabase.from('tipos_padronizacao').select('codigo,nome,ativo').order('nome').then(({data,error}) => {
+    void supabase.from('tipos_padronizacao').select('codigo,nome,ativo,drive_folder_id').order('nome').then(({data,error}) => {
       if (!ativo) return
       if (error) setErroTipo('Não foi possível carregar os tipos de material.')
       else setTipos((data ?? []) as TipoMaterial[])
@@ -102,6 +102,25 @@ export default function Padronizacao() {
     }
   }
 
+  async function vincularTipoDrive(codigo:string) {
+    if(!supabase || !admin) return
+    const {data:{session}}=await supabase.auth.getSession()
+    if(!session) throw new Error('Sessão expirada.')
+    const response=await fetch('https://uppdvhtmvprtwtppcfdm.supabase.co/functions/v1/google-drive-criar-pasta',{
+      method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${session.access_token}`},
+      body:JSON.stringify({tipo_codigo:codigo})
+    })
+    const result=await response.json()
+    if(!response.ok || !result.folder_id) throw new Error(result.error||'Não foi possível criar a categoria no Drive.')
+    setTipos(atual=>atual.map(t=>t.codigo===codigo?{...t,drive_folder_id:result.folder_id}:t))
+  }
+  async function criarPastaTipo(codigo:string) {
+    if(salvandoTipo)return
+    setSalvandoTipo(true);setErroTipo('')
+    try{await vincularTipoDrive(codigo)}
+    catch(error){setErroTipo(error instanceof Error?error.message:'Falha ao criar pasta')}
+    finally{setSalvandoTipo(false)}
+  }
   async function adicionarTipo() {
     if (!supabase || !admin) return
     const codigo = novoTipoCodigo.toUpperCase().replace(/[^A-Z0-9]/g,'')
@@ -111,11 +130,11 @@ export default function Padronizacao() {
     const existente = tipos.find(item => item.codigo === codigo)
     if (existente?.ativo) { setErroTipo('Este código já está em uso. Utilize a opção de editar.'); setSalvandoTipo(false); return }
     const consulta = existente
-      ? await supabase.from('tipos_padronizacao').update({nome,ativo:true}).eq('codigo',codigo).select('codigo,nome,ativo').single()
+      ? await supabase.from('tipos_padronizacao').update({nome,ativo:true}).eq('codigo',codigo).select('codigo,nome,ativo,drive_folder_id').single()
       : await supabase.from('tipos_padronizacao').insert({codigo,nome}).select('codigo,nome,ativo').single()
     const {data,error} = consulta
     if (error) setErroTipo('Não foi possível salvar este tipo.')
-    else { setTipos(atual => [...atual.filter(item => item.codigo !== codigo),data as TipoMaterial].sort((a,b)=>a.nome.localeCompare(b.nome))); setNovoTipoCodigo(''); setNovoTipoNome('') }
+    else { setTipos(atual => [...atual.filter(item => item.codigo !== codigo),data as TipoMaterial].sort((a,b)=>a.nome.localeCompare(b.nome))); setNovoTipoCodigo(''); setNovoTipoNome(''); try { await vincularTipoDrive(codigo) } catch(err) { setErroTipo(err instanceof Error?err.message:'Tipo cadastrado, mas não foi possível criar a pasta no Drive.') } }
     setSalvandoTipo(false)
   }
   async function reativarTipo(item: TipoMaterial) {
@@ -358,6 +377,7 @@ export default function Padronizacao() {
                 <div className="mt-3 space-y-2">{tipos.map(item=><div key={item.codigo} className="flex items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2">
                   <span className="min-w-0 truncate text-xs">{item.codigo} — {item.nome}{!item.ativo && <span className="ml-2 text-amber-300">(desativado)</span>}</span>
                   <div className="flex shrink-0 gap-2">
+                    {item.ativo && !item.drive_folder_id && <button type="button" disabled={salvandoTipo} onClick={()=>void criarPastaTipo(item.codigo)} className="text-xs font-bold text-amber-300 disabled:opacity-40">Criar pasta no Drive</button>}
                     <button type="button" aria-label={`Renomear ${item.nome}`} onClick={()=>abrirEdicaoTipo(item)} className="text-blue-300"><Pencil size={15}/></button>
                     {item.ativo ? <button type="button" aria-label={`Desativar ${item.nome}`} onClick={()=>void desativarTipo(item)} className="text-red-300"><Trash2 size={15}/></button> : <button type="button" onClick={()=>void reativarTipo(item)} className="text-xs font-bold text-emerald-300">Restaurar</button>}
                   </div>
