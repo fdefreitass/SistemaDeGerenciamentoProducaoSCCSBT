@@ -1,109 +1,125 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { listarTarefas, criarTarefa, atualizarEtapa, excluirTarefa, listarColaboradoresTarefas, type ColaboradorTarefa } from '../services/tarefas'
+import { useCallback, useEffect, useMemo, useState, type FormEvent, type DragEvent } from 'react'
+import { ArrowRight, CalendarDays, Clock3, MessageCircle, Paperclip, Plus, Search, X, Trash2 } from 'lucide-react'
 import { modoDemo } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { can } from '../lib/permissoes'
-import { ArrowRight, ClipboardList, Plus, Search, Trash2 } from 'lucide-react'
+import { listarTarefas, criarTarefa, atualizarEtapa, excluirTarefa, listarColaboradoresTarefas, salvarDetalhes, listarComentarios, comentar, listarTempos, iniciarTempo, pararTempo, listarAnexos, anexarArquivo, urlAnexo, type Tarefa, type ColaboradorTarefa, type EtapaTarefa, type Prioridade, type Comentario, type RegistroTempo, type AnexoTarefa } from '../services/tarefas'
 
-type Stage = 'backlog' | 'andamento' | 'revisao' | 'aprovado'
-type Task = { id: string; title: string; program: string; owner: string; due: string; stage: Stage }
-const stages: { id: Stage; label: string; color: string }[] = [
-  { id: 'backlog', label: 'A fazer', color: '#8f9ba8' },
-  { id: 'andamento', label: 'Em produção', color: '#0089ff' },
-  { id: 'revisao', label: 'Em revisão', color: '#ffb020' },
-  { id: 'aprovado', label: 'Aprovado', color: '#65d69b' },
+const stages: { id: EtapaTarefa; label: string; color: string }[] = [
+  { id:'backlog',label:'A fazer',color:'#9ca3af' },{id:'andamento',label:'Em produção',color:'#0089ff'},
+  { id:'revisao',label:'Em revisão',color:'#ffb020' },{id:'aprovado',label:'Aprovado',color:'#65d69b'}
 ]
-const initial: Task[] = [
-  { id: 'demo-1', title: 'Chamada institucional — 30s', program: 'SCC Meio-Dia', owner: 'Equipe de produção', due: '', stage: 'backlog' },
-  { id: 'demo-2', title: 'VT de programação', program: 'SCC News', owner: 'Equipe de edição', due: '', stage: 'andamento' },
-]
+const prioridades: Prioridade[]=['baixa','normal','alta','urgente']
+const cores:Record<Prioridade,string>={baixa:'#94a3b8',normal:'#38bdf8',alta:'#f59e0b',urgente:'#ef4444'}
+const input='mt-2 w-full min-w-0 rounded-xl border border-white/15 bg-[#111] px-3 py-3 text-sm text-white outline-none focus:border-blue-400'
+const dataBR=(d?:string|null)=>d?d.split('-').reverse().join('/'):'—'
+const avatar=(nome:string)=>(nome||'?').trim().slice(0,1).toUpperCase()
 export default function GestaoTarefas() {
-  const { perfil } = useAuth()
-  const podeEditar = modoDemo || can(perfil?.papel, 'tasks.write')
-  const podeExcluir = modoDemo || perfil?.papel === 'admin'
-  const [erro, setErro] = useState('')
-  const [ocupado, setOcupado] = useState(false)
-  const [colaboradores, setColaboradores] = useState<ColaboradorTarefa[]>([])
-  const [carregandoColaboradores, setCarregandoColaboradores] = useState(!modoDemo)
-  const [tasks, setTasks] = useState<Task[]>(modoDemo ? initial : [])
-  useEffect(() => { if (modoDemo) return; let active = true; listarTarefas().then(rows => { if (active) setTasks(rows.map(t => ({ id: t.id, title: t.titulo, program: t.programa, owner: t.responsavel, due: t.prazo ?? '', stage: t.etapa }))) }).catch(() => { if (active) setErro('Não foi possível carregar as tarefas.') }); return () => { active = false } }, [])
-  useEffect(() => { if (modoDemo) return; let ativo = true; listarColaboradoresTarefas().then(dados => { if (ativo) setColaboradores(dados) }).catch(() => { if (ativo) setErro('Não foi possível carregar os colaboradores.') }).finally(() => { if (ativo) setCarregandoColaboradores(false) }); return () => { ativo = false } }, [])
-  const [search, setSearch] = useState('')
-  const [creating, setCreating] = useState(false)
-  const [title, setTitle] = useState('')
-  const [program, setProgram] = useState('')
-  const [owner, setOwner] = useState('')
-  const [due, setDue] = useState('')
-  const filtered = useMemo(() => tasks.filter(task => [task.title, task.program, task.owner].join(' ').toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR'))), [tasks, search])
-  async function createTask(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!title.trim() || !podeEditar || ocupado) return
-    setOcupado(true); setErro('')
-    try {
-    const saved = await criarTarefa({ titulo: title.trim(), programa: program.trim(), responsavel: modoDemo ? owner.trim() : colaboradores.find(c => c.id === owner)?.nome ?? '', responsavel_id: modoDemo ? null : owner || null, prazo: due || null })
-    setTasks(current => [{ id: saved.id, title: saved.titulo, program: saved.programa, owner: saved.responsavel, due: saved.prazo ?? '', stage: saved.etapa }, ...current])
-    setTitle(''); setProgram(''); setOwner(''); setDue(''); setCreating(false)
-    } catch { setErro('Não foi possível salvar a tarefa.') } finally { setOcupado(false) }
+  const {perfil}=useAuth()
+  const podeEditar=modoDemo||can(perfil?.papel,'tasks.write')
+  const podeExcluir=modoDemo||perfil?.papel==='admin'
+  const [tarefas,setTarefas]=useState<Tarefa[]>([])
+  const [pessoas,setPessoas]=useState<ColaboradorTarefa[]>([])
+  const [selecionada,setSelecionada]=useState<string|null>(null)
+  const [busca,setBusca]=useState('')
+  const [nova,setNova]=useState(false)
+  const [ocupado,setOcupado]=useState(false)
+  const [erro,setErro]=useState('')
+  const [form,setForm]=useState({titulo:'',programa:'',responsavel_id:'',inicio:'',prazo:'',prioridade:'normal' as Prioridade,descricao:''})
+  const [comentarios,setComentarios]=useState<Comentario[]>([])
+  const [mensagem,setMensagem]=useState('')
+  const [tempos,setTempos]=useState<RegistroTempo[]>([])
+  const [anexos,setAnexos]=useState<AnexoTarefa[]>([])
+  const [agora,setAgora]=useState(Date.now())
+  const [drag,setDrag]=useState<string|null>(null)
+  const carregar=useCallback(async()=>{
+    try { const [t,p]=await Promise.all([listarTarefas(),listarColaboradoresTarefas()]);setTarefas(t);setPessoas(p) }
+    catch(e){setErro(e instanceof Error?e.message:'Falha ao carregar tarefas')}
+  },[])
+  useEffect(()=>{void carregar()},[carregar])
+  useEffect(()=>{if(!selecionada||modoDemo)return;let ativo=true;Promise.all([listarComentarios(selecionada),listarTempos(selecionada),listarAnexos(selecionada)]).then(([c,t,a])=>{if(ativo){setComentarios(c);setTempos(t);setAnexos(a)}}).catch(()=>setErro('Não foi possível carregar os detalhes.'));return()=>{ativo=false}},[selecionada])
+  useEffect(()=>{if(!selecionada)return;const timer=window.setInterval(()=>setAgora(Date.now()),1000);return()=>window.clearInterval(timer)},[selecionada])
+  const tarefa=tarefas.find(t=>t.id===selecionada)
+  const filtradas=useMemo(()=>tarefas.filter(t=>[t.titulo,t.programa,t.responsavel].join(' ').toLowerCase().includes(busca.toLowerCase())),[tarefas,busca])
+  const nomePessoa=(id?:string|null)=>pessoas.find(p=>p.id===id)?.nome||''
+  const atualiza=async(id:string,campos:Partial<Tarefa>)=>{
+    if(!podeEditar||ocupado)return
+    setOcupado(true);setErro('')
+    try{await salvarDetalhes(id,campos);setTarefas(v=>v.map(t=>t.id===id?{...t,...campos}:t))}
+    catch(e){setErro(e instanceof Error?e.message:'Erro ao salvar')}finally{setOcupado(false)}
   }
-  async function moveTask(id: string, stage: Stage) {
-    if (!podeEditar || ocupado) return
-    setOcupado(true); setErro('')
-    try { await atualizarEtapa(id, stage)
-    setTasks(current => current.map(task => task.id === id ? { ...task, stage } : task)) }
-    catch { setErro('Não foi possível alterar a etapa.') } finally { setOcupado(false) }
+  const mover=async(id:string,etapa:EtapaTarefa)=>{
+    if(!podeEditar||ocupado)return
+    setOcupado(true);setErro('')
+    try{await atualizarEtapa(id,etapa);setTarefas(v=>v.map(t=>t.id===id?{...t,etapa}:t))}
+    catch{setErro('Não foi possível mover a tarefa.')}finally{setOcupado(false)}
   }
-  async function removeTask(id: string) {
-    if (!podeExcluir || ocupado || !window.confirm('Excluir esta tarefa?')) return
-    setOcupado(true); setErro('')
-    try { await excluirTarefa(id); setTasks(current => current.filter(item => item.id !== id)) }
-    catch { setErro('Não foi possível excluir a tarefa.') } finally { setOcupado(false) }
+  const criar=async(e:FormEvent)=>{
+    e.preventDefault();if(!podeEditar||ocupado||!form.titulo.trim())return
+    setOcupado(true);setErro('')
+    try{const p=pessoas.find(p=>p.id===form.responsavel_id)
+      const t=await criarTarefa({titulo:form.titulo.trim(),programa:form.programa,responsavel:p?.nome||'',responsavel_id:p?.id||null,inicio:form.inicio||null,prazo:form.prazo||null,prioridade:form.prioridade,descricao:form.descricao})
+      setTarefas(v=>[t,...v]);setNova(false);setForm({titulo:'',programa:'',responsavel_id:'',inicio:'',prazo:'',prioridade:'normal',descricao:''})
+    }catch(e){setErro(e instanceof Error?e.message:'Falha ao criar tarefa')}finally{setOcupado(false)}
   }
-  return (
-    <main className="scc-fluid-content pb-20 pt-9">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-white/45">SCC PRODUÇÃO · V2</p>
-          <h1 className="mt-3 flex items-center gap-3 text-4xl font-extrabold"><ClipboardList /> Gestão de Tarefas</h1>
-          <p className="mt-3 text-sm text-white/55">Organize demandas da produção, acompanhe revisões e aprovações.</p>
-        </div>
-        <button type="button" disabled={!podeEditar || ocupado} onClick={() => setCreating(value => !value)} className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-black hover:bg-[#e2fa00]"><Plus size={17}/> Nova tarefa</button>
+  const enviarComentario=async(e:FormEvent)=>{
+    e.preventDefault();if(!selecionada||!mensagem.trim())return
+    setOcupado(true);try{await comentar(selecionada,mensagem.trim());setMensagem('');setComentarios(await listarComentarios(selecionada))}
+    catch{setErro('Não foi possível enviar a mensagem.')}finally{setOcupado(false)}
+  }
+  const atualizarTempo=async()=>{
+    if(!selecionada)return
+    setOcupado(true);setErro('')
+    try{const ativo=tempos.find(t=>!t.fim&&t.usuario_id===perfil?.id)
+      if(ativo)await pararTempo(ativo.id);else await iniciarTempo(selecionada)
+      setTempos(await listarTempos(selecionada))
+    }catch(e){setErro(e instanceof Error?e.message:'Falha no cronômetro')}finally{setOcupado(false)}
+  }
+  const totalSegundos=tempos.reduce((n,t)=>n+Math.max(0,((t.fim?new Date(t.fim).getTime():agora)-new Date(t.inicio).getTime())/1000),0)
+  const formatTempo=(s:number)=>`${Math.floor(s/3600)}h ${String(Math.floor(s%3600/60)).padStart(2,'0')}min`
+  const campo=(rotulo:string,valor:string,change:(v:string)=>void,tipo='text')=><label className="block text-xs text-white/55">{rotulo}<input type={tipo} value={valor} onChange={e=>change(e.target.value)} disabled={!podeEditar||ocupado} className={input}/></label>
+  return <main className="scc-fluid-content min-w-0 overflow-hidden pb-20 pt-8">
+    <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-xs font-bold tracking-[.25em] text-white/40">SCC PRODUÇÃO / WORKSPACE</p><h1 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">Gestão de Tarefas</h1><p className="mt-2 text-sm text-white/50">Produção, revisões e aprovações em um só lugar.</p></div>
+      {podeEditar&&<button className="rounded-xl bg-white px-5 py-3 text-sm font-bold text-black hover:bg-[#e2fa00]" onClick={()=>setNova(v=>!v)}><Plus size={16} className="mr-2 inline"/>Nova tarefa</button>}</div>
+    {modoDemo&&<p className="mt-4 text-xs text-amber-300">Modo demonstração: os dados não serão persistidos.</p>}
+    {erro&&<div role="alert" className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">{erro}<button className="ml-3 underline" onClick={()=>setErro('')}>Fechar</button></div>}
+    {nova&&<form onSubmit={e=>void criar(e)} className="mt-6 grid gap-4 rounded-2xl border border-white/10 bg-[#202020] p-5 sm:grid-cols-2">
+      {campo('Título',form.titulo,v=>setForm(f=>({...f,titulo:v})))}
+      {campo('Programa',form.programa,v=>setForm(f=>({...f,programa:v})))}
+      <label className="text-xs text-white/55">Responsável<select className={input} value={form.responsavel_id} onChange={e=>setForm(f=>({...f,responsavel_id:e.target.value}))}><option value="">Sem responsável</option>{pessoas.map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}</select></label>
+      <label className="text-xs text-white/55">Prioridade<select className={input} value={form.prioridade} onChange={e=>setForm(f=>({...f,prioridade:e.target.value as Prioridade}))}>{prioridades.map(p=><option key={p} value={p}>{p.toUpperCase()}</option>)}</select></label>
+      {campo('Início',form.inicio,v=>setForm(f=>({...f,inicio:v})),'date')}
+      {campo('Entrega',form.prazo,v=>setForm(f=>({...f,prazo:v})),'date')}
+      <label className="sm:col-span-2 text-xs text-white/55">Descrição<textarea className={input} rows={3} value={form.descricao} onChange={e=>setForm(f=>({...f,descricao:e.target.value}))}/></label>
+      <button disabled={ocupado} className="rounded-xl bg-[#e2fa00] px-5 py-3 text-sm font-bold text-black">Criar tarefa</button>
+    </form>}
+    <label className="mt-6 flex max-w-md items-center gap-3 rounded-xl border border-white/10 bg-[#1e1e1e] px-4"><Search size={17} className="text-white/40"/><input className="w-full min-w-0 bg-transparent py-3 text-sm outline-none" placeholder="Buscar tarefas..." value={busca} onChange={e=>setBusca(e.target.value)}/></label>
+    <div className="mt-6 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-5 md:grid md:grid-cols-2 md:overflow-visible xl:grid-cols-4">
+      {stages.map((stage,i)=><section key={stage.id} onDragOver={e=>{if(podeEditar)e.preventDefault()}} onDrop={e=>{e.preventDefault();if(drag)void mover(drag,stage.id);setDrag(null)}} className="min-h-[350px] w-[min(85vw,350px)] shrink-0 snap-start rounded-2xl border border-white/10 bg-[#191919]/95 p-4 md:w-auto">
+        <div className="mb-4 flex items-center justify-between"><h2 className="text-sm font-bold"><span className="mr-2 inline-block h-2.5 w-2.5 rounded-full" style={{background:stage.color}}/>{stage.label}</h2><span className="rounded-full bg-white/10 px-2 py-1 text-xs">{filtradas.filter(t=>t.etapa===stage.id).length}</span></div>
+        <div className="space-y-3">{filtradas.filter(t=>t.etapa===stage.id).map(t=><article key={t.id} draggable={podeEditar} onDragStart={(e:DragEvent)=>{e.dataTransfer.effectAllowed='move';setDrag(t.id)}} onDragEnd={()=>setDrag(null)} className="cursor-pointer rounded-xl border border-white/10 bg-[#272727] p-4 transition hover:border-blue-400/50 hover:bg-[#303030]" onClick={()=>setSelecionada(t.id)}>
+          <div className="mb-3 flex items-center justify-between"><span className="rounded-md px-2 py-1 text-[10px] font-bold uppercase" style={{color:cores[t.prioridade||'normal'],background:cores[t.prioridade||'normal']+'20'}}>● {t.prioridade||'normal'}</span><ArrowRight size={15} className="text-white/30"/></div>
+          <h3 className="text-sm font-semibold leading-snug">{t.titulo}</h3><p className="mt-2 text-xs text-white/45">{t.programa||'Sem programa'}</p>
+          <div className="mt-4 flex items-center justify-between gap-2 border-t border-white/10 pt-3"><div className="flex min-w-0 items-center gap-2"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-violet-600 text-xs font-bold">{avatar(t.responsavel)}</span><span className="truncate text-xs text-white/70">{t.responsavel||'Sem responsável'}</span></div>{t.prazo&&<span className="shrink-0 text-[10px] text-white/50">{dataBR(t.prazo)}</span>}</div>
+          {podeEditar&&<div className="mt-3 flex justify-end gap-2" onClick={e=>e.stopPropagation()}>{i>0&&<button className="rounded-md border border-white/10 px-2 py-1 text-xs" onClick={()=>void mover(t.id,stages[i-1].id)}>Voltar</button>}{i<3&&<button className="rounded-md border border-white/10 px-2 py-1 text-xs" onClick={()=>void mover(t.id,stages[i+1].id)}>Avançar</button>}</div>}
+        </article>)}</div>
+      </section>)}
+    </div>
+    {tarefa&&<div className="fixed inset-0 z-50 flex justify-end bg-black/75" onClick={()=>setSelecionada(null)}><section role="dialog" aria-modal="true" aria-label="Detalhes da tarefa" onClick={e=>e.stopPropagation()} className="h-full w-full max-w-2xl overflow-y-auto border-l border-white/10 bg-[#181818] p-5 shadow-2xl sm:p-8">
+      <div className="flex items-center justify-between"><span className="text-xs font-bold tracking-widest text-blue-400">SCC / TAREFA</span><button aria-label="Fechar" onClick={()=>setSelecionada(null)}><X/></button></div>
+      <h2 className="mt-5 text-2xl font-extrabold">{tarefa.titulo}</h2><p className="mt-2 text-sm text-white/45">{tarefa.programa||'Sem programa'}</p>
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        <label className="text-xs text-white/55">Responsável<select disabled={!podeEditar||ocupado} className={input} value={tarefa.responsavel_id||''} onChange={e=>void atualiza(tarefa.id,{responsavel_id:e.target.value||null,responsavel:nomePessoa(e.target.value)})}><option value="">Sem responsável</option>{pessoas.map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}</select></label>
+        <label className="text-xs text-white/55">Prioridade<select disabled={!podeEditar||ocupado} className={input} value={tarefa.prioridade||'normal'} onChange={e=>void atualiza(tarefa.id,{prioridade:e.target.value as Prioridade})}>{prioridades.map(p=><option key={p} value={p}>{p.toUpperCase()}</option>)}</select></label>
+        {campo('Início',tarefa.inicio||'',v=>void atualiza(tarefa.id,{inicio:v||null}),'date')}
+        {campo('Entrega',tarefa.prazo||'',v=>void atualiza(tarefa.id,{prazo:v||null}),'date')}
       </div>
-      <p role="status" className="mt-6 rounded-xl border border-amber-400/25 bg-amber-400/10 p-4 text-xs text-amber-100">As tarefas são salvas no Supabase. No modo de demonstração, os dados são apenas locais.</p>
-      {erro && <p role="alert" className="mt-4 text-red-300">{erro}</p>}
-      {creating && <form onSubmit={createTask} className="mt-5 grid gap-3 rounded-2xl border border-white/10 bg-[#1f1f1f] p-5 md:grid-cols-2">
-        <label className="text-xs text-white/65">Título da tarefa<input required maxLength={160} value={title} onChange={e => setTitle(e.target.value)} className="mt-2 w-full rounded-lg border border-white/15 bg-black/40 p-3 text-white" /></label>
-        <label className="text-xs text-white/65">Programa<input maxLength={100} value={program} onChange={e => setProgram(e.target.value)} className="mt-2 w-full rounded-lg border border-white/15 bg-black/40 p-3 text-white" /></label>
-        <label className="text-xs text-white/65">Responsável
-          {modoDemo ? <input maxLength={100} value={owner} onChange={e => setOwner(e.target.value)} className="mt-2 w-full rounded-lg border border-white/15 bg-black/40 p-3 text-white" /> :
-          <select value={owner} onChange={e => setOwner(e.target.value)} disabled={carregandoColaboradores} className="mt-2 w-full rounded-lg border border-white/15 bg-black/40 p-3 text-white">
-            <option value="">Sem responsável definido</option>
-            {colaboradores.map(c => <option key={c.id} value={c.id}>{c.nome} — {({ admin: 'Administrador', producao: 'Produção', opec: 'OPEC', editor: 'Editor', leitor: 'Leitor' } as const)[c.papel]}</option>)}
-          </select>}
-        </label>
-        <label className="text-xs text-white/65">Prazo<input type="date" value={due} onChange={e => setDue(e.target.value)} className="mt-2 w-full rounded-lg border border-white/15 bg-black/40 p-3 text-white" /></label>
-        <div className="md:col-span-2"><button className="rounded-lg bg-[#e2fa00] px-5 py-3 text-sm font-bold text-black" disabled={ocupado}>Salvar tarefa</button></div>
-      </form>}
-      <label className="mt-7 flex max-w-md items-center gap-3 rounded-xl border border-white/10 bg-[#1f1f1f] px-4"><Search size={18} className="text-white/40"/><span className="sr-only">Buscar tarefas</span><input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar tarefa, programa ou responsável" className="w-full bg-transparent py-3 text-sm outline-none"/></label>
-      <div className="mt-6 grid gap-4 xl:grid-cols-4 md:grid-cols-2">
-        {stages.map((stage, index) => {
-          const items = filtered.filter(task => task.stage === stage.id)
-          return <section key={stage.id} className="min-h-72 rounded-2xl border border-white/10 bg-[#1a1a1a] p-4" aria-label={stage.label}>
-            <div className="mb-4 flex items-center justify-between"><h2 className="text-sm font-bold"><span className="mr-2 inline-block h-2 w-2 rounded-full" style={{ background: stage.color }}/>{stage.label}</h2><span className="rounded-full bg-white/10 px-2 py-1 text-xs">{items.length}</span></div>
-            <div className="space-y-3">{items.map(task => <article key={task.id} className="rounded-xl border border-white/10 bg-[#252525] p-4">
-              <h3 className="text-sm font-semibold">{task.title}</h3>
-              <p className="mt-2 text-xs text-white/55">{task.program || 'Sem programa'} · {task.owner || 'Sem responsável'}</p>
-              {task.due && <p className="mt-2 text-xs text-white/45">Prazo: {task.due.split('-').reverse().join('/')}</p>}
-              <div className="mt-4 flex items-center justify-between gap-2">
-                {podeExcluir && <button type="button" disabled={ocupado} aria-label={`Excluir ${task.title}`} title="Excluir tarefa" onClick={() => void removeTask(task.id)} className="rounded-lg p-2 text-white/50 hover:bg-red-500/10 hover:text-red-300"><Trash2 size={15}/></button>}
-                <div className="flex items-center gap-2">
-                  {podeEditar && index > 0 && <button type="button" disabled={ocupado} onClick={() => void moveTask(task.id, stages[index - 1].id)} className="rounded-lg border border-white/15 px-2 py-1 text-xs hover:bg-white/10">Voltar</button>}
-                  {podeEditar && index < stages.length - 1 && <button type="button" disabled={ocupado} onClick={() => void moveTask(task.id, stages[index + 1].id)} className="flex items-center gap-1 rounded-lg border border-white/15 px-2 py-1 text-xs hover:bg-white/10">Avançar <ArrowRight size={13}/></button>}
-                </div>
-              </div>
-            </article>)}</div>
-          </section>
-        })}
-      </div>
-    </main>
-  )
+      <label className="mt-5 block text-xs text-white/55">Descrição<textarea key={tarefa.id} defaultValue={tarefa.descricao||''} disabled={!podeEditar} onBlur={e=>{if(e.target.value!==tarefa.descricao)void atualiza(tarefa.id,{descricao:e.target.value})}} rows={4} className={input}/></label>
+      <div className="mt-6 rounded-2xl border border-white/10 bg-[#222] p-5"><h3 className="flex items-center gap-2 font-bold"><Clock3 size={17}/> Rastreamento de tempo</h3><p className="mt-3 text-2xl font-black">{formatTempo(totalSegundos)}</p><button disabled={ocupado||!podeEditar} onClick={()=>void atualizarTempo()} className="mt-3 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold">{tempos.some(t=>!t.fim&&t.usuario_id===perfil?.id)?'Pausar contagem':'Iniciar contagem'}</button></div>
+      <div className="mt-6 rounded-2xl border border-white/10 bg-[#222] p-5"><h3 className="flex items-center gap-2 font-bold"><Paperclip size={17}/> Arquivos</h3><div className="mt-3 space-y-2">{anexos.map(a=><button key={a.id} className="block max-w-full truncate text-sm text-blue-300 underline" onClick={async()=>{try{window.open(await urlAnexo(a.caminho),'_blank','noopener,noreferrer')}catch{setErro('Não foi possível abrir o arquivo.')}}}>{a.nome}</button>)}</div>{podeEditar&&!modoDemo&&<input aria-label="Anexar arquivo" type="file" disabled={ocupado} className="mt-4 max-w-full text-xs" onChange={async e=>{const arquivo=e.target.files?.[0];if(!arquivo)return;setOcupado(true);try{await anexarArquivo(tarefa.id,arquivo);setAnexos(await listarAnexos(tarefa.id))}catch(err){setErro(err instanceof Error?err.message:'Erro ao anexar')}finally{setOcupado(false);e.target.value=''}}}/>}<p className="mt-2 text-xs text-white/40">Até 10 MB por arquivo. Acesso privado.</p></div>
+      <div className="mt-6 rounded-2xl border border-white/10 bg-[#222] p-5"><h3 className="flex items-center gap-2 font-bold"><MessageCircle size={17}/> Conversa da tarefa</h3><div className="mt-4 max-h-72 space-y-3 overflow-y-auto">{comentarios.length===0&&<p className="text-sm text-white/40">Nenhuma mensagem ainda.</p>}{comentarios.map(c=><div key={c.id} className="rounded-xl bg-white/5 p-3"><p className="text-xs font-semibold text-blue-300">{nomePessoa(c.autor_id)||'Colaborador'} · {new Date(c.criado_em).toLocaleString('pt-BR')}</p><p className="mt-1 whitespace-pre-wrap text-sm">{c.mensagem}</p></div>)}</div>{podeEditar&&!modoDemo&&<form onSubmit={e=>void enviarComentario(e)} className="mt-4 flex gap-2"><input required maxLength={5000} className={input+' mt-0'} placeholder="Escreva uma mensagem..." value={mensagem} onChange={e=>setMensagem(e.target.value)}/><button disabled={ocupado} className="rounded-xl bg-blue-600 px-4 text-sm font-bold">Enviar</button></form>}</div>
+      {podeExcluir&&<button className="mt-7 flex items-center gap-2 text-sm text-red-300" onClick={async()=>{if(!window.confirm('Excluir tarefa definitivamente?'))return;try{await excluirTarefa(tarefa.id);setTarefas(v=>v.filter(t=>t.id!==tarefa.id));setSelecionada(null)}catch{setErro('Não foi possível excluir.')}}}><Trash2 size={16}/> Excluir tarefa</button>}
+      <p className="mt-8 flex items-center gap-2 text-xs text-white/30"><CalendarDays size={14}/> Início {dataBR(tarefa.inicio)} · Entrega {dataBR(tarefa.prazo)}</p>
+    </section></div>}
+  </main>
 }
