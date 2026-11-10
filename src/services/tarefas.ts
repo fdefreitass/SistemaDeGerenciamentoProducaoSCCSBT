@@ -18,7 +18,7 @@ export async function listarTarefas(): Promise<Tarefa[]> {
 }
 export async function criarTarefa(entrada: { titulo: string; programa: string; responsavel: string; responsavel_id: string | null; prazo: string | null; inicio?: string | null; descricao?: string; prioridade?: Prioridade }): Promise<Tarefa> {
   if (modoDemo) return { id: crypto.randomUUID(), ...entrada, etapa: 'backlog' }
-  const { data, error } = await obterSupabase().from('tarefas_producao').insert(entrada).select('id,titulo,programa,responsavel,prazo,etapa').single()
+  const { data, error } = await obterSupabase().from('tarefas_producao').insert(entrada).select('id,titulo,programa,responsavel,responsavel_id,prazo,inicio,descricao,prioridade,etapa').single()
   if (error) throw error
   return data as Tarefa
 }
