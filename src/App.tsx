@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, Navigate, NavLink, Route, Routes, useLocation } from 'react-router'
+import { Link, Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router'
 import { ChevronDown, Clapperboard, LayoutDashboard, LibraryBig, LogOut, RefreshCcw, ArchiveX, Users, UserRound } from 'lucide-react'
 import { useAuth } from './context/AuthContext'
 import { modoDemo, supabase } from './lib/supabase'
@@ -37,6 +37,7 @@ const titulos: Record<string, string> = {
 export default function App() {
   const { carregando, email, perfil, erro, sair } = useAuth()
   const { pathname } = useLocation()
+  const navigate = useNavigate()
   const [menuAberto, setMenuAberto] = useState(false)
   const menuContaRef = useRef<HTMLDivElement>(null)
   const botaoPerfilRef = useRef<HTMLButtonElement>(null)
@@ -110,7 +111,7 @@ export default function App() {
   const permissions: ModulePermissions = { home: true, tasks: administrador, standardization: administrador, schedule: true }
   const moduleForPath = (path: string): SccModule => path === '/tarefas' ? 'tasks' : path === '/padronizacao' ? 'standardization' : ['/conteudos', '/gravacao', '/atualizacao', '/remocao', '/grade'].includes(path) ? 'schedule' : 'home'
   const currentModule = moduleForPath(pathname)
-  const navigateModule = (module: SccModule) => { window.history.pushState({}, '', ({ home: '/painel', tasks: '/tarefas', standardization: '/padronizacao', schedule: '/grade' })[module]); window.dispatchEvent(new PopStateEvent('popstate')) }
+  const navigateModule = (module: SccModule) => navigate(({ home: '/painel', tasks: '/tarefas', standardization: '/padronizacao', schedule: '/grade' })[module])
   const nome = modoDemo ? 'Demonstração local' : perfil?.nome || email || 'Colaborador'
 
   return (
