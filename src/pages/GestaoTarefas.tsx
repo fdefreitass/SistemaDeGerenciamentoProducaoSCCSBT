@@ -40,6 +40,8 @@ export default function GestaoTarefas() {
   const [mencionados,setMencionados]=useState<string[]>([])
   const [arquivosMensagem,setArquivosMensagem]=useState<File[]>([])
   const [nova,setNova]=useState(false)
+  const [etapaRapida,setEtapaRapida]=useState<string|null>(null)
+  const [tituloRapido,setTituloRapido]=useState('')
   const [ocupado,setOcupado]=useState(false)
   const [erro,setErro]=useState('')
   const [form,setForm]=useState({titulo:'',programa:'',responsavel_id:'',inicio:'',prazo:'',prioridade:'normal' as Prioridade,descricao:''})
@@ -109,6 +111,21 @@ export default function GestaoTarefas() {
       setTarefas(v=>[t,...v]);setNova(false);setForm({titulo:'',programa:'',responsavel_id:'',inicio:'',prazo:'',prioridade:'normal',descricao:''})
     }catch(e){setErro(e instanceof Error?e.message:'Falha ao criar tarefa')}finally{setOcupado(false)}
   }
+  const criarRapida=async(e:FormEvent,etapa:EtapaTarefa)=>{
+    e.preventDefault()
+    const titulo=tituloRapido.trim()
+    if(!podeEditar||ocupado||!titulo)return
+    setOcupado(true);setErro('')
+    try{
+      const novaTarefa=await criarTarefa({titulo,programa:'',responsavel:'',responsavel_id:null,inicio:null,prazo:null,prioridade:'normal',descricao:''})
+      if(etapa!==novaTarefa.etapa){
+        try{await atualizarEtapa(novaTarefa.id,etapa);novaTarefa.etapa=etapa}
+        catch{setTarefas(v=>[novaTarefa,...v]);setTituloRapido('');setEtapaRapida(null);setErro('Tarefa criada em A fazer, mas não foi possível movê-la para o status escolhido.');return}
+      }
+      setTarefas(v=>[novaTarefa,...v]);setTituloRapido('');setEtapaRapida(null)
+    }catch(err){setErro(err instanceof Error?err.message:'Não foi possível criar a tarefa.')}
+    finally{setOcupado(false)}
+  }
   const enviarComentario=async(e:FormEvent)=>{
     e.preventDefault();if(!selecionada||!mensagem.trim())return
     setOcupado(true);try{const id=await comentar(selecionada,mensagem.trim(),mencionados);for(const arquivo of arquivosMensagem)await anexarArquivo(selecionada,arquivo,id);setMensagem('');setMencionados([]);setArquivosMensagem([]);setComentarios(await listarComentarios(selecionada));setAnexos(await listarAnexos(selecionada));void recarregarNotificacoes()}
@@ -166,7 +183,13 @@ export default function GestaoTarefas() {
     {visualizacao==='kanban'&&<div style={{["--scc-stage-count" as string]:stages.length}} className="scc-bitrix-board mt-6 flex items-start gap-2 overflow-x-auto pb-4">
       {stages.map((stage,i)=>{const itensEtapa=filtradas.filter(t=>t.etapa===stage.id);return <section key={stage.id} onDragOver={e=>{if(podeEditar)e.preventDefault()}} onDrop={e=>{e.preventDefault();if(drag)void mover(drag,stage.id);setDrag(null)}} onMouseEnter={()=>setEtapaEmHover(stage.id)} onMouseLeave={()=>setEtapaEmHover(v=>v===stage.id?null:v)} onFocusCapture={()=>setEtapaEmHover(stage.id)} className="scc-bitrix-column group min-w-0 shrink-0 snap-start">
         <div className="scc-bitrix-heading flex items-center justify-between gap-2 rounded-md px-2.5 py-2" style={{background:stage.cor,color:'#111'}}><h2 className="min-w-0 truncate text-[11px] font-extrabold uppercase tracking-wide">{stage.nome} <span className="font-semibold opacity-70">{itensEtapa.length}</span></h2>{perfil?.papel==='admin'&&<div data-visible={etapaEmHover===stage.id} className="scc-stage-admin flex shrink-0 items-center gap-1"><button type="button" title="Adicionar status" aria-label={'Adicionar status após '+stage.nome} onClick={()=>{setEtapaEmEdicao(null);setMostrarNovaEtapa(true);setGerenciarEtapas(true)}} className="rounded p-1 hover:bg-black/20 focus-visible:outline focus-visible:outline-2"><Plus size={14}/></button><button type="button" title="Alterar cor e nome" aria-label={'Personalizar '+stage.nome} onClick={()=>{setEtapaEmEdicao(stage.id);setMostrarNovaEtapa(false);setGerenciarEtapas(true)}} className="rounded p-1 hover:bg-black/20 focus-visible:outline focus-visible:outline-2"><Paintbrush size={14}/></button></div>}</div>
-        {podeEditar&&<button type="button" onClick={()=>setNova(true)} className="scc-bitrix-add mt-1 flex w-full items-center justify-center gap-1 rounded-md py-1.5 text-xs font-semibold text-white/75 hover:bg-white/10 hover:text-white"><Plus size={13}/> Nova tarefa</button>}
+        {podeEditar&&<div className="mt-1">
+          <button type="button" aria-expanded={etapaRapida===stage.id} onClick={()=>{setEtapaRapida(v=>v===stage.id?null:stage.id);setTituloRapido('')}} className="scc-bitrix-add flex w-full items-center justify-center gap-1 rounded-xl bg-[#292929] py-2 text-xs font-bold text-white/90 hover:bg-[#383838]"><Plus size={15}/> Tarefa rápida</button>
+          {etapaRapida===stage.id&&<form onSubmit={e=>void criarRapida(e,stage.id)} className="scc-quick-task mt-1 overflow-hidden rounded-lg border border-blue-400/50 bg-[#272727]">
+            <textarea autoFocus rows={3} maxLength={180} required value={tituloRapido} onChange={e=>setTituloRapido(e.target.value)} onKeyDown={e=>{if(e.key==='Escape'){setEtapaRapida(null);setTituloRapido('')}if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();e.currentTarget.form?.requestSubmit()}}} placeholder="Nome da tarefa" aria-label={'Título da nova tarefa em '+stage.nome} className="min-h-24 w-full resize-y bg-transparent px-3 py-3 text-sm text-white outline-none placeholder:text-white/40"/>
+            <div className="flex items-center justify-between gap-2 border-t border-white/10 px-3 py-2"><span className="text-[10px] text-white/45">Enter cria · Shift+Enter pula linha</span><div className="flex gap-1"><button type="button" onClick={()=>{setEtapaRapida(null);setTituloRapido('')}} className="rounded-md px-2 py-1 text-xs text-white/60 hover:bg-white/10">Cancelar</button><button type="submit" disabled={ocupado||!tituloRapido.trim()} className="rounded-md bg-blue-600 px-3 py-1 text-xs font-bold text-white disabled:opacity-40">Criar</button></div></div>
+          </form>}
+        </div>}
         <div className="space-y-1.5">{itensEtapa.map(t=><article key={t.id} draggable={podeEditar} onDragStart={(e:DragEvent)=>{e.dataTransfer.effectAllowed='move';setDrag(t.id)}} onDragEnd={()=>setDrag(null)} className={["scc-task-card", "scc-priority-" + (t.prioridade || "normal"), "scc-bitrix-card cursor-pointer rounded-lg border border-white/10 bg-[#272727] p-2.5 transition hover:bg-[#303030]"].join(" ")} onClick={()=>{setSelecionada(t.id);setAbaDetalhe('geral')}}>
           <div className="mb-1.5 flex items-center justify-between"><span className="rounded-md px-2 py-1 text-[10px] font-bold uppercase" style={{color:cores[t.prioridade||'normal'],background:cores[t.prioridade||'normal']+'20'}}>{(t.prioridade==='urgente'||t.prioridade==='alta') ? '🔥 ' : '● '}{t.prioridade||'normal'}</span><ArrowRight size={15} className="text-white/30"/></div>
           <h3 className="text-[12px] font-bold leading-snug text-white">{t.titulo}</h3><p className="mt-1 text-[10px] text-white/45">{t.programa||'Sem programa'}</p>
