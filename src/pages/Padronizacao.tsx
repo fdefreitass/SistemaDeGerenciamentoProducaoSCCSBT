@@ -4,14 +4,10 @@ import { CheckCircle2, ClipboardCopy, FileCheck2, Film, Info, Plus, Pencil, Tras
 import { useAuth } from '../context/AuthContext'
 import { modoDemo, supabase } from '../lib/supabase'
 
+type TipoMaterial = { codigo: string; nome: string; ativo: boolean }
 type Destino = { id: string; tipo: string; nome: string; drive_folder_id: string | null; ativo: boolean }
 
-const types = [
-  { value: 'CH', label: 'CH — Chamada' },
-  { value: 'VT', label: 'VT — Videotape' },
-  { value: 'VH', label: 'VH — Vinheta' },
-  { value: 'CALHAU', label: 'Calhau' },
-] as const
+const tiposIniciais: TipoMaterial[] = [{codigo:'CH',nome:'Chamada',ativo:true},{codigo:'VT',nome:'Videotape',ativo:true},{codigo:'VH',nome:'Vinheta',ativo:true},{codigo:'CALHAU',nome:'Calhau',ativo:true}]
 
 function dataLocal() {
   const agora = new Date()
@@ -30,6 +26,12 @@ export default function Padronizacao() {
   const { perfil } = useAuth()
   const admin = perfil?.papel === 'admin'
   const [destinos, setDestinos] = useState<Destino[]>([])
+  const [tipos, setTipos] = useState<TipoMaterial[]>(tiposIniciais)
+  const [gerenciarTipos, setGerenciarTipos] = useState(false)
+  const [novoTipoCodigo, setNovoTipoCodigo] = useState('')
+  const [novoTipoNome, setNovoTipoNome] = useState('')
+  const [erroTipo, setErroTipo] = useState('')
+  const [salvandoTipo, setSalvandoTipo] = useState(false)
   const [novoDestino, setNovoDestino] = useState('')
   const [gerenciar, setGerenciar] = useState(false)
   const [erroDestino, setErroDestino] = useState('')
@@ -37,6 +39,17 @@ export default function Padronizacao() {
   const [conectandoDrive, setConectandoDrive] = useState(false)
   const [erroDrive, setErroDrive] = useState('')
   const [driveConectado, setDriveConectado] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    if (!supabase || modoDemo) return
+    let ativo = true
+    void supabase.from('tipos_padronizacao').select('codigo,nome,ativo').order('nome').then(({data,error}) => {
+      if (!ativo) return
+      if (error) setErroTipo('Não foi possível carregar os tipos de material.')
+      else setTipos((data ?? []) as TipoMaterial[])
+    })
+    return () => { ativo = false }
+  }, [])
 
   useEffect(() => {
     if (!supabase || modoDemo) return
@@ -86,6 +99,32 @@ export default function Padronizacao() {
     }
   }
 
+  async function adicionarTipo() {
+    if (!supabase || !admin) return
+    const codigo = novoTipoCodigo.toUpperCase().replace(/[^A-Z0-9]/g,'')
+    const nome = novoTipoNome.trim()
+    if (!/^[A-Z][A-Z0-9]{1,11}$/.test(codigo) || !nome) { setErroTipo('Informe um código de 2 a 12 caracteres e uma descrição.'); return }
+    setSalvandoTipo(true); setErroTipo('')
+    const {data,error} = await supabase.from('tipos_padronizacao').insert({codigo,nome}).select('codigo,nome,ativo').single()
+    if (error) setErroTipo('Não foi possível adicionar. Confira se o código já existe.')
+    else { setTipos(atual => [...atual,data as TipoMaterial]); setNovoTipoCodigo(''); setNovoTipoNome('') }
+    setSalvandoTipo(false)
+  }
+  async function renomearTipo(item: TipoMaterial) {
+    if (!supabase || !admin) return
+    const nome = window.prompt('Nova descrição do tipo (o código do arquivo permanece fixo):',item.nome)?.trim()
+    if (!nome || nome===item.nome) return
+    const {error}=await supabase.from('tipos_padronizacao').update({nome}).eq('codigo',item.codigo)
+    if (error) setErroTipo('Não foi possível alterar o tipo.')
+    else setTipos(atual=>atual.map(t=>t.codigo===item.codigo?{...t,nome}:t))
+  }
+  async function desativarTipo(item: TipoMaterial) {
+    if (!supabase || !admin || !window.confirm('Ocultar este tipo da seleção? Destinos e arquivos já enviados serão preservados.')) return
+    const {error}=await supabase.from('tipos_padronizacao').update({ativo:false}).eq('codigo',item.codigo)
+    if (error) setErroTipo('Não foi possível desativar o tipo.')
+    else {setTipos(atual=>atual.map(t=>t.codigo===item.codigo?{...t,ativo:false}:t));if(type===item.codigo){setType('CH');setProgram('')}}
+  }
+
   async function adicionarDestino() {
     if (!supabase || !admin || !novoDestino.trim()) return
     setSalvandoDestino(true); setErroDestino('')
@@ -111,7 +150,7 @@ export default function Padronizacao() {
     else { setDestinos(atual => atual.map(d => d.id === item.id ? { ...d, ativo: false } : d)); if (program === item.nome) setProgram('') }
   }
 
-  const [type, setType] = useState<(typeof types)[number]['value']>('CH')
+  const [type, setType] = useState<string>('CH')
   const [program, setProgram] = useState('')
   const [complemento, setComplemento] = useState('')
   const [dataEnvio] = useState(dataLocal)
@@ -188,6 +227,7 @@ export default function Padronizacao() {
     setLinkDrive('')
     setDuplicado('')
     setGerenciar(false)
+    setGerenciarTipos(false)
     setNovoDestino('')
     setErroDestino('')
   }
@@ -234,11 +274,32 @@ export default function Padronizacao() {
             {erroArquivo && <span role="alert" className="mt-2 block text-xs text-red-300">{erroArquivo}</span>}
           </label>
           <div className="grid gap-5 sm:grid-cols-2">
-            <label className="text-xs font-semibold text-white/70">Tipo de material
-              <select value={type} onChange={e => { setType(e.target.value as typeof type); setProgram(''); setGerenciar(false); setConfirmation('') }} className="mt-2 w-full rounded-xl border border-white/15 bg-[#111] p-3 text-sm text-white">
-                {types.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
+            <div className="min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <label htmlFor="tipo-material" className="text-xs font-semibold text-white/70">Tipo de material</label>
+                {admin && <button type="button" onClick={() => setGerenciarTipos(v=>!v)} className="text-xs font-bold text-blue-400 hover:text-blue-300">{gerenciarTipos?'Fechar gerenciamento':'Gerenciar tipos'}</button>}
+              </div>
+              <select id="tipo-material" value={type} onChange={e => {setType(e.target.value);setProgram('');setGerenciar(false);setConfirmation('')}} className="mt-2 w-full rounded-xl border border-white/15 bg-[#111] p-3 text-sm text-white">
+                {tipos.filter(t=>t.ativo).map(t=><option key={t.codigo} value={t.codigo}>{t.codigo === 'CALHAU' ? t.nome : `${t.codigo} — ${t.nome}`}</option>)}
               </select>
-            </label>
+              {admin && gerenciarTipos && <div className="mt-3 rounded-xl border border-blue-400/20 bg-[#111] p-3">
+                <p className="mb-3 text-xs font-semibold text-white/70">Gerenciar tipos de materiais</p>
+                <div className="flex flex-wrap gap-2">
+                  <input aria-label="Código do novo tipo" maxLength={12} placeholder="CÓDIGO (EX.: DOC)" value={novoTipoCodigo} onChange={e=>setNovoTipoCodigo(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,''))} className="min-w-0 w-28 flex-1 rounded-lg border border-white/15 bg-[#080808] px-3 py-2 text-xs"/>
+                  <input aria-label="Nome do novo tipo" maxLength={80} placeholder="Descrição do tipo" value={novoTipoNome} onChange={e=>setNovoTipoNome(e.target.value)} className="min-w-0 flex-[2] rounded-lg border border-white/15 bg-[#080808] px-3 py-2 text-xs"/>
+                  <button type="button" disabled={salvandoTipo || !novoTipoCodigo || !novoTipoNome.trim()} onClick={()=>void adicionarTipo()} className="flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold disabled:opacity-40"><Plus size={14}/> Adicionar</button>
+                </div>
+                <div className="mt-3 space-y-2">{tipos.filter(t=>t.ativo).map(item=><div key={item.codigo} className="flex items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2">
+                  <span className="min-w-0 truncate text-xs">{item.codigo} — {item.nome}</span>
+                  <div className="flex shrink-0 gap-2">
+                    <button type="button" aria-label={`Renomear ${item.nome}`} onClick={()=>void renomearTipo(item)} className="text-blue-300"><Pencil size={15}/></button>
+                    <button type="button" aria-label={`Desativar ${item.nome}`} onClick={()=>void desativarTipo(item)} className="text-red-300"><Trash2 size={15}/></button>
+                  </div>
+                </div>)}</div>
+                <p className="mt-3 text-xs text-white/50">O código é fixo para preservar o histórico. A descrição pode ser alterada; desativar não exclui arquivos existentes.</p>
+                {erroTipo && <p role="alert" className="mt-2 text-xs text-red-300">{erroTipo}</p>}
+              </div>}
+            </div>
             <label className="text-xs font-semibold text-white/70">Complemento (opcional)
               <input maxLength={80} placeholder="EX.: INSTITUCIONAL" value={complemento} onChange={e => { setComplemento(normalizeName(e.target.value)); setConfirmation('') }} className="mt-2 w-full rounded-xl border border-white/15 bg-[#111] p-3 text-sm uppercase text-white" />
             </label>
