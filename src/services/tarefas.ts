@@ -41,16 +41,17 @@ export async function salvarDetalhes(id: string, dados: Partial<Pick<Tarefa,'tit
   if (error) throw error
   if (!data?.length) throw new Error('Atualização não autorizada.')
 }
-export type Comentario = { id: string; tarefa_id: string; autor_id: string; mensagem: string; criado_em: string }
+export type Comentario = { id: string; tarefa_id: string; autor_id: string; mensagem: string; criado_em: string; mencoes?:string[] }
 export async function listarComentarios(tarefaId: string): Promise<Comentario[]> {
   if (modoDemo) return []
   const { data,error } = await obterSupabase().from('tarefa_comentarios').select('*').eq('tarefa_id',tarefaId).order('criado_em',{ascending:true})
   if (error) throw error
   return data ?? []
 }
-export async function comentar(tarefaId:string,mensagem:string) {
-  const { error } = await obterSupabase().from('tarefa_comentarios').insert({tarefa_id:tarefaId,mensagem})
-  if (error) throw error
+export async function comentar(tarefaId:string,mensagem:string,mencoes:string[]=[]):Promise<string> {
+  const {data,error}=await obterSupabase().from('tarefa_comentarios').insert({tarefa_id:tarefaId,mensagem,mencoes}).select('id').single()
+  if(error)throw error
+  return data.id
 }
 export type RegistroTempo = { id:string; tarefa_id:string; usuario_id:string; inicio:string; fim:string|null }
 export async function listarTempos(tarefaId:string): Promise<RegistroTempo[]> {
@@ -67,20 +68,20 @@ export async function pararTempo(registroId:string) {
   const {error}=await obterSupabase().from('tarefa_tempos').update({fim:new Date().toISOString()}).eq('id',registroId).is('fim',null)
   if(error) throw error
 }
-export type AnexoTarefa={id:string;tarefa_id:string;nome:string;caminho:string;criado_em:string}
+export type AnexoTarefa={id:string;tarefa_id:string;nome:string;caminho:string;criado_em:string;comentario_id?:string|null}
 export async function listarAnexos(tarefaId:string):Promise<AnexoTarefa[]> {
   if(modoDemo) return []
   const {data,error}=await obterSupabase().from('tarefa_anexos').select('*').eq('tarefa_id',tarefaId).order('criado_em',{ascending:false})
   if(error) throw error
   return data ?? []
 }
-export async function anexarArquivo(tarefaId:string,arquivo:File) {
+export async function anexarArquivo(tarefaId:string,arquivo:File,comentarioId?:string) {
   if(arquivo.size>10*1024*1024) throw new Error('O limite por arquivo é 10 MB.')
   const caminho=`${tarefaId}/${crypto.randomUUID()}-${arquivo.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`
   const db=obterSupabase()
   const {error:erroUpload}=await db.storage.from('scc-tarefas').upload(caminho,arquivo,{upsert:false})
   if(erroUpload) throw erroUpload
-  const {error}=await db.from('tarefa_anexos').insert({tarefa_id:tarefaId,caminho,nome:arquivo.name})
+  const {error}=await db.from('tarefa_anexos').insert({tarefa_id:tarefaId,caminho,nome:arquivo.name,...(comentarioId?{comentario_id:comentarioId}:{})})
   if(error) {await db.storage.from('scc-tarefas').remove([caminho]);throw error}
 }
 export async function urlAnexo(caminho:string) {
