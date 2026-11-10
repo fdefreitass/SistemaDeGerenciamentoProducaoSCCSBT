@@ -1107,3 +1107,9 @@ body { overflow-x: hidden; }
 .scc-task-card:hover{background:#2b2b2b!important}
 .scc-chat-bubble{background:#272727!important}
 .scc-chat-bubble:hover{background:#303030!important}
+
+/* Ações do cabeçalho de Gestão de Tarefas */
+.scc-header-action{transition:background-color .2s,border-color .2s,box-shadow .2s,transform .2s}
+.scc-header-action:hover{background-color:#343434;border-color:#60a5fa;box-shadow:0 6px 22px #2563eb2e;transform:translateY(-1px)}
+.scc-header-action:focus-visible{outline:2px solid #93c5fd;outline-offset:3px}
+@media(hover:none),(prefers-reduced-motion:reduce){.scc-header-action:hover{transform:none}.scc-header-action{transition:none}}
