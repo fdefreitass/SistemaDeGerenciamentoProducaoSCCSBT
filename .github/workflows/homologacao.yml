@@ -1,0 +1,20 @@
+name: Homologação SCC Produção
+# Novo disparo para verificar a versão atual da branch de produção
+on:
+  push:
+    branches: [feat/admin-usuarios]
+  pull_request:
+    branches: [feat/admin-usuarios]
+  workflow_dispatch:
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run lint

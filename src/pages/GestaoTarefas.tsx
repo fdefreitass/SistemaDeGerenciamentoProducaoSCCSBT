@@ -1,0 +1,188 @@
+import { createPortal } from 'react-dom'
+import { useCallback, useEffect, useMemo, useState, type FormEvent, type DragEvent } from 'react'
+import { ArrowRight, CalendarDays, Clock3, MessageCircle, Paperclip, Plus, Search, X, Trash2, Users, ListChecks, SlidersHorizontal, Bell, History, Settings2, ArrowUp, ArrowDown, CheckCircle2 } from 'lucide-react'
+import { modoDemo } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
+import { can } from '../lib/permissoes'
+import { listarTarefas, criarTarefa, atualizarEtapa, excluirTarefa, listarColaboradoresTarefas, salvarDetalhes, listarComentarios, comentar, listarTempos, iniciarTempo, pararTempo, listarAnexos, anexarArquivo, urlAnexo, type Tarefa, type ColaboradorTarefa, type EtapaTarefa, type Prioridade, type Comentario, type RegistroTempo, type AnexoTarefa, listarParticipantes, adicionarParticipante, removerParticipante, listarChecklist, criarItemChecklist, marcarItemChecklist, removerItemChecklist, type ParticipanteTarefa, type ItemChecklist, listarAtividades, listarNotificacoes, marcarNotificacaoLida, type AtividadeTarefa, type NotificacaoTarefa, listarEtapas, criarEtapa, atualizarEtapaConfig, excluirEtapaConfig, type ConfigEtapa, definirEtapaConclusao, reordenarEtapas } from '../services/tarefas'
+
+const etapasPadrao:ConfigEtapa[]=[{id:'backlog',nome:'A fazer',cor:'#9ca3af',ordem:0,concluida:false},{id:'andamento',nome:'Em produção',cor:'#0089ff',ordem:1,concluida:false},{id:'revisao',nome:'Em revisão',cor:'#ffb020',ordem:2,concluida:false},{id:'aprovado',nome:'Aprovado',cor:'#65d69b',ordem:3,concluida:true}]
+const prioridades: Prioridade[]=['baixa','normal','alta','urgente']
+const cores:Record<Prioridade,string>={baixa:'#94a3b8',normal:'#38bdf8',alta:'#f59e0b',urgente:'#ef4444'}
+const input='mt-2 w-full min-w-0 rounded-xl border border-white/15 bg-[#111] px-3 py-3 text-sm text-white outline-none focus:border-blue-400'
+const dataBR=(d?:string|null)=>d?d.split('-').reverse().join('/'):'—'
+const avatar=(nome:string)=>(nome||'?').trim().slice(0,1).toUpperCase()
+export default function GestaoTarefas() {
+  const {perfil}=useAuth()
+  const podeEditar=modoDemo||can(perfil?.papel,'tasks.write')
+  const podeExcluir=modoDemo||perfil?.papel==='admin'
+  const [tarefas,setTarefas]=useState<Tarefa[]>([])
+  const [pessoas,setPessoas]=useState<ColaboradorTarefa[]>([])
+  const [selecionada,setSelecionada]=useState<string|null>(null)
+  const [busca,setBusca]=useState('')
+  const [filtroProgresso,setFiltroProgresso]=useState('')
+  const [stages,setStages]=useState<ConfigEtapa[]>(etapasPadrao)
+  const [gerenciarEtapas,setGerenciarEtapas]=useState(false)
+  const [nomeNovaEtapa,setNomeNovaEtapa]=useState('')
+  const [corNovaEtapa,setCorNovaEtapa]=useState('#0089ff')
+  const [filtroResponsavel,setFiltroResponsavel]=useState('')
+  const [filtroPrioridade,setFiltroPrioridade]=useState('')
+  const [filtroPrazo,setFiltroPrazo]=useState('')
+  const [mostrarFiltros,setMostrarFiltros]=useState(false)
+  const [nova,setNova]=useState(false)
+  const [ocupado,setOcupado]=useState(false)
+  const [erro,setErro]=useState('')
+  const [form,setForm]=useState({titulo:'',programa:'',responsavel_id:'',inicio:'',prazo:'',prioridade:'normal' as Prioridade,descricao:''})
+  const [comentarios,setComentarios]=useState<Comentario[]>([])
+  const [mensagem,setMensagem]=useState('')
+  const [participantes,setParticipantes]=useState<ParticipanteTarefa[]>([])
+  const [checklist,setChecklist]=useState<ItemChecklist[]>([])
+  const [novoItem,setNovoItem]=useState('')
+  const [atividades,setAtividades]=useState<AtividadeTarefa[]>([])
+  const [notificacoes,setNotificacoes]=useState<NotificacaoTarefa[]>([])
+  const [mostrarNotificacoes,setMostrarNotificacoes]=useState(false)
+  const [tempos,setTempos]=useState<RegistroTempo[]>([])
+  const [anexos,setAnexos]=useState<AnexoTarefa[]>([])
+  const [agora,setAgora]=useState(Date.now())
+  const [drag,setDrag]=useState<string|null>(null)
+  const carregar=useCallback(async()=>{
+    try { const [t,p,e]=await Promise.all([listarTarefas(),listarColaboradoresTarefas(),listarEtapas()]);setTarefas(t);setPessoas(p);setStages(e) }
+    catch(e){setErro(e instanceof Error?e.message:'Falha ao carregar tarefas')}
+  },[])
+  useEffect(()=>{void carregar()},[carregar])
+  const recarregarNotificacoes=useCallback(async()=>{try{setNotificacoes(await listarNotificacoes())}catch{ /* Erro não bloqueia o Kanban */ }},[])
+  useEffect(()=>{void recarregarNotificacoes()},[recarregarNotificacoes])
+  useEffect(()=>{if(!selecionada||modoDemo)return;let ativo=true;Promise.all([listarComentarios(selecionada),listarTempos(selecionada),listarAnexos(selecionada),listarParticipantes(selecionada),listarChecklist(selecionada),listarAtividades(selecionada)]).then(([c,t,a,p,l,h])=>{if(ativo){setComentarios(c);setTempos(t);setAnexos(a);setParticipantes(p);setChecklist(l);setAtividades(h)}}).catch(()=>setErro('Não foi possível carregar os detalhes.'));return()=>{ativo=false}},[selecionada])
+  useEffect(()=>{if(!selecionada)return;const timer=window.setInterval(()=>setAgora(Date.now()),1000);return()=>window.clearInterval(timer)},[selecionada])
+  const tarefa=tarefas.find(t=>t.id===selecionada)
+  const hoje=(()=>{const d=new Date();const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);return local.toISOString().slice(0,10)})()
+  const filtradas=useMemo(()=>tarefas.filter(t=>{
+    if(![t.titulo,t.programa,t.responsavel].join(' ').toLowerCase().includes(busca.trim().toLowerCase()))return false
+    if(filtroProgresso&&t.etapa!==filtroProgresso)return false
+    if(filtroResponsavel==='sem'&&t.responsavel_id)return false
+    if(filtroResponsavel&&filtroResponsavel!=='sem'&&t.responsavel_id!==filtroResponsavel)return false
+    if(filtroPrioridade&&(t.prioridade||'normal')!==filtroPrioridade)return false
+    if(filtroPrazo==='vencidas'&&(!t.prazo||t.prazo>=hoje||stages.some(e=>e.id===t.etapa&&e.concluida)))return false
+    if(filtroPrazo==='hoje'&&t.prazo!==hoje)return false
+    if(filtroPrazo==='sem'&&t.prazo)return false
+    if(filtroPrazo==='futuras'&&(!t.prazo||t.prazo<=hoje))return false
+    return true
+  }),[tarefas,busca,filtroProgresso,filtroResponsavel,filtroPrioridade,filtroPrazo,hoje,stages])
+  const filtrosAtivos=[filtroProgresso,filtroResponsavel,filtroPrioridade,filtroPrazo].filter(Boolean).length
+  const limparFiltros=()=>{setFiltroProgresso('');setFiltroResponsavel('');setFiltroPrioridade('');setFiltroPrazo('');setBusca('')}
+  const nomePessoa=(id?:string|null)=>pessoas.find(p=>p.id===id)?.nome||''
+  const atualiza=async(id:string,campos:Partial<Tarefa>)=>{
+    if(!podeEditar||ocupado)return
+    setOcupado(true);setErro('')
+    try{await salvarDetalhes(id,campos);setTarefas(v=>v.map(t=>t.id===id?{...t,...campos}:t));if(id===selecionada)setAtividades(await listarAtividades(id));void recarregarNotificacoes()}
+    catch(e){setErro(e instanceof Error?e.message:'Erro ao salvar')}finally{setOcupado(false)}
+  }
+  const salvarEtapa=async(id:string,nome:string,cor:string)=>{setOcupado(true);setErro('');try{await atualizarEtapaConfig(id,{nome:nome.trim(),cor});setStages(await listarEtapas())}catch(e){setErro(e instanceof Error?e.message:'Erro ao atualizar etapa')}finally{setOcupado(false)}}
+  const adicionarEtapa=async(e:FormEvent)=>{e.preventDefault();if(!nomeNovaEtapa.trim())return;setOcupado(true);setErro('');try{await criarEtapa({id:'etapa_'+crypto.randomUUID().replace(/-/g,'').slice(0,16),nome:nomeNovaEtapa.trim(),cor:corNovaEtapa,ordem:stages.length});setStages(await listarEtapas());setNomeNovaEtapa('')}catch(e){setErro(e instanceof Error?e.message:'Erro ao criar etapa')}finally{setOcupado(false)}}
+  const alterarConclusao=async(id:string)=>{setOcupado(true);setErro('');try{await definirEtapaConclusao(id);setStages(await listarEtapas())}catch(e){setErro(e instanceof Error?e.message:'Falha ao definir conclusão')}finally{setOcupado(false)}}
+  const moverPosicao=async(id:string,direcao:number)=>{const atual=stages.findIndex(e=>e.id===id),destino=atual+direcao;if(destino<0||destino>=stages.length)return;const lista=[...stages];[lista[atual],lista[destino]]=[lista[destino],lista[atual]];setOcupado(true);setErro('');try{await reordenarEtapas(lista);setStages(await listarEtapas())}catch(e){setErro(e instanceof Error?e.message:'Falha ao reordenar');setStages(await listarEtapas())}finally{setOcupado(false)}}
+  const removerEtapa=async(id:string)=>{if(stages.find(e=>e.id===id)?.concluida){setErro('Defina outra etapa de conclusão antes de excluir esta.');return}if(tarefas.some(t=>t.etapa===id)){setErro('Mova todas as tarefas desta etapa antes de excluí-la.');return}if(!window.confirm('Excluir esta etapa?'))return;setOcupado(true);setErro('');try{await excluirEtapaConfig(id);setStages(await listarEtapas());if(filtroProgresso===id)setFiltroProgresso('')}catch(e){setErro(e instanceof Error?e.message:'Não foi possível excluir a etapa')}finally{setOcupado(false)}}
+  const mover=async(id:string,etapa:EtapaTarefa)=>{
+    if(!podeEditar||ocupado)return
+    setOcupado(true);setErro('')
+    try{await atualizarEtapa(id,etapa);setTarefas(v=>v.map(t=>t.id===id?{...t,etapa}:t));if(id===selecionada)setAtividades(await listarAtividades(id));void recarregarNotificacoes()}
+    catch{setErro('Não foi possível mover a tarefa.')}finally{setOcupado(false)}
+  }
+  const criar=async(e:FormEvent)=>{
+    e.preventDefault();if(!podeEditar||ocupado||!form.titulo.trim())return
+    setOcupado(true);setErro('')
+    try{const p=pessoas.find(p=>p.id===form.responsavel_id)
+      const t=await criarTarefa({titulo:form.titulo.trim(),programa:form.programa,responsavel:p?.nome||'',responsavel_id:p?.id||null,inicio:form.inicio||null,prazo:form.prazo||null,prioridade:form.prioridade,descricao:form.descricao})
+      setTarefas(v=>[t,...v]);setNova(false);setForm({titulo:'',programa:'',responsavel_id:'',inicio:'',prazo:'',prioridade:'normal',descricao:''})
+    }catch(e){setErro(e instanceof Error?e.message:'Falha ao criar tarefa')}finally{setOcupado(false)}
+  }
+  const enviarComentario=async(e:FormEvent)=>{
+    e.preventDefault();if(!selecionada||!mensagem.trim())return
+    setOcupado(true);try{await comentar(selecionada,mensagem.trim());setMensagem('');setComentarios(await listarComentarios(selecionada))}
+    catch{setErro('Não foi possível enviar a mensagem.')}finally{setOcupado(false)}
+  }
+  const atualizarTempo=async()=>{
+    if(!selecionada)return
+    setOcupado(true);setErro('')
+    try{const ativo=tempos.find(t=>!t.fim&&t.usuario_id===perfil?.id)
+      if(ativo)await pararTempo(ativo.id);else await iniciarTempo(selecionada)
+      setTempos(await listarTempos(selecionada))
+    }catch(e){setErro(e instanceof Error?e.message:'Falha no cronômetro')}finally{setOcupado(false)}
+  }
+  const totalSegundos=tempos.reduce((n,t)=>n+Math.max(0,((t.fim?new Date(t.fim).getTime():agora)-new Date(t.inicio).getTime())/1000),0)
+  const formatTempo=(s:number)=>`${Math.floor(s/3600)}h ${String(Math.floor(s%3600/60)).padStart(2,'0')}min`
+  const campo=(rotulo:string,valor:string,change:(v:string)=>void,tipo='text')=><label className="block text-xs text-white/55">{rotulo}<input type={tipo} value={valor} onChange={e=>change(e.target.value)} disabled={!podeEditar||ocupado} className={input}/></label>
+  return <main className="scc-fluid-content min-w-0 overflow-hidden pb-20 pt-8">
+    <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-xs font-bold tracking-[.25em] text-white/40">SCC PRODUÇÃO / WORKSPACE</p><h1 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">Gestão de Tarefas</h1><p className="mt-2 text-sm text-white/50">Produção, revisões e aprovações em um só lugar.</p></div>
+      {podeEditar&&<button className="rounded-xl bg-white px-5 py-3 text-sm font-bold text-black hover:bg-[#e2fa00]" onClick={()=>setNova(v=>!v)}><Plus size={16} className="mr-2 inline"/>Nova tarefa</button>}</div>
+    <div className="mt-5 flex flex-wrap items-center gap-3">
+      <button type="button" onClick={()=>{setMostrarNotificacoes(v=>!v);void recarregarNotificacoes()}} aria-expanded={mostrarNotificacoes} className="flex items-center gap-2 rounded-xl border border-white/10 bg-[#222] px-4 py-2.5 text-sm hover:border-blue-400/40"><Bell size={16}/> Notificações {notificacoes.filter(n=>!n.lida_em).length>0&&<span className="rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold">{notificacoes.filter(n=>!n.lida_em).length}</span>}</button>
+    </div>
+    {mostrarNotificacoes&&<div className="mt-3 max-w-2xl rounded-2xl border border-white/10 bg-[#202020] p-4"><h3 className="mb-3 text-sm font-bold">Atualizações das suas tarefas</h3>{notificacoes.length===0&&<p className="text-sm text-white/45">Nenhuma notificação.</p>}<div className="max-h-80 space-y-2 overflow-y-auto">{notificacoes.map(n=><button key={n.id} type="button" className={'flex w-full items-center justify-between gap-3 rounded-xl border p-3 text-left text-sm '+(n.lida_em?'border-white/5 bg-white/5 text-white/55':'border-blue-500/30 bg-blue-500/10')} onClick={async()=>{try{if(!n.lida_em)await marcarNotificacaoLida(n.id);setSelecionada(n.tarefa_id);setMostrarNotificacoes(false);void recarregarNotificacoes()}catch{setErro('Não foi possível abrir a notificação')}}}><span className="min-w-0 truncate">{tarefas.find(t=>t.id===n.tarefa_id)?.titulo||'Tarefa'} · Nova atividade</span><span className="shrink-0 text-xs">{new Date(n.criado_em).toLocaleDateString('pt-BR')}</span></button>)}</div></div>}
+    {modoDemo&&<p className="mt-4 text-xs text-amber-300">Modo demonstração: os dados não serão persistidos.</p>}
+    {erro&&<div role="alert" className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">{erro}<button className="ml-3 underline" onClick={()=>setErro('')}>Fechar</button></div>}
+    {nova&&<form onSubmit={e=>void criar(e)} className="mt-6 grid gap-4 rounded-2xl border border-white/10 bg-[#202020] p-5 sm:grid-cols-2">
+      {campo('Título',form.titulo,v=>setForm(f=>({...f,titulo:v})))}
+      {campo('Programa',form.programa,v=>setForm(f=>({...f,programa:v})))}
+      <label className="text-xs text-white/55">Responsável<select className={input} value={form.responsavel_id} onChange={e=>setForm(f=>({...f,responsavel_id:e.target.value}))}><option value="">Sem responsável</option>{pessoas.map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}</select></label>
+      <label className="text-xs text-white/55">Prioridade<select className={input} value={form.prioridade} onChange={e=>setForm(f=>({...f,prioridade:e.target.value as Prioridade}))}>{prioridades.map(p=><option key={p} value={p}>{p.toUpperCase()}</option>)}</select></label>
+      {campo('Início',form.inicio,v=>setForm(f=>({...f,inicio:v})),'date')}
+      {campo('Entrega',form.prazo,v=>setForm(f=>({...f,prazo:v})),'date')}
+      <label className="sm:col-span-2 text-xs text-white/55">Descrição<textarea className={input} rows={3} value={form.descricao} onChange={e=>setForm(f=>({...f,descricao:e.target.value}))}/></label>
+      <button disabled={ocupado} className="rounded-xl bg-[#e2fa00] px-5 py-3 text-sm font-bold text-black">Criar tarefa</button>
+    </form>}
+    <div className="mt-6 flex flex-wrap items-center gap-3">
+      <label className="flex min-w-[210px] max-w-md flex-1 items-center gap-3 rounded-xl border border-white/10 bg-[#1e1e1e] px-4"><Search size={17} className="text-white/40"/><input className="w-full min-w-0 bg-transparent py-3 text-sm outline-none" placeholder="Buscar tarefas..." value={busca} onChange={e=>setBusca(e.target.value)}/></label>
+      <button type="button" aria-expanded={mostrarFiltros} onClick={()=>setMostrarFiltros(v=>!v)} className="flex items-center gap-2 rounded-xl border border-white/15 bg-[#222] px-4 py-3 text-sm font-semibold hover:border-blue-400/50"><SlidersHorizontal size={16}/> Filtros {filtrosAtivos>0&&<span className="rounded-full bg-blue-500 px-2 py-0.5 text-xs">{filtrosAtivos}</span>}</button>
+      <span className="text-xs text-white/45">{filtradas.length} de {tarefas.length} tarefas</span>
+      {(filtrosAtivos>0||busca)&&<button type="button" className="text-xs text-blue-300 underline" onClick={limparFiltros}>Limpar filtros</button>}
+    </div>
+    {perfil?.papel==='admin'&&<div className="mt-3"><button type="button" onClick={()=>setGerenciarEtapas(true)} className="inline-flex items-center gap-2 rounded-xl border border-blue-500/40 bg-blue-600/15 px-4 py-3 text-sm font-semibold text-blue-100"><Settings2 size={16}/> Gerenciar status e cores</button></div>}
+    {gerenciarEtapas&&perfil?.papel==='admin'&&createPortal(<div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/85 p-3 backdrop-blur-sm sm:p-6" onClick={()=>setGerenciarEtapas(false)}><section role="dialog" aria-modal="true" aria-label="Administrar status" onClick={e=>e.stopPropagation()} className="max-h-[calc(100dvh-24px)] w-full max-w-3xl overflow-x-hidden overflow-y-auto rounded-2xl border border-white/15 bg-[#202020] p-4 shadow-2xl sm:max-h-[calc(100dvh-48px)] sm:p-6"><div className="mb-3 flex justify-end"><button type="button" onClick={()=>setGerenciarEtapas(false)} aria-label="Fechar administração"><X size={22}/></button></div><div><h3 className="mb-3 font-bold">Etapas do Kanban</h3><p className="mb-4 text-xs text-white/50">Personalize os nomes e as cores. Para excluir, a etapa precisa estar vazia. A etapa inicial e a etapa de conclusão são protegidas. Use as setas para reordenar.</p><div className="space-y-3">{stages.map(stage=><form key={stage.id} className="flex flex-wrap items-end gap-3 rounded-xl border border-white/10 bg-[#272727] p-3" onSubmit={e=>{e.preventDefault();const data=new FormData(e.currentTarget);void salvarEtapa(stage.id,String(data.get('nome')||''),String(data.get('cor')||''))}}><label className="min-w-[160px] flex-1 text-xs text-white/50">Nome<input name="nome" required maxLength={60} defaultValue={stage.nome} className={input}/></label><label className="text-xs text-white/50">Cor<input name="cor" type="color" defaultValue={stage.cor} className="mt-2 block h-11 w-16 cursor-pointer rounded-lg bg-transparent"/></label><div className="flex items-center gap-1"><button type="button" aria-label="Mover etapa para a esquerda" title="Mover para a esquerda" disabled={ocupado||stages[0].id===stage.id} onClick={()=>void moverPosicao(stage.id,-1)} className="rounded-lg border border-white/15 p-2"><ArrowUp size={15}/></button><button type="button" aria-label="Mover etapa para a direita" title="Mover para a direita" disabled={ocupado||stages[stages.length-1].id===stage.id} onClick={()=>void moverPosicao(stage.id,1)} className="rounded-lg border border-white/15 p-2"><ArrowDown size={15}/></button></div><button type="button" disabled={ocupado||stage.concluida} onClick={()=>void alterarConclusao(stage.id)} className={'inline-flex items-center gap-1 rounded-lg border px-3 py-3 text-xs '+(stage.concluida?'border-emerald-400/40 text-emerald-300':'border-white/15 text-white/70')}><CheckCircle2 size={14}/>{stage.concluida?'Conclusão':'Definir conclusão'}</button><button disabled={ocupado} className="rounded-lg bg-blue-600 px-4 py-3 text-xs font-bold">Salvar</button><button type="button" disabled={ocupado||stage.id==='backlog'||stage.concluida||tarefas.some(t=>t.etapa===stage.id)} title={stage.id==='backlog'?'Etapa inicial protegida':'A etapa deve estar vazia'} onClick={()=>void removerEtapa(stage.id)} className="rounded-lg border border-red-400/30 px-3 py-3 text-xs text-red-300">Excluir</button></form>)}</div><form onSubmit={e=>void adicionarEtapa(e)} className="mt-5 flex flex-wrap items-end gap-3 border-t border-white/10 pt-4"><label className="min-w-[160px] flex-1 text-xs text-white/50">Nova etapa<input required maxLength={60} className={input} value={nomeNovaEtapa} onChange={e=>setNomeNovaEtapa(e.target.value)} placeholder="Ex.: Aguardando aprovação"/></label><label className="text-xs text-white/50">Cor<input type="color" value={corNovaEtapa} onChange={e=>setCorNovaEtapa(e.target.value)} className="mt-2 block h-11 w-16 cursor-pointer rounded-lg bg-transparent"/></label><button disabled={ocupado||!nomeNovaEtapa.trim()} className="rounded-lg bg-blue-600 px-4 py-3 text-xs font-bold">Adicionar etapa</button></form></div></section></div>,document.body)}
+    {mostrarFiltros&&<div className="mt-3 grid gap-3 rounded-2xl border border-white/10 bg-[#202020] p-4 sm:grid-cols-2 xl:grid-cols-4">
+      <label className="text-xs text-white/60">Progresso<select className={input} value={filtroProgresso} onChange={e=>setFiltroProgresso(e.target.value)}><option value="">Todas as etapas</option>{stages.map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}</select></label>
+      <label className="text-xs text-white/60">Responsável<select className={input} value={filtroResponsavel} onChange={e=>setFiltroResponsavel(e.target.value)}><option value="">Todos os responsáveis</option>{perfil?.id&&<option value={perfil.id}>Minhas tarefas</option>}<option value="sem">Sem responsável</option>{pessoas.filter(p=>p.id!==perfil?.id).map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}</select></label>
+      <label className="text-xs text-white/60">Prioridade<select className={input} value={filtroPrioridade} onChange={e=>setFiltroPrioridade(e.target.value)}><option value="">Todas as prioridades</option>{prioridades.map(p=><option key={p} value={p}>{p.toUpperCase()}</option>)}</select></label>
+      <label className="text-xs text-white/60">Prazo<select className={input} value={filtroPrazo} onChange={e=>setFiltroPrazo(e.target.value)}><option value="">Todos os prazos</option><option value="vencidas">Vencidas (não aprovadas)</option><option value="hoje">Vencem hoje</option><option value="futuras">Próximas entregas</option><option value="sem">Sem prazo</option></select></label>
+    </div>}
+    <div className="mt-6 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-5 md:grid md:grid-cols-2 md:overflow-visible xl:grid-cols-4">
+      {stages.map((stage,i)=><section key={stage.id} onDragOver={e=>{if(podeEditar)e.preventDefault()}} onDrop={e=>{e.preventDefault();if(drag)void mover(drag,stage.id);setDrag(null)}} className="min-h-[350px] w-[min(85vw,350px)] shrink-0 snap-start rounded-2xl border border-white/10 bg-[#191919]/95 p-4 md:w-auto">
+        <div className="mb-4 flex items-center justify-between"><h2 className="text-sm font-bold"><span className="mr-2 inline-block h-2.5 w-2.5 rounded-full" style={{background:stage.color}}/>{stage.nome}</h2><span className="rounded-full bg-white/10 px-2 py-1 text-xs">{filtradas.filter(t=>t.etapa===stage.id).length}</span></div>
+        <div className="space-y-3">{filtradas.filter(t=>t.etapa===stage.id).map(t=><article key={t.id} draggable={podeEditar} onDragStart={(e:DragEvent)=>{e.dataTransfer.effectAllowed='move';setDrag(t.id)}} onDragEnd={()=>setDrag(null)} className={["scc-task-card", "scc-priority-" + (t.prioridade || "normal"), "cursor-pointer rounded-xl border border-white/10 bg-[#272727] p-4 transition hover:bg-[#303030]"].join(" ")} onClick={()=>setSelecionada(t.id)}>
+          <div className="mb-3 flex items-center justify-between"><span className="rounded-md px-2 py-1 text-[10px] font-bold uppercase" style={{color:cores[t.prioridade||'normal'],background:cores[t.prioridade||'normal']+'20'}}>{(t.prioridade==='urgente'||t.prioridade==='alta') ? '🔥 ' : '● '}{t.prioridade||'normal'}</span><ArrowRight size={15} className="text-white/30"/></div>
+          <h3 className="text-sm font-semibold leading-snug">{t.titulo}</h3><p className="mt-2 text-xs text-white/45">{t.programa||'Sem programa'}</p>
+          <div className="mt-4 flex items-center justify-between gap-2 border-t border-white/10 pt-3"><div className="flex min-w-0 items-center gap-2"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-violet-600 text-xs font-bold">{avatar(t.responsavel)}</span><span className="truncate text-xs text-white/70">{t.responsavel||'Sem responsável'}</span></div>{t.prazo&&<span className="shrink-0 text-[10px] text-white/50">{dataBR(t.prazo)}</span>}</div>
+          {podeEditar&&<div className="mt-3 flex justify-end gap-2" onClick={e=>e.stopPropagation()}>{i>0&&<button className="rounded-md border border-white/10 px-2 py-1 text-xs" onClick={()=>void mover(t.id,stages[i-1].id)}>Voltar</button>}{i<stages.length-1&&<button className="rounded-md border border-white/10 px-2 py-1 text-xs" onClick={()=>void mover(t.id,stages[i+1].id)}>Avançar</button>}</div>}
+        </article>)}</div>
+      </section>)}
+    </div>
+    {tarefa&&createPortal(<div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/80 p-3 backdrop-blur-sm sm:p-6" onClick={()=>setSelecionada(null)}><section role="dialog" aria-modal="true" aria-label="Detalhes da tarefa" onClick={e=>e.stopPropagation()} className="relative max-h-[calc(100dvh-24px)] w-full max-w-2xl min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain rounded-2xl border border-white/15 bg-[#181818] p-4 shadow-2xl sm:max-h-[calc(100dvh-48px)] sm:rounded-3xl sm:p-8">
+      <div className="flex items-center justify-between"><span className="text-xs font-bold tracking-widest text-blue-400">SCC / TAREFA</span><button aria-label="Fechar" onClick={()=>setSelecionada(null)}><X/></button></div>
+      <h2 className="mt-5 text-2xl font-extrabold">{tarefa.titulo}</h2><p className="mt-2 text-sm text-white/45">{tarefa.programa||'Sem programa'}</p>
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        <label className="text-xs text-white/55">Responsável<select disabled={!podeEditar||ocupado} className={input} value={tarefa.responsavel_id||''} onChange={e=>void atualiza(tarefa.id,{responsavel_id:e.target.value||null,responsavel:nomePessoa(e.target.value)})}><option value="">Sem responsável</option>{pessoas.map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}</select></label>
+        <label className="text-xs text-white/55">Prioridade<select disabled={!podeEditar||ocupado} className={input} value={tarefa.prioridade||'normal'} onChange={e=>void atualiza(tarefa.id,{prioridade:e.target.value as Prioridade})}>{prioridades.map(p=><option key={p} value={p}>{p.toUpperCase()}</option>)}</select></label>
+        {campo('Início',tarefa.inicio||'',v=>void atualiza(tarefa.id,{inicio:v||null}),'date')}
+        {campo('Entrega',tarefa.prazo||'',v=>void atualiza(tarefa.id,{prazo:v||null}),'date')}
+      </div>
+      <div className="mt-6 rounded-2xl border border-white/10 bg-[#222] p-5">
+        <h3 className="flex items-center gap-2 font-bold"><Users size={17}/> Participantes</h3>
+        <div className="mt-3 flex flex-wrap gap-2">{participantes.map(p=><span key={p.usuario_id} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs"><span className="grid h-6 w-6 place-items-center rounded-full bg-blue-600 font-bold">{avatar(nomePessoa(p.usuario_id))}</span>{nomePessoa(p.usuario_id)||'Colaborador'}{podeEditar&&<button aria-label="Remover participante" disabled={ocupado} onClick={async()=>{setOcupado(true);try{await removerParticipante(tarefa.id,p.usuario_id);setParticipantes(await listarParticipantes(tarefa.id))}catch{setErro('Erro ao remover participante')}finally{setOcupado(false)}}}><X size={13}/></button>}</span>)}</div>
+        {podeEditar&&<select aria-label="Adicionar participante" className={input} value="" disabled={ocupado} onChange={async e=>{if(!e.target.value)return;setOcupado(true);try{await adicionarParticipante(tarefa.id,e.target.value);setParticipantes(await listarParticipantes(tarefa.id))}catch{setErro('Erro ao adicionar participante')}finally{setOcupado(false)}}}><option value="">+ Adicionar participante</option>{pessoas.filter(p=>!participantes.some(x=>x.usuario_id===p.id)).map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}</select>}
+      </div>
+      <div className="mt-6 rounded-2xl border border-white/10 bg-[#222] p-5">
+        <h3 className="flex items-center gap-2 font-bold"><ListChecks size={17}/> Checklist <span className="ml-auto text-xs text-white/50">{checklist.filter(i=>i.concluido).length}/{checklist.length}</span></h3>
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-blue-500 transition-all" style={{width:checklist.length?String(checklist.filter(i=>i.concluido).length/checklist.length*100)+'%':'0%'}}/></div>
+        <div className="mt-4 space-y-2">{checklist.map(item=><div key={item.id} className="flex items-center gap-3 rounded-lg bg-white/5 px-3 py-2"><input type="checkbox" checked={item.concluido} disabled={!podeEditar||ocupado} onChange={async e=>{setOcupado(true);try{await marcarItemChecklist(item.id,e.target.checked);setChecklist(await listarChecklist(tarefa.id))}catch{setErro('Erro ao atualizar checklist')}finally{setOcupado(false)}}}/><span className={'min-w-0 flex-1 text-sm '+(item.concluido?'text-white/40 line-through':'')}>{item.titulo}</span>{podeEditar&&<button aria-label="Excluir item" disabled={ocupado} onClick={async()=>{setOcupado(true);try{await removerItemChecklist(item.id);setChecklist(await listarChecklist(tarefa.id))}catch{setErro('Erro ao excluir item')}finally{setOcupado(false)}}}><X size={14}/></button>}</div>)}</div>
+        {podeEditar&&<form className="mt-4 flex gap-2" onSubmit={async e=>{e.preventDefault();if(!novoItem.trim())return;setOcupado(true);try{await criarItemChecklist(tarefa.id,novoItem);setNovoItem('');setChecklist(await listarChecklist(tarefa.id))}catch{setErro('Erro ao criar item')}finally{setOcupado(false)}}}><input className={input+' mt-0'} maxLength={240} placeholder="Nova etapa da tarefa..." value={novoItem} onChange={e=>setNovoItem(e.target.value)}/><button disabled={ocupado||!novoItem.trim()} className="rounded-xl bg-blue-600 px-4 text-sm font-bold">Adicionar</button></form>}
+      </div>
+      <label className="mt-5 block text-xs text-white/55">Descrição<textarea key={tarefa.id} defaultValue={tarefa.descricao||''} disabled={!podeEditar} onBlur={e=>{if(e.target.value!==tarefa.descricao)void atualiza(tarefa.id,{descricao:e.target.value})}} rows={4} className={input}/></label>
+      <div className="mt-6 rounded-2xl border border-white/10 bg-[#222] p-5"><h3 className="flex items-center gap-2 font-bold"><Clock3 size={17}/> Rastreamento de tempo</h3><p className="mt-3 text-2xl font-black">{formatTempo(totalSegundos)}</p><button disabled={ocupado||!podeEditar} onClick={()=>void atualizarTempo()} className="mt-3 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold">{tempos.some(t=>!t.fim&&t.usuario_id===perfil?.id)?'Pausar contagem':'Iniciar contagem'}</button></div>
+      <div className="mt-6 rounded-2xl border border-white/10 bg-[#222] p-5"><h3 className="flex items-center gap-2 font-bold"><Paperclip size={17}/> Arquivos</h3><div className="mt-3 space-y-2">{anexos.map(a=><button key={a.id} className="block max-w-full truncate text-sm text-blue-300 underline" onClick={async()=>{try{window.open(await urlAnexo(a.caminho),'_blank','noopener,noreferrer')}catch{setErro('Não foi possível abrir o arquivo.')}}}>{a.nome}</button>)}</div>{podeEditar&&!modoDemo&&<input aria-label="Anexar arquivo" type="file" disabled={ocupado} className="mt-4 max-w-full text-xs" onChange={async e=>{const arquivo=e.target.files?.[0];if(!arquivo)return;setOcupado(true);try{await anexarArquivo(tarefa.id,arquivo);setAnexos(await listarAnexos(tarefa.id))}catch(err){setErro(err instanceof Error?err.message:'Erro ao anexar')}finally{setOcupado(false);e.target.value=''}}}/>}<p className="mt-2 text-xs text-white/40">Até 10 MB por arquivo. Acesso privado.</p></div>
+      <div className="mt-6 rounded-2xl border border-white/10 bg-[#222] p-5"><h3 className="flex items-center gap-2 font-bold"><MessageCircle size={17}/> Conversa da tarefa</h3><div className="mt-4 max-h-72 space-y-3 overflow-y-auto">{comentarios.length===0&&<p className="text-sm text-white/40">Nenhuma mensagem ainda.</p>}{comentarios.map(c=><div key={c.id} className="rounded-xl bg-white/5 p-3"><p className="text-xs font-semibold text-blue-300">{nomePessoa(c.autor_id)||'Colaborador'} · {new Date(c.criado_em).toLocaleString('pt-BR')}</p><p className="mt-1 whitespace-pre-wrap text-sm">{c.mensagem}</p></div>)}</div>{podeEditar&&!modoDemo&&<form onSubmit={e=>void enviarComentario(e)} className="mt-4 flex gap-2"><input required maxLength={5000} className={input+' mt-0'} placeholder="Escreva uma mensagem..." value={mensagem} onChange={e=>setMensagem(e.target.value)}/><button disabled={ocupado} className="rounded-xl bg-blue-600 px-4 text-sm font-bold">Enviar</button></form>}</div>
+      <div className="mt-6 rounded-2xl border border-white/10 bg-[#222] p-5"><h3 className="flex items-center gap-2 font-bold"><History size={17}/> Histórico de atividades</h3><button type="button" className="mt-2 text-xs text-blue-300 underline" onClick={async()=>{try{setAtividades(await listarAtividades(tarefa.id));void recarregarNotificacoes()}catch{setErro('Falha ao atualizar histórico')}}}>Atualizar histórico</button><div className="mt-4 max-h-72 space-y-3 overflow-y-auto">{atividades.length===0&&<p className="text-sm text-white/40">Nenhuma alteração registrada ainda.</p>}{atividades.map(a=><div key={a.id} className="border-l-2 border-blue-500/40 pl-3"><p className="text-xs text-white/50">{nomePessoa(a.autor_id)||'Sistema'} · {new Date(a.criado_em).toLocaleString('pt-BR')}</p><p className="mt-1 text-sm"><span className="font-semibold capitalize">{a.tipo}</span> · {a.detalhe}</p></div>)}</div></div>
+      {podeExcluir&&<button className="mt-7 flex items-center gap-2 text-sm text-red-300" onClick={async()=>{if(!window.confirm('Excluir tarefa definitivamente?'))return;try{await excluirTarefa(tarefa.id);setTarefas(v=>v.filter(t=>t.id!==tarefa.id));setSelecionada(null)}catch{setErro('Não foi possível excluir.')}}}><Trash2 size={16}/> Excluir tarefa</button>}
+      <p className="mt-8 flex items-center gap-2 text-xs text-white/30"><CalendarDays size={14}/> Início {dataBR(tarefa.inicio)} · Entrega {dataBR(tarefa.prazo)}</p>
+    </section></div>,document.body)}
+  </main>
+}

@@ -1064,3 +1064,13 @@ body { overflow-x: hidden; }
   .scc-materials-overview button.scc-materials-stat:hover,
   .scc-materials-overview button.scc-materials-stat:focus-visible { transform: none; }
 }
+
+
+/* SCC Produção — prioridade destacada somente pelo contorno. */
+.scc-task-card { position:relative; background:#272727; transition:border-color .2s ease,box-shadow .2s ease; }
+.scc-priority-baixa { border-color:rgba(148,163,184,.22); }
+.scc-priority-normal { border-color:rgba(56,189,248,.28); }
+.scc-priority-alta { border-color:rgba(245,158,11,.85); }
+.scc-priority-urgente { border-color:rgba(248,90,42,.95); }
+.scc-priority-alta:hover { border-color:#f59e0b; }
+.scc-priority-urgente:hover { border-color:#fb5b36; }

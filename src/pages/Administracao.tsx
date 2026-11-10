@@ -8,7 +8,7 @@ import ConviteUsuario from '../components/ConviteUsuario'
 import Avatar from '../components/Avatar'
 import type { Papel } from '../types/materiais'
 
-const nomesPapel = { admin: 'Administrador', editor: 'Editor', leitor: 'Leitor' }
+const nomesPapel: Record<Papel, string> = { admin: 'Administrador', editor: 'Editor', leitor: 'Leitor', opec: 'OPEC', producao: 'Produção' }
 
 export default function Administracao() {
   const { perfil } = useAuth()
@@ -311,7 +311,9 @@ export default function Administracao() {
                   }}
                   className="mt-2 w-full rounded-xl border border-white/15 bg-[#050505] px-4 py-3 text-sm text-white outline-none focus:border-blue-400">
                   <option value="leitor">Leitor — somente consulta</option>
-                  <option value="editor">Editor — gerencia materiais</option>
+                  <option value="editor">Editor — gerencia materiais (legado)</option>
+                  <option value="opec">OPEC — gerencia a grade</option>
+                  <option value="producao">PRODUÇÃO — tarefas e consulta à grade</option>
                   <option value="admin">Administrador — acesso total</option>
                 </select>
                 {novoPapel === 'admin' && (

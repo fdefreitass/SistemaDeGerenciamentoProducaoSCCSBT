@@ -1,4 +1,4 @@
-export type Papel = 'admin' | 'editor' | 'leitor'
+export type Papel = 'admin' | 'editor' | 'leitor' | 'opec' | 'producao'
 export type StatusGrade =
   | 'em_utilizacao'
   | 'fora_da_grade'
