@@ -1,14 +1,11 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type DragEvent } from 'react'
-import { ArrowRight, CalendarDays, Clock3, MessageCircle, Paperclip, Plus, Search, X, Trash2, Users, ListChecks, SlidersHorizontal, Bell, History } from 'lucide-react'
+import { ArrowRight, CalendarDays, Clock3, MessageCircle, Paperclip, Plus, Search, X, Trash2, Users, ListChecks, SlidersHorizontal, Bell, History, Settings2 } from 'lucide-react'
 import { modoDemo } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { can } from '../lib/permissoes'
-import { listarTarefas, criarTarefa, atualizarEtapa, excluirTarefa, listarColaboradoresTarefas, salvarDetalhes, listarComentarios, comentar, listarTempos, iniciarTempo, pararTempo, listarAnexos, anexarArquivo, urlAnexo, type Tarefa, type ColaboradorTarefa, type EtapaTarefa, type Prioridade, type Comentario, type RegistroTempo, type AnexoTarefa, listarParticipantes, adicionarParticipante, removerParticipante, listarChecklist, criarItemChecklist, marcarItemChecklist, removerItemChecklist, type ParticipanteTarefa, type ItemChecklist, listarAtividades, listarNotificacoes, marcarNotificacaoLida, type AtividadeTarefa, type NotificacaoTarefa } from '../services/tarefas'
+import { listarTarefas, criarTarefa, atualizarEtapa, excluirTarefa, listarColaboradoresTarefas, salvarDetalhes, listarComentarios, comentar, listarTempos, iniciarTempo, pararTempo, listarAnexos, anexarArquivo, urlAnexo, type Tarefa, type ColaboradorTarefa, type EtapaTarefa, type Prioridade, type Comentario, type RegistroTempo, type AnexoTarefa, listarParticipantes, adicionarParticipante, removerParticipante, listarChecklist, criarItemChecklist, marcarItemChecklist, removerItemChecklist, type ParticipanteTarefa, type ItemChecklist, listarAtividades, listarNotificacoes, marcarNotificacaoLida, type AtividadeTarefa, type NotificacaoTarefa, listarEtapas, criarEtapa, atualizarEtapaConfig, excluirEtapaConfig, type ConfigEtapa } from '../services/tarefas'
 
-const stages: { id: EtapaTarefa; label: string; color: string }[] = [
-  { id:'backlog',label:'A fazer',color:'#9ca3af' },{id:'andamento',label:'Em produção',color:'#0089ff'},
-  { id:'revisao',label:'Em revisão',color:'#ffb020' },{id:'aprovado',label:'Aprovado',color:'#65d69b'}
-]
+const etapasPadrao:ConfigEtapa[]=[{id:'backlog',nome:'A fazer',cor:'#9ca3af',ordem:0},{id:'andamento',nome:'Em produção',cor:'#0089ff',ordem:1},{id:'revisao',nome:'Em revisão',cor:'#ffb020',ordem:2},{id:'aprovado',nome:'Aprovado',cor:'#65d69b',ordem:3}]
 const prioridades: Prioridade[]=['baixa','normal','alta','urgente']
 const cores:Record<Prioridade,string>={baixa:'#94a3b8',normal:'#38bdf8',alta:'#f59e0b',urgente:'#ef4444'}
 const input='mt-2 w-full min-w-0 rounded-xl border border-white/15 bg-[#111] px-3 py-3 text-sm text-white outline-none focus:border-blue-400'
@@ -22,7 +19,11 @@ export default function GestaoTarefas() {
   const [pessoas,setPessoas]=useState<ColaboradorTarefa[]>([])
   const [selecionada,setSelecionada]=useState<string|null>(null)
   const [busca,setBusca]=useState('')
-  const [filtroPrograma,setFiltroPrograma]=useState('')
+  const [filtroProgresso,setFiltroProgresso]=useState('')
+  const [stages,setStages]=useState<ConfigEtapa[]>(etapasPadrao)
+  const [gerenciarEtapas,setGerenciarEtapas]=useState(false)
+  const [nomeNovaEtapa,setNomeNovaEtapa]=useState('')
+  const [corNovaEtapa,setCorNovaEtapa]=useState('#0089ff')
   const [filtroResponsavel,setFiltroResponsavel]=useState('')
   const [filtroPrioridade,setFiltroPrioridade]=useState('')
   const [filtroPrazo,setFiltroPrazo]=useState('')
@@ -44,7 +45,7 @@ export default function GestaoTarefas() {
   const [agora,setAgora]=useState(Date.now())
   const [drag,setDrag]=useState<string|null>(null)
   const carregar=useCallback(async()=>{
-    try { const [t,p]=await Promise.all([listarTarefas(),listarColaboradoresTarefas()]);setTarefas(t);setPessoas(p) }
+    try { const [t,p,e]=await Promise.all([listarTarefas(),listarColaboradoresTarefas(),listarEtapas()]);setTarefas(t);setPessoas(p);setStages(e) }
     catch(e){setErro(e instanceof Error?e.message:'Falha ao carregar tarefas')}
   },[])
   useEffect(()=>{void carregar()},[carregar])
@@ -53,11 +54,10 @@ export default function GestaoTarefas() {
   useEffect(()=>{if(!selecionada||modoDemo)return;let ativo=true;Promise.all([listarComentarios(selecionada),listarTempos(selecionada),listarAnexos(selecionada),listarParticipantes(selecionada),listarChecklist(selecionada),listarAtividades(selecionada)]).then(([c,t,a,p,l,h])=>{if(ativo){setComentarios(c);setTempos(t);setAnexos(a);setParticipantes(p);setChecklist(l);setAtividades(h)}}).catch(()=>setErro('Não foi possível carregar os detalhes.'));return()=>{ativo=false}},[selecionada])
   useEffect(()=>{if(!selecionada)return;const timer=window.setInterval(()=>setAgora(Date.now()),1000);return()=>window.clearInterval(timer)},[selecionada])
   const tarefa=tarefas.find(t=>t.id===selecionada)
-  const programas=useMemo(()=>Array.from(new Set(tarefas.map(t=>t.programa).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'pt-BR')),[tarefas])
   const hoje=(()=>{const d=new Date();const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);return local.toISOString().slice(0,10)})()
   const filtradas=useMemo(()=>tarefas.filter(t=>{
     if(![t.titulo,t.programa,t.responsavel].join(' ').toLowerCase().includes(busca.trim().toLowerCase()))return false
-    if(filtroPrograma&&t.programa!==filtroPrograma)return false
+    if(filtroProgresso&&t.etapa!==filtroProgresso)return false
     if(filtroResponsavel==='sem'&&t.responsavel_id)return false
     if(filtroResponsavel&&filtroResponsavel!=='sem'&&t.responsavel_id!==filtroResponsavel)return false
     if(filtroPrioridade&&(t.prioridade||'normal')!==filtroPrioridade)return false
@@ -66,9 +66,9 @@ export default function GestaoTarefas() {
     if(filtroPrazo==='sem'&&t.prazo)return false
     if(filtroPrazo==='futuras'&&(!t.prazo||t.prazo<=hoje))return false
     return true
-  }),[tarefas,busca,filtroPrograma,filtroResponsavel,filtroPrioridade,filtroPrazo,hoje])
-  const filtrosAtivos=[filtroPrograma,filtroResponsavel,filtroPrioridade,filtroPrazo].filter(Boolean).length
-  const limparFiltros=()=>{setFiltroPrograma('');setFiltroResponsavel('');setFiltroPrioridade('');setFiltroPrazo('');setBusca('')}
+  }),[tarefas,busca,filtroProgresso,filtroResponsavel,filtroPrioridade,filtroPrazo,hoje])
+  const filtrosAtivos=[filtroProgresso,filtroResponsavel,filtroPrioridade,filtroPrazo].filter(Boolean).length
+  const limparFiltros=()=>{setFiltroProgresso('');setFiltroResponsavel('');setFiltroPrioridade('');setFiltroPrazo('');setBusca('')}
   const nomePessoa=(id?:string|null)=>pessoas.find(p=>p.id===id)?.nome||''
   const atualiza=async(id:string,campos:Partial<Tarefa>)=>{
     if(!podeEditar||ocupado)return
@@ -76,6 +76,9 @@ export default function GestaoTarefas() {
     try{await salvarDetalhes(id,campos);setTarefas(v=>v.map(t=>t.id===id?{...t,...campos}:t));if(id===selecionada)setAtividades(await listarAtividades(id));void recarregarNotificacoes()}
     catch(e){setErro(e instanceof Error?e.message:'Erro ao salvar')}finally{setOcupado(false)}
   }
+  const salvarEtapa=async(id:string,nome:string,cor:string)=>{setOcupado(true);setErro('');try{await atualizarEtapaConfig(id,{nome:nome.trim(),cor});setStages(await listarEtapas())}catch(e){setErro(e instanceof Error?e.message:'Erro ao atualizar etapa')}finally{setOcupado(false)}}
+  const adicionarEtapa=async(e:FormEvent)=>{e.preventDefault();if(!nomeNovaEtapa.trim())return;setOcupado(true);setErro('');try{await criarEtapa({id:'etapa_'+crypto.randomUUID().replace(/-/g,'').slice(0,16),nome:nomeNovaEtapa.trim(),cor:corNovaEtapa,ordem:stages.length});setStages(await listarEtapas());setNomeNovaEtapa('')}catch(e){setErro(e instanceof Error?e.message:'Erro ao criar etapa')}finally{setOcupado(false)}}
+  const removerEtapa=async(id:string)=>{if(tarefas.some(t=>t.etapa===id)){setErro('Mova todas as tarefas desta etapa antes de excluí-la.');return}if(!window.confirm('Excluir esta etapa?'))return;setOcupado(true);setErro('');try{await excluirEtapaConfig(id);setStages(await listarEtapas());if(filtroProgresso===id)setFiltroProgresso('')}catch(e){setErro(e instanceof Error?e.message:'Não foi possível excluir a etapa')}finally{setOcupado(false)}}
   const mover=async(id:string,etapa:EtapaTarefa)=>{
     if(!podeEditar||ocupado)return
     setOcupado(true);setErro('')
@@ -131,20 +134,22 @@ export default function GestaoTarefas() {
       <span className="text-xs text-white/45">{filtradas.length} de {tarefas.length} tarefas</span>
       {(filtrosAtivos>0||busca)&&<button type="button" className="text-xs text-blue-300 underline" onClick={limparFiltros}>Limpar filtros</button>}
     </div>
+    {perfil?.papel==='admin'&&<div className="mt-3"><button type="button" onClick={()=>setGerenciarEtapas(v=>!v)} className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-[#222] px-4 py-2.5 text-sm font-semibold"><Settings2 size={16}/> Administrar etapas</button></div>}
+    {gerenciarEtapas&&perfil?.papel==='admin'&&<div className="mt-3 rounded-2xl border border-white/10 bg-[#202020] p-5"><h3 className="mb-3 font-bold">Etapas do Kanban</h3><p className="mb-4 text-xs text-white/50">Personalize os nomes e as cores. Para excluir, a etapa precisa estar vazia. A etapa inicial é protegida.</p><div className="space-y-3">{stages.map(stage=><form key={stage.id} className="flex flex-wrap items-end gap-3 rounded-xl border border-white/10 bg-[#272727] p-3" onSubmit={e=>{e.preventDefault();const data=new FormData(e.currentTarget);void salvarEtapa(stage.id,String(data.get('nome')||''),String(data.get('cor')||''))}}><label className="min-w-[160px] flex-1 text-xs text-white/50">Nome<input name="nome" required maxLength={60} defaultValue={stage.nome} className={input}/></label><label className="text-xs text-white/50">Cor<input name="cor" type="color" defaultValue={stage.cor} className="mt-2 block h-11 w-16 cursor-pointer rounded-lg bg-transparent"/></label><button disabled={ocupado} className="rounded-lg bg-blue-600 px-4 py-3 text-xs font-bold">Salvar</button><button type="button" disabled={ocupado||stage.id==='backlog'||tarefas.some(t=>t.etapa===stage.id)} title={stage.id==='backlog'?'Etapa inicial protegida':'A etapa deve estar vazia'} onClick={()=>void removerEtapa(stage.id)} className="rounded-lg border border-red-400/30 px-3 py-3 text-xs text-red-300">Excluir</button></form>)}</div><form onSubmit={e=>void adicionarEtapa(e)} className="mt-5 flex flex-wrap items-end gap-3 border-t border-white/10 pt-4"><label className="min-w-[160px] flex-1 text-xs text-white/50">Nova etapa<input required maxLength={60} className={input} value={nomeNovaEtapa} onChange={e=>setNomeNovaEtapa(e.target.value)} placeholder="Ex.: Aguardando aprovação"/></label><label className="text-xs text-white/50">Cor<input type="color" value={corNovaEtapa} onChange={e=>setCorNovaEtapa(e.target.value)} className="mt-2 block h-11 w-16 cursor-pointer rounded-lg bg-transparent"/></label><button disabled={ocupado||!nomeNovaEtapa.trim()} className="rounded-lg bg-blue-600 px-4 py-3 text-xs font-bold">Adicionar etapa</button></form></div>}
     {mostrarFiltros&&<div className="mt-3 grid gap-3 rounded-2xl border border-white/10 bg-[#202020] p-4 sm:grid-cols-2 xl:grid-cols-4">
-      <label className="text-xs text-white/60">Programa<select className={input} value={filtroPrograma} onChange={e=>setFiltroPrograma(e.target.value)}><option value="">Todos os programas</option>{programas.map(p=><option key={p} value={p}>{p}</option>)}</select></label>
+      <label className="text-xs text-white/60">Progresso<select className={input} value={filtroProgresso} onChange={e=>setFiltroProgresso(e.target.value)}><option value="">Todas as etapas</option>{stages.map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}</select></label>
       <label className="text-xs text-white/60">Responsável<select className={input} value={filtroResponsavel} onChange={e=>setFiltroResponsavel(e.target.value)}><option value="">Todos os responsáveis</option>{perfil?.id&&<option value={perfil.id}>Minhas tarefas</option>}<option value="sem">Sem responsável</option>{pessoas.filter(p=>p.id!==perfil?.id).map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}</select></label>
       <label className="text-xs text-white/60">Prioridade<select className={input} value={filtroPrioridade} onChange={e=>setFiltroPrioridade(e.target.value)}><option value="">Todas as prioridades</option>{prioridades.map(p=><option key={p} value={p}>{p.toUpperCase()}</option>)}</select></label>
       <label className="text-xs text-white/60">Prazo<select className={input} value={filtroPrazo} onChange={e=>setFiltroPrazo(e.target.value)}><option value="">Todos os prazos</option><option value="vencidas">Vencidas (não aprovadas)</option><option value="hoje">Vencem hoje</option><option value="futuras">Próximas entregas</option><option value="sem">Sem prazo</option></select></label>
     </div>}
     <div className="mt-6 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-5 md:grid md:grid-cols-2 md:overflow-visible xl:grid-cols-4">
       {stages.map((stage,i)=><section key={stage.id} onDragOver={e=>{if(podeEditar)e.preventDefault()}} onDrop={e=>{e.preventDefault();if(drag)void mover(drag,stage.id);setDrag(null)}} className="min-h-[350px] w-[min(85vw,350px)] shrink-0 snap-start rounded-2xl border border-white/10 bg-[#191919]/95 p-4 md:w-auto">
-        <div className="mb-4 flex items-center justify-between"><h2 className="text-sm font-bold"><span className="mr-2 inline-block h-2.5 w-2.5 rounded-full" style={{background:stage.color}}/>{stage.label}</h2><span className="rounded-full bg-white/10 px-2 py-1 text-xs">{filtradas.filter(t=>t.etapa===stage.id).length}</span></div>
+        <div className="mb-4 flex items-center justify-between"><h2 className="text-sm font-bold"><span className="mr-2 inline-block h-2.5 w-2.5 rounded-full" style={{background:stage.color}}/>{stage.nome}</h2><span className="rounded-full bg-white/10 px-2 py-1 text-xs">{filtradas.filter(t=>t.etapa===stage.id).length}</span></div>
         <div className="space-y-3">{filtradas.filter(t=>t.etapa===stage.id).map(t=><article key={t.id} draggable={podeEditar} onDragStart={(e:DragEvent)=>{e.dataTransfer.effectAllowed='move';setDrag(t.id)}} onDragEnd={()=>setDrag(null)} className={["scc-task-card", "scc-priority-" + (t.prioridade || "normal"), "cursor-pointer rounded-xl border border-white/10 bg-[#272727] p-4 transition hover:bg-[#303030]"].join(" ")} onClick={()=>setSelecionada(t.id)}>
           <div className="mb-3 flex items-center justify-between"><span className="rounded-md px-2 py-1 text-[10px] font-bold uppercase" style={{color:cores[t.prioridade||'normal'],background:cores[t.prioridade||'normal']+'20'}}>{(t.prioridade==='urgente'||t.prioridade==='alta') ? '🔥 ' : '● '}{t.prioridade||'normal'}</span><ArrowRight size={15} className="text-white/30"/></div>
           <h3 className="text-sm font-semibold leading-snug">{t.titulo}</h3><p className="mt-2 text-xs text-white/45">{t.programa||'Sem programa'}</p>
           <div className="mt-4 flex items-center justify-between gap-2 border-t border-white/10 pt-3"><div className="flex min-w-0 items-center gap-2"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-violet-600 text-xs font-bold">{avatar(t.responsavel)}</span><span className="truncate text-xs text-white/70">{t.responsavel||'Sem responsável'}</span></div>{t.prazo&&<span className="shrink-0 text-[10px] text-white/50">{dataBR(t.prazo)}</span>}</div>
-          {podeEditar&&<div className="mt-3 flex justify-end gap-2" onClick={e=>e.stopPropagation()}>{i>0&&<button className="rounded-md border border-white/10 px-2 py-1 text-xs" onClick={()=>void mover(t.id,stages[i-1].id)}>Voltar</button>}{i<3&&<button className="rounded-md border border-white/10 px-2 py-1 text-xs" onClick={()=>void mover(t.id,stages[i+1].id)}>Avançar</button>}</div>}
+          {podeEditar&&<div className="mt-3 flex justify-end gap-2" onClick={e=>e.stopPropagation()}>{i>0&&<button className="rounded-md border border-white/10 px-2 py-1 text-xs" onClick={()=>void mover(t.id,stages[i-1].id)}>Voltar</button>}{i<stages.length-1&&<button className="rounded-md border border-white/10 px-2 py-1 text-xs" onClick={()=>void mover(t.id,stages[i+1].id)}>Avançar</button>}</div>}
         </article>)}</div>
       </section>)}
     </div>
