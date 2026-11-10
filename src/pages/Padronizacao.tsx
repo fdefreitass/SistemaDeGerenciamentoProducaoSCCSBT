@@ -202,7 +202,7 @@ export default function Padronizacao() {
             {filename || 'Preencha os campos para gerar o nome'}
           </div>
           <button type="button" disabled={!arquivo || !filename} onClick={baixarRenomeado} className="mt-4 flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold disabled:opacity-40"><Download size={15}/> Baixar MP4 com nome correto</button>
-          <button type="button" disabled={!filename} onClick={() => void copy() className="mt-4 flex items-center gap-2 rounded-lg border border-white/20 px-4 py-2 text-xs font-semibold disabled:opacity-40"><ClipboardCopy size={15}/>{copied ? 'Copiado' : 'Copiar nome'}</button>
+          <button type="button" disabled={!filename} onClick={() => void copy()} className="mt-4 flex items-center gap-2 rounded-lg border border-white/20 px-4 py-2 text-xs font-semibold disabled:opacity-40"><ClipboardCopy size={15}/>{copied ? 'Copiado' : 'Copiar nome'}</button>
           {confirmation && <p role="status" className="mt-5 flex items-start gap-2 rounded-xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-xs text-emerald-200"><CheckCircle2 size={17} className="shrink-0"/> Simulação confirmada para {confirmation}. Nenhum arquivo foi alterado.</p>}
         </section>
       </div>
