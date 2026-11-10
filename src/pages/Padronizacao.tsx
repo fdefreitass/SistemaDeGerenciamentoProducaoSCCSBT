@@ -36,6 +36,7 @@ export default function Padronizacao() {
   const [salvandoDestino, setSalvandoDestino] = useState(false)
   const [conectandoDrive, setConectandoDrive] = useState(false)
   const [erroDrive, setErroDrive] = useState('')
+  const [driveConectado, setDriveConectado] = useState<boolean | null>(null)
 
   useEffect(() => {
     if (!supabase || modoDemo) return
@@ -45,6 +46,23 @@ export default function Padronizacao() {
       if (error) setErroDestino('Não foi possível carregar os destinos.')
       else setDestinos((data ?? []) as Destino[])
     })
+    return () => { ativo = false }
+  }, [])
+
+  useEffect(() => {
+    if (!supabase || modoDemo) return
+    let ativo = true
+    void (async () => {
+      try {
+        const { data: { session } } = await supabase!.auth.getSession()
+        if (!session) return
+        const response = await fetch('https://uppdvhtmvprtwtppcfdm.supabase.co/functions/v1/google-drive-status', {
+          headers: { Authorization: `Bearer ${session.access_token}` }
+        })
+        const data = await response.json()
+        if (ativo && response.ok) setDriveConectado(data.connected === true)
+      } catch { if (ativo) setErroDrive('Não foi possível verificar o status do Google Drive.') }
+    })()
     return () => { ativo = false }
   }, [])
 
@@ -171,7 +189,7 @@ export default function Padronizacao() {
         <p>O arquivo MP4 pode ser selecionado e baixado com o nome padronizado. O envio automático e a verificação de duplicidade no Google Drive ainda dependem da integração segura; nenhum arquivo é publicado nesta etapa.</p>
       </div>
 
-      {admin && <div className="mt-5 flex flex-wrap items-center gap-3"><button type="button" disabled={conectandoDrive} onClick={() => void conectarDrive()} className="rounded-xl border border-blue-400/30 bg-blue-500/15 px-4 py-3 text-sm font-bold text-blue-200 disabled:opacity-50">{conectandoDrive ? 'Abrindo autorização...' : 'Conectar Google Drive corporativo'}</button>{erroDrive && <p role="alert" className="text-xs text-red-300">{erroDrive}</p>}</div>}
+      {admin && <div className="mt-5 flex flex-wrap items-center gap-3">{driveConectado === true ? <span className="rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm font-bold text-emerald-200">✓ Google Drive corporativo conectado</span> : <button type="button" disabled={conectandoDrive} onClick={() => void conectarDrive()} className="rounded-xl border border-blue-400/30 bg-blue-500/15 px-4 py-3 text-sm font-bold text-blue-200 disabled:opacity-50">{conectandoDrive ? 'Abrindo autorização...' : 'Conectar Google Drive corporativo'}</button>}{erroDrive && <p role="alert" className="text-xs text-red-300">{erroDrive}</p>}</div>}
       <div className="mt-7 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
         <form onSubmit={confirm} className="rounded-2xl border border-white/10 bg-[#1f1f1f] p-6">
           <h2 className="mb-6 flex items-center gap-2 text-lg font-bold"><Film size={20}/> Identificação do material</h2>
