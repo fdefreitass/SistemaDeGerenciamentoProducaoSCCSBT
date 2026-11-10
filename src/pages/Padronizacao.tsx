@@ -105,10 +105,22 @@ export default function Padronizacao() {
     const nome = novoTipoNome.trim()
     if (!/^[A-Z][A-Z0-9]{1,11}$/.test(codigo) || !nome) { setErroTipo('Informe um código de 2 a 12 caracteres e uma descrição.'); return }
     setSalvandoTipo(true); setErroTipo('')
-    const {data,error} = await supabase.from('tipos_padronizacao').insert({codigo,nome}).select('codigo,nome,ativo').single()
-    if (error) setErroTipo('Não foi possível adicionar. Confira se o código já existe.')
-    else { setTipos(atual => [...atual,data as TipoMaterial]); setNovoTipoCodigo(''); setNovoTipoNome('') }
+    const existente = tipos.find(item => item.codigo === codigo)
+    if (existente?.ativo) { setErroTipo('Este código já está em uso. Utilize a opção de editar.'); setSalvandoTipo(false); return }
+    const consulta = existente
+      ? await supabase.from('tipos_padronizacao').update({nome,ativo:true}).eq('codigo',codigo).select('codigo,nome,ativo').single()
+      : await supabase.from('tipos_padronizacao').insert({codigo,nome}).select('codigo,nome,ativo').single()
+    const {data,error} = consulta
+    if (error) setErroTipo('Não foi possível salvar este tipo.')
+    else { setTipos(atual => [...atual.filter(item => item.codigo !== codigo),data as TipoMaterial].sort((a,b)=>a.nome.localeCompare(b.nome))); setNovoTipoCodigo(''); setNovoTipoNome('') }
     setSalvandoTipo(false)
+  }
+  async function reativarTipo(item: TipoMaterial) {
+    if (!supabase || !admin) return
+    setErroTipo('')
+    const {error}=await supabase.from('tipos_padronizacao').update({ativo:true}).eq('codigo',item.codigo)
+    if (error) setErroTipo('Não foi possível restaurar o tipo.')
+    else setTipos(atual=>atual.map(t=>t.codigo===item.codigo?{...t,ativo:true}:t))
   }
   async function renomearTipo(item: TipoMaterial) {
     if (!supabase || !admin) return
@@ -129,10 +141,22 @@ export default function Padronizacao() {
     if (!supabase || !admin || !novoDestino.trim()) return
     setSalvandoDestino(true); setErroDestino('')
     const nome = normalizeName(novoDestino)
-    const { data, error } = await supabase.from('destinos_padronizacao').insert({ tipo: type, nome }).select('id,tipo,nome,drive_folder_id,ativo').single()
-    if (error) setErroDestino('Não foi possível cadastrar. Confira se o nome já existe.')
-    else { setDestinos(atual => [...atual, data as Destino].sort((a,b) => a.nome.localeCompare(b.nome))); setProgram(nome); setNovoDestino('') }
+    const existente = destinos.find(item => item.tipo === type && item.nome === nome)
+    if (existente?.ativo) { setErroDestino('Este destino já existe. Utilize a opção de editar.'); setSalvandoDestino(false); return }
+    const consulta = existente
+      ? await supabase.from('destinos_padronizacao').update({ativo:true}).eq('id',existente.id).select('id,tipo,nome,drive_folder_id,ativo').single()
+      : await supabase.from('destinos_padronizacao').insert({ tipo: type, nome }).select('id,tipo,nome,drive_folder_id,ativo').single()
+    const {data,error} = consulta
+    if (error) setErroDestino('Não foi possível salvar o destino.')
+    else { setDestinos(atual => [...atual.filter(item=>item.id!==data.id),data as Destino].sort((a,b) => a.nome.localeCompare(b.nome))); setProgram(nome); setNovoDestino('') }
     setSalvandoDestino(false)
+  }
+  async function reativarDestino(item: Destino) {
+    if (!supabase || !admin) return
+    setErroDestino('')
+    const {error}=await supabase.from('destinos_padronizacao').update({ativo:true}).eq('id',item.id)
+    if (error) setErroDestino('Não foi possível restaurar o destino.')
+    else setDestinos(atual=>atual.map(d=>d.id===item.id?{...d,ativo:true}:d))
   }
   async function renomearDestino(item: Destino) {
     if (!supabase || !admin) return
@@ -289,11 +313,11 @@ export default function Padronizacao() {
                   <input aria-label="Nome do novo tipo" maxLength={80} placeholder="Descrição do tipo" value={novoTipoNome} onChange={e=>setNovoTipoNome(e.target.value)} className="min-w-0 flex-[2] rounded-lg border border-white/15 bg-[#080808] px-3 py-2 text-xs"/>
                   <button type="button" disabled={salvandoTipo || !novoTipoCodigo || !novoTipoNome.trim()} onClick={()=>void adicionarTipo()} className="flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold disabled:opacity-40"><Plus size={14}/> Adicionar</button>
                 </div>
-                <div className="mt-3 space-y-2">{tipos.filter(t=>t.ativo).map(item=><div key={item.codigo} className="flex items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2">
-                  <span className="min-w-0 truncate text-xs">{item.codigo} — {item.nome}</span>
+                <div className="mt-3 space-y-2">{tipos.map(item=><div key={item.codigo} className="flex items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2">
+                  <span className="min-w-0 truncate text-xs">{item.codigo} — {item.nome}{!item.ativo && <span className="ml-2 text-amber-300">(desativado)</span>}</span>
                   <div className="flex shrink-0 gap-2">
                     <button type="button" aria-label={`Renomear ${item.nome}`} onClick={()=>void renomearTipo(item)} className="text-blue-300"><Pencil size={15}/></button>
-                    <button type="button" aria-label={`Desativar ${item.nome}`} onClick={()=>void desativarTipo(item)} className="text-red-300"><Trash2 size={15}/></button>
+                    {item.ativo ? <button type="button" aria-label={`Desativar ${item.nome}`} onClick={()=>void desativarTipo(item)} className="text-red-300"><Trash2 size={15}/></button> : <button type="button" onClick={()=>void reativarTipo(item)} className="text-xs font-bold text-emerald-300">Restaurar</button>}
                   </div>
                 </div>)}</div>
                 <p className="mt-3 text-xs text-white/50">O código é fixo para preservar o histórico. A descrição pode ser alterada; desativar não exclui arquivos existentes.</p>
@@ -319,11 +343,11 @@ export default function Padronizacao() {
                   <input aria-label="Nome do novo destino" value={novoDestino} onChange={e => setNovoDestino(e.target.value)} maxLength={100} placeholder={type === 'CALHAU' ? 'Nome da nova série' : 'Nome do programa'} className="min-w-0 flex-1 rounded-lg border border-white/15 bg-[#080808] px-3 py-2 text-sm" />
                   <button type="button" disabled={salvandoDestino || !novoDestino.trim()} onClick={() => void adicionarDestino()} className="flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold disabled:opacity-40"><Plus size={14}/> Adicionar</button>
                 </div>
-                <div className="mt-3 space-y-2">{opcoes.map(item => <div key={item.id} className="flex items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2">
-                  <span className="min-w-0 truncate text-xs">{item.nome}</span>
+                <div className="mt-3 space-y-2">{destinos.filter(item=>item.tipo===type).map(item => <div key={item.id} className="flex items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-2">
+                  <span className="min-w-0 truncate text-xs">{item.nome}{!item.ativo && <span className="ml-2 text-amber-300">(desativado)</span>}</span>
                   <div className="flex shrink-0 gap-2">
                     <button type="button" title="Renomear" aria-label={`Renomear ${item.nome}`} onClick={() => void renomearDestino(item)} className="text-blue-300"><Pencil size={15}/></button>
-                    <button type="button" title="Desativar" aria-label={`Desativar ${item.nome}`} onClick={() => void desativarDestino(item)} className="text-red-300"><Trash2 size={15}/></button>
+                    {item.ativo ? <button type="button" title="Desativar" aria-label={`Desativar ${item.nome}`} onClick={() => void desativarDestino(item)} className="text-red-300"><Trash2 size={15}/></button> : <button type="button" onClick={()=>void reativarDestino(item)} className="text-xs font-bold text-emerald-300">Restaurar</button>}
                   </div>
                 </div>)}</div>
                 <p className="mt-3 text-xs text-amber-200/80">Novos destinos são cadastrados no sistema. A pasta no Drive deverá ser vinculada antes da publicação de arquivos.</p>
