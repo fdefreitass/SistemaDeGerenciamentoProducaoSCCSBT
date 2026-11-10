@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { CheckCircle2, ClipboardCopy, FileCheck2, Film, Plus, Pencil, Trash2, UploadCloud, Download, RotateCcw } from 'lucide-react'
+import { CheckCircle2, ClipboardCopy, FileCheck2, Film, Plus, Pencil, Trash2, UploadCloud, Download, RotateCcw, ExternalLink, History } from 'lucide-react'
 
 import { useAuth } from '../context/AuthContext'
 import { modoDemo, supabase } from '../lib/supabase'
 
 type TipoMaterial = { codigo: string; nome: string; ativo: boolean; drive_folder_id?: string | null }
 type Destino = { id: string; tipo: string; nome: string; drive_folder_id: string | null; ativo: boolean }
+type UploadRecente = { id: string; nome_padronizado: string; drive_url: string | null; criado_em: string }
 
 const tiposIniciais: TipoMaterial[] = [{codigo:'CH',nome:'Chamada',ativo:true},{codigo:'VT',nome:'Videotape',ativo:true},{codigo:'VH',nome:'Vinheta',ativo:true},{codigo:'CALHAU',nome:'Calhau',ativo:true}]
 
@@ -250,6 +251,22 @@ export default function Padronizacao() {
   const [progresso, setProgresso] = useState(0)
   const [linkDrive, setLinkDrive] = useState('')
   const [duplicado, setDuplicado] = useState('')
+  const [ultimosUploads, setUltimosUploads] = useState<UploadRecente[]>([])
+  const [carregandoUploads, setCarregandoUploads] = useState(true)
+  const [erroUploads, setErroUploads] = useState('')
+  async function carregarUltimosUploads() {
+    if (!supabase || modoDemo) { setCarregandoUploads(false); return }
+    const { data, error } = await supabase.from('envios_drive')
+      .select('id,nome_padronizado,drive_url,criado_em')
+      .eq('status','concluido')
+      .order('criado_em',{ascending:false})
+      .limit(5)
+    if (error) setErroUploads('Não foi possível carregar os últimos uploads.')
+    else { setUltimosUploads((data ?? []) as UploadRecente[]); setErroUploads('') }
+    setCarregandoUploads(false)
+  }
+  useEffect(() => { void carregarUltimosUploads() }, [])
+
 
   const opcoes = destinos.filter(item => item.tipo === type && item.ativo)
   const destinoSelecionado = opcoes.find(item => item.nome === program)
@@ -290,7 +307,7 @@ export default function Padronizacao() {
         for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i,i+0x8000))
         const resultado = await enviar({action:'chunk',upload_id:inicio.upload_id,start,end,total:arquivo.size,chunk_base64:btoa(binary)})
         setProgresso(Math.round((end+1)/arquivo.size*100))
-        if (resultado.done) { setConfirmation(resultado.name); setLinkDrive(resultado.url) }
+        if (resultado.done) { setConfirmation(resultado.name); setLinkDrive(resultado.url); void carregarUltimosUploads() }
       }
     } catch (error) {
       setErroArquivo(error instanceof Error ? error.message : 'Falha ao enviar o vídeo.')
@@ -445,6 +462,29 @@ export default function Padronizacao() {
           {enviando && <div className="mt-4"><div className="h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full bg-blue-500" style={{width:`${progresso}%`}}/></div><p className="mt-2 text-xs text-white/60">Transferência para Google Drive: {progresso}%</p></div>}
           {linkDrive && <a href={linkDrive} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block rounded-lg bg-emerald-500/15 px-4 py-3 text-sm font-bold text-emerald-200">Abrir arquivo no Google Drive</a>}
           {confirmation && <p role="status" className="mt-5 flex items-start gap-2 rounded-xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-xs text-emerald-200"><CheckCircle2 size={17} className="shrink-0"/> Arquivo enviado com sucesso: {confirmation}.</p>}
+        </section>
+        <section className="h-fit rounded-2xl border border-white/10 bg-[#1f1f1f] p-5 sm:p-6 lg:col-start-2" aria-label="Últimos uploads">
+          <div className="mb-4 flex items-center gap-2">
+            <History size={19} className="text-blue-400"/>
+            <h2 className="text-lg font-bold text-white">Últimos 5 uploads</h2>
+          </div>
+          <p className="mb-4 text-xs text-white/45">Arquivos enviados e confirmados no Google Drive.</p>
+          {carregandoUploads ? <p className="text-sm text-white/50">Carregando envios...</p> : erroUploads ? <p role="alert" className="text-sm text-red-300">{erroUploads}</p> : ultimosUploads.length===0 ? <p className="rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-white/50">Nenhum upload concluído encontrado.</p> : (
+            <div className="space-y-2">
+              {ultimosUploads.map((item,index)=>(
+                <div key={item.id} className="flex flex-col gap-3 rounded-xl border border-white/10 bg-[#121212] p-3 transition-colors hover:bg-[#292929] sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/5 text-xs font-bold text-white/50">{String(index+1).padStart(2,'0')}</span>
+                    <div className="min-w-0">
+                      <p className="break-all text-xs font-semibold leading-relaxed text-white">{item.nome_padronizado}</p>
+                      <p className="mt-1 text-[11px] text-white/40">{new Date(item.criado_em).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</p>
+                    </div>
+                  </div>
+                  {item.drive_url ? <a href={item.drive_url} target="_blank" rel="noopener noreferrer" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-blue-500/30 bg-blue-600/15 px-3 py-2 text-xs font-bold text-blue-300 hover:bg-blue-600/25"><ExternalLink size={14}/> Abrir no Drive</a> : <span className="text-xs text-white/40">Link indisponível</span>}
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </div>
       {edicao && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget && !salvandoEdicao)setEdicao(null)}}>
