@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type DragEvent } from 'react'
-import { ArrowRight, CalendarDays, Clock3, MessageCircle, Paperclip, Plus, Search, X, Trash2, Users, ListChecks } from 'lucide-react'
+import { ArrowRight, CalendarDays, Clock3, MessageCircle, Paperclip, Plus, Search, X, Trash2, Users, ListChecks, SlidersHorizontal } from 'lucide-react'
 import { modoDemo } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { can } from '../lib/permissoes'
@@ -22,6 +22,11 @@ export default function GestaoTarefas() {
   const [pessoas,setPessoas]=useState<ColaboradorTarefa[]>([])
   const [selecionada,setSelecionada]=useState<string|null>(null)
   const [busca,setBusca]=useState('')
+  const [filtroPrograma,setFiltroPrograma]=useState('')
+  const [filtroResponsavel,setFiltroResponsavel]=useState('')
+  const [filtroPrioridade,setFiltroPrioridade]=useState('')
+  const [filtroPrazo,setFiltroPrazo]=useState('')
+  const [mostrarFiltros,setMostrarFiltros]=useState(false)
   const [nova,setNova]=useState(false)
   const [ocupado,setOcupado]=useState(false)
   const [erro,setErro]=useState('')
@@ -43,7 +48,22 @@ export default function GestaoTarefas() {
   useEffect(()=>{if(!selecionada||modoDemo)return;let ativo=true;Promise.all([listarComentarios(selecionada),listarTempos(selecionada),listarAnexos(selecionada),listarParticipantes(selecionada),listarChecklist(selecionada)]).then(([c,t,a,p,l])=>{if(ativo){setComentarios(c);setTempos(t);setAnexos(a);setParticipantes(p);setChecklist(l)}}).catch(()=>setErro('Não foi possível carregar os detalhes.'));return()=>{ativo=false}},[selecionada])
   useEffect(()=>{if(!selecionada)return;const timer=window.setInterval(()=>setAgora(Date.now()),1000);return()=>window.clearInterval(timer)},[selecionada])
   const tarefa=tarefas.find(t=>t.id===selecionada)
-  const filtradas=useMemo(()=>tarefas.filter(t=>[t.titulo,t.programa,t.responsavel].join(' ').toLowerCase().includes(busca.toLowerCase())),[tarefas,busca])
+  const programas=useMemo(()=>Array.from(new Set(tarefas.map(t=>t.programa).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'pt-BR')),[tarefas])
+  const hoje=new Date().toLocaleDateString('en-CA')
+  const filtradas=useMemo(()=>tarefas.filter(t=>{
+    if(![t.titulo,t.programa,t.responsavel].join(' ').toLowerCase().includes(busca.trim().toLowerCase()))return false
+    if(filtroPrograma&&t.programa!==filtroPrograma)return false
+    if(filtroResponsavel==='sem'&&t.responsavel_id)return false
+    if(filtroResponsavel&&filtroResponsavel!=='sem'&&t.responsavel_id!==filtroResponsavel)return false
+    if(filtroPrioridade&&(t.prioridade||'normal')!==filtroPrioridade)return false
+    if(filtroPrazo==='vencidas'&&(!t.prazo||t.prazo>=hoje||t.etapa==='aprovado'))return false
+    if(filtroPrazo==='hoje'&&t.prazo!==hoje)return false
+    if(filtroPrazo==='sem'&&t.prazo)return false
+    if(filtroPrazo==='futuras'&&(!t.prazo||t.prazo<=hoje))return false
+    return true
+  }),[tarefas,busca,filtroPrograma,filtroResponsavel,filtroPrioridade,filtroPrazo,hoje])
+  const filtrosAtivos=[filtroPrograma,filtroResponsavel,filtroPrioridade,filtroPrazo].filter(Boolean).length
+  const limparFiltros=()=>{setFiltroPrograma('');setFiltroResponsavel('');setFiltroPrioridade('');setFiltroPrazo('');setBusca('')}
   const nomePessoa=(id?:string|null)=>pessoas.find(p=>p.id===id)?.nome||''
   const atualiza=async(id:string,campos:Partial<Tarefa>)=>{
     if(!podeEditar||ocupado)return
@@ -96,7 +116,18 @@ export default function GestaoTarefas() {
       <label className="sm:col-span-2 text-xs text-white/55">Descrição<textarea className={input} rows={3} value={form.descricao} onChange={e=>setForm(f=>({...f,descricao:e.target.value}))}/></label>
       <button disabled={ocupado} className="rounded-xl bg-[#e2fa00] px-5 py-3 text-sm font-bold text-black">Criar tarefa</button>
     </form>}
-    <label className="mt-6 flex max-w-md items-center gap-3 rounded-xl border border-white/10 bg-[#1e1e1e] px-4"><Search size={17} className="text-white/40"/><input className="w-full min-w-0 bg-transparent py-3 text-sm outline-none" placeholder="Buscar tarefas..." value={busca} onChange={e=>setBusca(e.target.value)}/></label>
+    <div className="mt-6 flex flex-wrap items-center gap-3">
+      <label className="flex min-w-[210px] max-w-md flex-1 items-center gap-3 rounded-xl border border-white/10 bg-[#1e1e1e] px-4"><Search size={17} className="text-white/40"/><input className="w-full min-w-0 bg-transparent py-3 text-sm outline-none" placeholder="Buscar tarefas..." value={busca} onChange={e=>setBusca(e.target.value)}/></label>
+      <button type="button" aria-expanded={mostrarFiltros} onClick={()=>setMostrarFiltros(v=>!v)} className="flex items-center gap-2 rounded-xl border border-white/15 bg-[#222] px-4 py-3 text-sm font-semibold hover:border-blue-400/50"><SlidersHorizontal size={16}/> Filtros {filtrosAtivos>0&&<span className="rounded-full bg-blue-500 px-2 py-0.5 text-xs">{filtrosAtivos}</span>}</button>
+      <span className="text-xs text-white/45">{filtradas.length} de {tarefas.length} tarefas</span>
+      {(filtrosAtivos>0||busca)&&<button type="button" className="text-xs text-blue-300 underline" onClick={limparFiltros}>Limpar filtros</button>}
+    </div>
+    {mostrarFiltros&&<div className="mt-3 grid gap-3 rounded-2xl border border-white/10 bg-[#202020] p-4 sm:grid-cols-2 xl:grid-cols-4">
+      <label className="text-xs text-white/60">Programa<select className={input} value={filtroPrograma} onChange={e=>setFiltroPrograma(e.target.value)}><option value="">Todos os programas</option>{programas.map(p=><option key={p} value={p}>{p}</option>)}</select></label>
+      <label className="text-xs text-white/60">Responsável<select className={input} value={filtroResponsavel} onChange={e=>setFiltroResponsavel(e.target.value)}><option value="">Todos os responsáveis</option>{perfil?.id&&<option value={perfil.id}>Minhas tarefas</option>}<option value="sem">Sem responsável</option>{pessoas.filter(p=>p.id!==perfil?.id).map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}</select></label>
+      <label className="text-xs text-white/60">Prioridade<select className={input} value={filtroPrioridade} onChange={e=>setFiltroPrioridade(e.target.value)}><option value="">Todas as prioridades</option>{prioridades.map(p=><option key={p} value={p}>{p.toUpperCase()}</option>)}</select></label>
+      <label className="text-xs text-white/60">Prazo<select className={input} value={filtroPrazo} onChange={e=>setFiltroPrazo(e.target.value)}><option value="">Todos os prazos</option><option value="vencidas">Vencidas (não aprovadas)</option><option value="hoje">Vencem hoje</option><option value="futuras">Próximas entregas</option><option value="sem">Sem prazo</option></select></label>
+    </div>}
     <div className="mt-6 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-5 md:grid md:grid-cols-2 md:overflow-visible xl:grid-cols-4">
       {stages.map((stage,i)=><section key={stage.id} onDragOver={e=>{if(podeEditar)e.preventDefault()}} onDrop={e=>{e.preventDefault();if(drag)void mover(drag,stage.id);setDrag(null)}} className="min-h-[350px] w-[min(85vw,350px)] shrink-0 snap-start rounded-2xl border border-white/10 bg-[#191919]/95 p-4 md:w-auto">
         <div className="mb-4 flex items-center justify-between"><h2 className="text-sm font-bold"><span className="mr-2 inline-block h-2.5 w-2.5 rounded-full" style={{background:stage.color}}/>{stage.label}</h2><span className="rounded-full bg-white/10 px-2 py-1 text-xs">{filtradas.filter(t=>t.etapa===stage.id).length}</span></div>
