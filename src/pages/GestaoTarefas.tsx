@@ -274,7 +274,7 @@ export default function GestaoTarefas() {
               </div>
             </div>
           </div>}
-                    {podeEditar&&<div className="mt-1 flex justify-end gap-2" onClick={e=>e.stopPropagation()}>{i>0&&<button className="rounded-md border border-white/10 px-2 py-1 text-xs" onClick={()=>void mover(t.id,stages[i-1].id)}>Voltar</button>}{i<stages.length-1&&<button className="rounded-md border border-white/10 px-2 py-1 text-xs" onClick={()=>void mover(t.id,stages[i+1].id)}>Avançar</button>}</div>}
+                    {podeEditar&&<div className="mt-1 flex justify-end gap-2 md:hidden" onClick={e=>e.stopPropagation()}>{i>0&&<button className="rounded-md border border-white/10 px-2 py-1 text-xs" onClick={()=>void mover(t.id,stages[i-1].id)}>Voltar</button>}{i<stages.length-1&&<button className="rounded-md border border-white/10 px-2 py-1 text-xs" onClick={()=>void mover(t.id,stages[i+1].id)}>Avançar</button>}</div>}
         </article>)}</div>
       </section>})}
     </div>}
