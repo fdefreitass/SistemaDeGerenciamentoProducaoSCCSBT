@@ -1146,3 +1146,4 @@ body { overflow-x: hidden; }
 .scc-stage-admin{visibility:hidden;pointer-events:none}
 .scc-bitrix-column:hover .scc-stage-admin,.scc-bitrix-column:focus-within .scc-stage-admin{visibility:visible;pointer-events:auto}
 @media(hover:none){.scc-stage-admin{opacity:1;visibility:visible;pointer-events:auto}}
+\n/* Modal de tarefa: aproveita a largura disponível e mantém a rolagem sem trilho visual */\n.scc-task-detail-modal{scrollbar-width:none;-ms-overflow-style:none}\n.scc-task-detail-modal::-webkit-scrollbar{display:none}\n
