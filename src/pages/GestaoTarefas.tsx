@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type DragEvent } from 'react'
-import { ArrowRight, CalendarDays, Clock3, MessageCircle, Paperclip, Plus, Search, X, Trash2, Users, ListChecks, SlidersHorizontal } from 'lucide-react'
+import { ArrowRight, CalendarDays, Clock3, MessageCircle, Paperclip, Plus, Search, X, Trash2, Users, ListChecks, SlidersHorizontal, Bell, History } from 'lucide-react'
 import { modoDemo } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { can } from '../lib/permissoes'
-import { listarTarefas, criarTarefa, atualizarEtapa, excluirTarefa, listarColaboradoresTarefas, salvarDetalhes, listarComentarios, comentar, listarTempos, iniciarTempo, pararTempo, listarAnexos, anexarArquivo, urlAnexo, type Tarefa, type ColaboradorTarefa, type EtapaTarefa, type Prioridade, type Comentario, type RegistroTempo, type AnexoTarefa, listarParticipantes, adicionarParticipante, removerParticipante, listarChecklist, criarItemChecklist, marcarItemChecklist, removerItemChecklist, type ParticipanteTarefa, type ItemChecklist } from '../services/tarefas'
+import { listarTarefas, criarTarefa, atualizarEtapa, excluirTarefa, listarColaboradoresTarefas, salvarDetalhes, listarComentarios, comentar, listarTempos, iniciarTempo, pararTempo, listarAnexos, anexarArquivo, urlAnexo, type Tarefa, type ColaboradorTarefa, type EtapaTarefa, type Prioridade, type Comentario, type RegistroTempo, type AnexoTarefa, listarParticipantes, adicionarParticipante, removerParticipante, listarChecklist, criarItemChecklist, marcarItemChecklist, removerItemChecklist, type ParticipanteTarefa, type ItemChecklist, listarAtividades, listarNotificacoes, marcarNotificacaoLida, type AtividadeTarefa, type NotificacaoTarefa } from '../services/tarefas'
 
 const stages: { id: EtapaTarefa; label: string; color: string }[] = [
   { id:'backlog',label:'A fazer',color:'#9ca3af' },{id:'andamento',label:'Em produção',color:'#0089ff'},
@@ -36,6 +36,9 @@ export default function GestaoTarefas() {
   const [participantes,setParticipantes]=useState<ParticipanteTarefa[]>([])
   const [checklist,setChecklist]=useState<ItemChecklist[]>([])
   const [novoItem,setNovoItem]=useState('')
+  const [atividades,setAtividades]=useState<AtividadeTarefa[]>([])
+  const [notificacoes,setNotificacoes]=useState<NotificacaoTarefa[]>([])
+  const [mostrarNotificacoes,setMostrarNotificacoes]=useState(false)
   const [tempos,setTempos]=useState<RegistroTempo[]>([])
   const [anexos,setAnexos]=useState<AnexoTarefa[]>([])
   const [agora,setAgora]=useState(Date.now())
@@ -45,7 +48,9 @@ export default function GestaoTarefas() {
     catch(e){setErro(e instanceof Error?e.message:'Falha ao carregar tarefas')}
   },[])
   useEffect(()=>{void carregar()},[carregar])
-  useEffect(()=>{if(!selecionada||modoDemo)return;let ativo=true;Promise.all([listarComentarios(selecionada),listarTempos(selecionada),listarAnexos(selecionada),listarParticipantes(selecionada),listarChecklist(selecionada)]).then(([c,t,a,p,l])=>{if(ativo){setComentarios(c);setTempos(t);setAnexos(a);setParticipantes(p);setChecklist(l)}}).catch(()=>setErro('Não foi possível carregar os detalhes.'));return()=>{ativo=false}},[selecionada])
+  const recarregarNotificacoes=useCallback(async()=>{try{setNotificacoes(await listarNotificacoes())}catch{ /* Erro não bloqueia o Kanban */ }},[])
+  useEffect(()=>{void recarregarNotificacoes()},[recarregarNotificacoes])
+  useEffect(()=>{if(!selecionada||modoDemo)return;let ativo=true;Promise.all([listarComentarios(selecionada),listarTempos(selecionada),listarAnexos(selecionada),listarParticipantes(selecionada),listarChecklist(selecionada),listarAtividades(selecionada)]).then(([c,t,a,p,l,h])=>{if(ativo){setComentarios(c);setTempos(t);setAnexos(a);setParticipantes(p);setChecklist(l);setAtividades(h)}}).catch(()=>setErro('Não foi possível carregar os detalhes.'));return()=>{ativo=false}},[selecionada])
   useEffect(()=>{if(!selecionada)return;const timer=window.setInterval(()=>setAgora(Date.now()),1000);return()=>window.clearInterval(timer)},[selecionada])
   const tarefa=tarefas.find(t=>t.id===selecionada)
   const programas=useMemo(()=>Array.from(new Set(tarefas.map(t=>t.programa).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'pt-BR')),[tarefas])
@@ -68,13 +73,13 @@ export default function GestaoTarefas() {
   const atualiza=async(id:string,campos:Partial<Tarefa>)=>{
     if(!podeEditar||ocupado)return
     setOcupado(true);setErro('')
-    try{await salvarDetalhes(id,campos);setTarefas(v=>v.map(t=>t.id===id?{...t,...campos}:t))}
+    try{await salvarDetalhes(id,campos);setTarefas(v=>v.map(t=>t.id===id?{...t,...campos}:t));if(id===selecionada)setAtividades(await listarAtividades(id));void recarregarNotificacoes()}
     catch(e){setErro(e instanceof Error?e.message:'Erro ao salvar')}finally{setOcupado(false)}
   }
   const mover=async(id:string,etapa:EtapaTarefa)=>{
     if(!podeEditar||ocupado)return
     setOcupado(true);setErro('')
-    try{await atualizarEtapa(id,etapa);setTarefas(v=>v.map(t=>t.id===id?{...t,etapa}:t))}
+    try{await atualizarEtapa(id,etapa);setTarefas(v=>v.map(t=>t.id===id?{...t,etapa}:t));if(id===selecionada)setAtividades(await listarAtividades(id));void recarregarNotificacoes()}
     catch{setErro('Não foi possível mover a tarefa.')}finally{setOcupado(false)}
   }
   const criar=async(e:FormEvent)=>{
@@ -104,6 +109,10 @@ export default function GestaoTarefas() {
   return <main className="scc-fluid-content min-w-0 overflow-hidden pb-20 pt-8">
     <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-xs font-bold tracking-[.25em] text-white/40">SCC PRODUÇÃO / WORKSPACE</p><h1 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">Gestão de Tarefas</h1><p className="mt-2 text-sm text-white/50">Produção, revisões e aprovações em um só lugar.</p></div>
       {podeEditar&&<button className="rounded-xl bg-white px-5 py-3 text-sm font-bold text-black hover:bg-[#e2fa00]" onClick={()=>setNova(v=>!v)}><Plus size={16} className="mr-2 inline"/>Nova tarefa</button>}</div>
+    <div className="mt-5 flex flex-wrap items-center gap-3">
+      <button type="button" onClick={()=>{setMostrarNotificacoes(v=>!v);void recarregarNotificacoes()}} aria-expanded={mostrarNotificacoes} className="flex items-center gap-2 rounded-xl border border-white/10 bg-[#222] px-4 py-2.5 text-sm hover:border-blue-400/40"><Bell size={16}/> Notificações {notificacoes.filter(n=>!n.lida_em).length>0&&<span className="rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold">{notificacoes.filter(n=>!n.lida_em).length}</span>}</button>
+    </div>
+    {mostrarNotificacoes&&<div className="mt-3 max-w-2xl rounded-2xl border border-white/10 bg-[#202020] p-4"><h3 className="mb-3 text-sm font-bold">Atualizações das suas tarefas</h3>{notificacoes.length===0&&<p className="text-sm text-white/45">Nenhuma notificação.</p>}<div className="max-h-80 space-y-2 overflow-y-auto">{notificacoes.map(n=><button key={n.id} type="button" className={'flex w-full items-center justify-between gap-3 rounded-xl border p-3 text-left text-sm '+(n.lida_em?'border-white/5 bg-white/5 text-white/55':'border-blue-500/30 bg-blue-500/10')} onClick={async()=>{try{if(!n.lida_em)await marcarNotificacaoLida(n.id);setSelecionada(n.tarefa_id);setMostrarNotificacoes(false);void recarregarNotificacoes()}catch{setErro('Não foi possível abrir a notificação')}}}><span className="min-w-0 truncate">{tarefas.find(t=>t.id===n.tarefa_id)?.titulo||'Tarefa'} · Nova atividade</span><span className="shrink-0 text-xs">{new Date(n.criado_em).toLocaleDateString('pt-BR')}</span></button>)}</div></div>}
     {modoDemo&&<p className="mt-4 text-xs text-amber-300">Modo demonstração: os dados não serão persistidos.</p>}
     {erro&&<div role="alert" className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">{erro}<button className="ml-3 underline" onClick={()=>setErro('')}>Fechar</button></div>}
     {nova&&<form onSubmit={e=>void criar(e)} className="mt-6 grid gap-4 rounded-2xl border border-white/10 bg-[#202020] p-5 sm:grid-cols-2">
@@ -163,6 +172,7 @@ export default function GestaoTarefas() {
       <div className="mt-6 rounded-2xl border border-white/10 bg-[#222] p-5"><h3 className="flex items-center gap-2 font-bold"><Clock3 size={17}/> Rastreamento de tempo</h3><p className="mt-3 text-2xl font-black">{formatTempo(totalSegundos)}</p><button disabled={ocupado||!podeEditar} onClick={()=>void atualizarTempo()} className="mt-3 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold">{tempos.some(t=>!t.fim&&t.usuario_id===perfil?.id)?'Pausar contagem':'Iniciar contagem'}</button></div>
       <div className="mt-6 rounded-2xl border border-white/10 bg-[#222] p-5"><h3 className="flex items-center gap-2 font-bold"><Paperclip size={17}/> Arquivos</h3><div className="mt-3 space-y-2">{anexos.map(a=><button key={a.id} className="block max-w-full truncate text-sm text-blue-300 underline" onClick={async()=>{try{window.open(await urlAnexo(a.caminho),'_blank','noopener,noreferrer')}catch{setErro('Não foi possível abrir o arquivo.')}}}>{a.nome}</button>)}</div>{podeEditar&&!modoDemo&&<input aria-label="Anexar arquivo" type="file" disabled={ocupado} className="mt-4 max-w-full text-xs" onChange={async e=>{const arquivo=e.target.files?.[0];if(!arquivo)return;setOcupado(true);try{await anexarArquivo(tarefa.id,arquivo);setAnexos(await listarAnexos(tarefa.id))}catch(err){setErro(err instanceof Error?err.message:'Erro ao anexar')}finally{setOcupado(false);e.target.value=''}}}/>}<p className="mt-2 text-xs text-white/40">Até 10 MB por arquivo. Acesso privado.</p></div>
       <div className="mt-6 rounded-2xl border border-white/10 bg-[#222] p-5"><h3 className="flex items-center gap-2 font-bold"><MessageCircle size={17}/> Conversa da tarefa</h3><div className="mt-4 max-h-72 space-y-3 overflow-y-auto">{comentarios.length===0&&<p className="text-sm text-white/40">Nenhuma mensagem ainda.</p>}{comentarios.map(c=><div key={c.id} className="rounded-xl bg-white/5 p-3"><p className="text-xs font-semibold text-blue-300">{nomePessoa(c.autor_id)||'Colaborador'} · {new Date(c.criado_em).toLocaleString('pt-BR')}</p><p className="mt-1 whitespace-pre-wrap text-sm">{c.mensagem}</p></div>)}</div>{podeEditar&&!modoDemo&&<form onSubmit={e=>void enviarComentario(e)} className="mt-4 flex gap-2"><input required maxLength={5000} className={input+' mt-0'} placeholder="Escreva uma mensagem..." value={mensagem} onChange={e=>setMensagem(e.target.value)}/><button disabled={ocupado} className="rounded-xl bg-blue-600 px-4 text-sm font-bold">Enviar</button></form>}</div>
+      <div className="mt-6 rounded-2xl border border-white/10 bg-[#222] p-5"><h3 className="flex items-center gap-2 font-bold"><History size={17}/> Histórico de atividades</h3><button type="button" className="mt-2 text-xs text-blue-300 underline" onClick={async()=>{try{setAtividades(await listarAtividades(tarefa.id));void recarregarNotificacoes()}catch{setErro('Falha ao atualizar histórico')}}}>Atualizar histórico</button><div className="mt-4 max-h-72 space-y-3 overflow-y-auto">{atividades.length===0&&<p className="text-sm text-white/40">Nenhuma alteração registrada ainda.</p>}{atividades.map(a=><div key={a.id} className="border-l-2 border-blue-500/40 pl-3"><p className="text-xs text-white/50">{nomePessoa(a.autor_id)||'Sistema'} · {new Date(a.criado_em).toLocaleString('pt-BR')}</p><p className="mt-1 text-sm"><span className="font-semibold capitalize">{a.tipo}</span> · {a.detalhe}</p></div>)}</div></div>
       {podeExcluir&&<button className="mt-7 flex items-center gap-2 text-sm text-red-300" onClick={async()=>{if(!window.confirm('Excluir tarefa definitivamente?'))return;try{await excluirTarefa(tarefa.id);setTarefas(v=>v.filter(t=>t.id!==tarefa.id));setSelecionada(null)}catch{setErro('Não foi possível excluir.')}}}><Trash2 size={16}/> Excluir tarefa</button>}
       <p className="mt-8 flex items-center gap-2 text-xs text-white/30"><CalendarDays size={14}/> Início {dataBR(tarefa.inicio)} · Entrega {dataBR(tarefa.prazo)}</p>
     </section></div>}
