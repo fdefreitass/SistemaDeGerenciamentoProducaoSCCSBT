@@ -74,7 +74,7 @@ export default function Padronizacao() {
   const [type, setType] = useState<(typeof types)[number]['value']>('CH')
   const [program, setProgram] = useState('')
   const [complemento, setComplemento] = useState('')
-  const [dataEnvio, setDataEnvio] = useState(dataLocal)
+  const [dataEnvio] = useState(dataLocal)
   const [duration, setDuration] = useState('')
   const [approved, setApproved] = useState(false)
   const [confirmation, setConfirmation] = useState('')
@@ -161,8 +161,8 @@ export default function Padronizacao() {
               <label className="text-xs font-semibold text-white/70">Duração em segundos
                 <input required type="number" min="1" max="36000" step="1" placeholder="30" value={duration} onChange={e => { setDuration(e.target.value); setConfirmation('') }} className="mt-2 w-full rounded-xl border border-white/15 bg-[#111] p-3 text-sm text-white" />
               </label>
-              <label className="text-xs font-semibold text-white/70">Data de envio
-                <input required type="date" value={dataEnvio} onChange={e => { setDataEnvio(e.target.value); setConfirmation('') }} className="mt-2 w-full rounded-xl border border-white/15 bg-[#111] p-3 text-sm text-white" />
+              <label className="text-xs font-semibold text-white/70">Data de envio (automática)
+                <input required type="date" value={dataEnvio} disabled readOnly className="mt-2 w-full rounded-xl border border-white/15 bg-[#111] p-3 text-sm text-white" />
               </label>
             </div>
           </div>
