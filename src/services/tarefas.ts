@@ -6,6 +6,15 @@ export async function listarColaboradoresTarefas(): Promise<ColaboradorTarefa[]>
   if (error) throw error
   return (data ?? []) as ColaboradorTarefa[]
 }
+export async function listarAvataresColaboradores(ids:string[]):Promise<Record<string,string>>{
+ if(modoDemo||ids.length===0)return {}
+ const supabase=obterSupabase()
+ const entradas=await Promise.all(ids.map(async id=>{
+  const {data,error}=await supabase.storage.from('scc-avatars').createSignedUrl(id+'/avatar',3600)
+  return [id,error?'':data?.signedUrl??''] as const
+ }))
+ return Object.fromEntries(entradas.filter(([,url])=>Boolean(url)))
+}
 export type Prioridade = 'baixa' | 'normal' | 'alta' | 'urgente'
 export type EtapaTarefa = string
 export type Tarefa = { id: string; titulo: string; programa: string; responsavel: string; responsavel_id?: string | null; prazo: string | null; inicio?: string | null; descricao?: string; prioridade?: Prioridade; etapa: EtapaTarefa }
