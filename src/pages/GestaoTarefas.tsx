@@ -1,5 +1,6 @@
 import { createPortal } from 'react-dom'
 import CalendarioEntregas from '../components/CalendarioEntregas'
+import CampoData from '../components/CampoData'
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type DragEvent } from 'react'
 import { ArrowRight, CalendarDays, MessageCircle, Paperclip, Plus, Search, X, Trash2, Users, ListChecks, SlidersHorizontal, Bell, History, ArrowUp, ArrowDown, CheckCircle2, LayoutDashboard, AtSign, Send, Paintbrush } from 'lucide-react'
 import { modoDemo } from '../lib/supabase'
@@ -213,7 +214,7 @@ export default function GestaoTarefas() {
     setOcupado(true);try{const id=await comentar(selecionada,mensagem.trim(),mencionados);for(const arquivo of arquivosMensagem)await anexarArquivo(selecionada,arquivo,id);setMensagem('');setMencionados([]);setArquivosMensagem([]);setComentarios(await listarComentarios(selecionada));setAnexos(await listarAnexos(selecionada));void recarregarNotificacoes()}
     catch{setErro('Não foi possível enviar a mensagem.')}finally{setOcupado(false)}
   }
-  const campo=(rotulo:string,valor:string,change:(v:string)=>void,tipo='text')=><label className="block text-xs text-white/55">{rotulo}<input type={tipo} value={valor} min={tipo==='date'?'2020-01-01':undefined} max={tipo==='date'?'2100-12-31':undefined} onChange={e=>{const v=e.target.value;if(tipo==='date'&&v&&!/^(20[2-9]\d|2100)-\d{2}-\d{2}$/.test(v))return;change(v)}} onClick={e=>{if(tipo==='date'&&podeEditar&&!ocupado){try{e.currentTarget.showPicker?.()}catch{/* O navegador pode bloquear a abertura programática. */}}}} onKeyDown={e=>{if(tipo==='date'&&!['Tab','Escape'].includes(e.key))e.preventDefault()}} onPaste={e=>{if(tipo==='date')e.preventDefault()}} disabled={!podeEditar||ocupado} className={input+(tipo==='date'?' cursor-pointer':'')}/></label>
+  const campo=(rotulo:string,valor:string,change:(v:string)=>void,tipo='text')=>tipo==='date'?<CampoData label={rotulo} value={valor} onChange={change} disabled={!podeEditar||ocupado}/>:<label className="block text-xs text-white/55">{rotulo}<input type={tipo} value={valor} onChange={e=>change(e.target.value)} disabled={!podeEditar||ocupado} className={input}/></label>
   return <main className="scc-fluid-content min-w-0 overflow-hidden pb-20 pt-8">
     <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-xs font-bold tracking-[.25em] text-white/40">SCC PRODUÇÃO / WORKSPACE</p><h1 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">Gestão de Tarefas</h1><p className="mt-2 text-sm text-white/50">Produção, revisões e aprovações em um só lugar.</p></div>
       <div className="flex flex-wrap items-center justify-end gap-2">
